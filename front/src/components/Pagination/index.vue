@@ -81,7 +81,7 @@ export default class extends Vue {
 <style lang="scss">
 .pagination-container {
   background: transparent;
-  padding: 16px 16px 32px;
+  padding: 20px 20px 32px;
   .el-pagination.is-background .el-pager li:not(.disabled).active {
     background-color: #615f72;
     color: #fff;

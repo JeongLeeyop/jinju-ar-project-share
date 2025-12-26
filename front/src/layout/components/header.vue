@@ -369,10 +369,6 @@ export default class extends Vue {
 }
 
 @media (max-width: 1200px) {
-  .header-nav {
-    gap: 20px;
-  }
-
   .nav-item {
     padding: 0 12px;
 
@@ -392,10 +388,6 @@ export default class extends Vue {
     position: static;
     transform: none;
     gap: 16px;
-  }
-
-  .home-header {
-    padding: 32px 30px;
   }
 
   .nav-item {
@@ -425,14 +417,14 @@ export default class extends Vue {
   }
 }
 
-@media (max-width: 768px) {
+@media screen and (max-width: 768px) {
   .header-nav {
     display: none;
   }
 
   .home-header {
     padding: 24px 20px;
-    justify-content: space-between;
+    height: fit-content; 
   }
 
   .header-logo .logo-text {
@@ -459,10 +451,6 @@ export default class extends Vue {
 
   .aside-btn {
     gap: 12px;
-  }
-
-  .home-header {
-    padding: 20px 16px;
   }
 }
 </style>

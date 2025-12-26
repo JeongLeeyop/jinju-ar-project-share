@@ -24,7 +24,7 @@
 
     <div class="category-section">
       <div class="category-wrapper">
-        <button class="mobile-filter-btn" @click="handleFilter()">
+        <button class="mobile-filter-btn" @click="handleFilter()" v-if="filterVisible">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M10.5 6H20.25M10.5 6C10.5 6.39782 10.342 6.77936 10.0607 7.06066C9.77936 7.34196 9.39782 7.5 9 7.5C8.60218 7.5 8.22064 7.34196 7.93934 7.06066C7.65804 6.77936 7.5 6.39782 7.5 6M10.5 6C10.5 5.60218 10.342 5.22064 10.0607 4.93934C9.77936 4.65804 9.39782 4.5 9 4.5C8.60218 4.5 8.22064 4.65804 7.93934 4.93934C7.65804 5.22064 7.5 5.60218 7.5 6M7.5 6H3.75M10.5 18H20.25M10.5 18C10.5 18.3978 10.342 18.7794 10.0607 19.0607C9.77936 19.342 9.39782 19.5 9 19.5C8.60218 19.5 8.22064 19.342 7.93934 19.0607C7.65804 18.7794 7.5 18.3978 7.5 18M10.5 18C10.5 17.6022 10.342 17.2206 10.0607 16.9393C9.77936 16.658 9.39782 16.5 9 16.5C8.60218 16.5 8.22064 16.658 7.93934 16.9393C7.65804 17.2206 7.5 17.6022 7.5 18M7.5 18H3.75M16.5 12H20.25M16.5 12C16.5 12.3978 16.342 12.7794 16.0607 13.0607C15.7794 13.342 15.3978 13.5 15 13.5C14.6022 13.5 14.2206 13.342 13.9393 13.0607C13.658 12.7794 13.5 12.3978 13.5 12M16.5 12C16.5 11.6022 16.342 11.2206 16.0607 10.9393C15.7794 10.658 15.3978 10.5 15 10.5C14.6022 10.5 14.2206 10.658 13.9393 10.9393C13.658 11.2206 13.5 11.6022 13.5 12M13.5 12H3.75" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
@@ -55,33 +55,34 @@
         </div>
       </div>
     </div>
-
-    <div class="community-grid-section" v-loading="loading">
-      <!-- show a friendly message when no communities are found for the selected category -->
-      <div v-if="!loading && channelList.length === 0" class="no-results">
-        <div class="no-results-box">
-          <p class="no-results-title">해당 카테고리에 커뮤니티가 없습니다.</p>
-          <p class="no-results-sub">다른 카테고리를 선택하거나 검색어를 변경해보세요.</p>
-        </div>
-      </div>
-      <div v-else class="community-grid">
-        <div class="community-card" v-for="item in channelList" :key="item.uid" @click="handleContent(0, item)">
-          <div class="card-image">
-            <img v-if="item.coverImageList.length > 0" :src="apiUrl + '/attached-file/' + item.coverImageList[0]?.fileUid" alt="">
-            <img v-else src="@/assets/images/logo.png" alt="">
-          </div>
-          <div class="card-content">
-            <h3 class="card-title">{{ item.name }}</h3>
-            <p class="card-description">{{ item.introduce }}</p>
+    <div class="community-grid-wrapper">
+      <div class="community-grid-section" v-loading="loading">
+        <!-- show a friendly message when no communities are found for the selected category -->
+        <div v-if="!loading && channelList.length === 0" class="no-results">
+          <div class="no-results-box">
+            <p class="no-results-title">해당 카테고리에 커뮤니티가 없습니다.</p>
+            <p class="no-results-sub">다른 카테고리를 선택하거나 검색어를 변경해보세요.</p>
           </div>
         </div>
+        <div v-else class="community-grid">
+          <div class="community-card" v-for="item in channelList" :key="item.uid" @click="handleContent(0, item)">
+            <div class="card-image">
+              <img v-if="item.coverImageList.length > 0" :src="apiUrl + '/attached-file/' + item.coverImageList[0]?.fileUid" alt="">
+              <img v-else src="@/assets/images/logo.png" alt="">
+            </div>
+            <div class="card-content">
+              <h3 class="card-title">{{ item.name }}</h3>
+              <p class="card-description">{{ item.introduce }}</p>
+            </div>
+          </div>
+        </div>
+        <Pagination
+        :total="totalElements"
+        :page.sync="listQuery.page"
+        :limit.sync="listQuery.size"
+        @pagination="handleChangePaging"
+      />
       </div>
-      <Pagination
-      :total="totalElements"
-      :page.sync="listQuery.page"
-      :limit.sync="listQuery.size"
-      @pagination="handleChangePaging"
-    />
     </div>
 
     <el-dialog
@@ -175,6 +176,7 @@ import { ChannelModule } from '@/store/modules/channel';
     Pagination, UserModal,
   },
 })
+
 export default class extends Vue {
   mounted() {
     this.getCategoryList();
@@ -329,7 +331,6 @@ export default class extends Vue {
   align-items: center;
   padding: 76px 20px 48px;
   gap: 48px;
-  margin-top: 120px;
   border-bottom: 2px solid #EBEBEB;
 }
 
@@ -346,8 +347,7 @@ export default class extends Vue {
   font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
   font-size: 52px;
   font-weight: 800;
-  line-height: 100%;
-  margin: 0;
+  line-height: 1.4em;
 }
 
 .hero-subtitle {
@@ -369,6 +369,18 @@ export default class extends Vue {
     }
   }
 }
+
+@media screen and (max-width: 768px) {
+  .hero-section {padding: 65px 15px 45px;}
+  .hero-title {font-size: 40px;}
+  .hero-subtitle {font-size: 20px;}
+}
+
+@media screen and (max-width: 500px) {
+  .hero-title {font-size: clamp(30px, 2vw, 50px);}
+  .hero-subtitle {font-size: 18px;}
+}
+
 
 .search-container {
   width: 100%;
@@ -407,6 +419,16 @@ export default class extends Vue {
   }
 }
 
+@media screen and (max-width: 768px) {
+  .search-input-wrapper input {font-size: clamp(16px, 2vw, 22px)}
+}
+
+@media screen and (max-width: 500px) {
+  .search-container{padding: 0;}
+  .search-input-wrapper {padding: 10px 15px}
+  .search-input-wrapper input {font-size: clamp(14px, 2vw, 22px)}
+}
+
 .category-section {
   display: flex;
   justify-content: center;
@@ -417,8 +439,7 @@ export default class extends Vue {
 
 .category-wrapper {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-wrap: wrap;
   width: 100%;
   max-width: 1200px;
   padding: 0 20px;
@@ -446,30 +467,19 @@ export default class extends Vue {
   }
 }
 
-.category-pills {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
+.category-pills { flex: 0 1 calc(100% - 110px) ;display: flex; align-items: center; gap: 10px; flex-wrap: wrap; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none;
 
   &::-webkit-scrollbar {
     display: none;
   }
 }
 
-.category-pill {
-  display: flex;
+.category-pill { flex: 0 1 calc(20% - 8px);
   padding: 14px 24px;
-  justify-content: center;
-  align-items: center;
   border-radius: 100px;
-  background: rgba(242, 242, 242, 0.50);
   color: #8A8A8A;
   font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
-  font-size: 22px;
+  font-size: clamp(16px, 2vw, 22px);
   font-weight: 700;
   line-height: 100%;
   border: none;
@@ -518,6 +528,23 @@ export default class extends Vue {
   }
 }
 
+@media screen and (max-width: 768px) {
+  .category-section {padding: 20px 0 30px;}
+  .category-wrapper {padding: 0 0 0 20px; flex-direction: column-reverse;position: relative; gap: 3px;}
+  .category-pills {flex: 0 1 calc(100% - 50px);width: 100%; overflow-x: scroll;}
+  
+}
+
+@media screen and (max-width: 600px) {
+  .category-section {padding: 10px 0 30px;}
+  .category-pills {flex: 0 1 calc(100% - 50px); flex-wrap: unset;width: 100%; overflow-x: scroll;padding: 0 0 20px;}
+  .category-pills::-webkit-scrollbar{width:5px;}
+  .category-pills::-webkit-scrollbar-thumb{background-color:#272c8f;border-radius:10px}
+  .category-pills::-webkit-scrollbar-track{background-color:#d2d2d2;border-radius:10px}
+  .category-pill {flex: 0 1 100%;}
+  .filter-controls {}
+}
+
 .filter-controls {
   display: flex;
   align-items: center;
@@ -554,40 +581,31 @@ export default class extends Vue {
   }
 }
 
-.community-grid-section {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  background: #F8F9FB;
-  padding: 44px 360px;
-  gap: 52px;
+.community-grid-wrapper { background: #F8F9FB;}
+.community-grid-section { width: 100%; max-width: 1200px; margin: 0 auto; padding: 40px 0px;}
+.community-grid { display: flex; flex-wrap: wrap; gap: 50px; width: 100%; max-width: 1200px;}
+.community-card { flex: 0 1 calc(100% / 3 - 34px); display: flex; flex-direction: column; gap: 28px; cursor: pointer; transition: transform 0.3s ease; &:hover{ transform: translateY(-4px);}}
+
+@media screen and (max-width: 1200px) {
+  .community-grid-section {padding: 40px 20px;}
 }
 
-.community-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 52px;
-  width: 100%;
-  max-width: 1200px;
+@media screen and (max-width: 768px) {
+  .community-grid {gap: 20px;}
+  .community-card {flex: 0 1 calc(100% / 3 - 14px);}
 }
 
-.community-card {
-  display: flex;
-  flex-direction: column;
-  gap: 28px;
-  cursor: pointer;
-  transition: transform 0.3s ease;
-
-  &:hover {
-    transform: translateY(-4px);
-  }
+@media screen and (max-width: 600px) {
+  .community-grid {gap: 20px 15px;}
+  .community-card {flex: 0 1 calc(100% / 2 - 8px);}
 }
 
-.card-image {
-  width: 100%;
-  aspect-ratio: 366 / 231.07;
-  border-radius: 10px;
-  overflow: hidden;
+@media screen and (max-width: 425px) {
+  .community-grid {gap: 10px;}
+  .community-card {flex: 0 1 100%;}
+}
+
+.card-image { width: 100%; aspect-ratio: 366 / 231.07; border-radius: 10px; overflow: hidden;
 
   img {
     width: 100%;
@@ -602,29 +620,17 @@ export default class extends Vue {
   gap: 18px;
 }
 
-.card-title {
-  color: #222;
-  font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
-  font-size: 26px;
-  font-weight: 700;
-  line-height: 100%;
-  margin: 0;
-  text-align: left;;
+.card-title { color: #222; font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif; font-size: 26px; font-weight: 700; line-height: 100%; margin: 0; text-align: left;;}
+.card-description { color: #888; font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif; font-size: 22px; font-weight: 500; line-height: 105%; margin: 0; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; text-align: left;}
+
+@media screen and (max-width: 1024px) {
+  .card-title {font-size: clamp(16px, 2vw, 22px);line-height: 1.4em;}
+  .card-description {font-size: clamp(16px, 2vw, 18px); line-height: 1.4em;}
 }
 
-.card-description {
-  color: #888;
-  font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
-  font-size: 22px;
-  font-weight: 500;
-  line-height: 105%;
-  margin: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  text-align: left;
+@media screen and (max-width: 768px) {
+  .community-card {gap: 20px;}
+  .card-content {gap: 10px;}
 }
 
 .no-results {
@@ -935,203 +941,6 @@ export default class extends Vue {
   .filter-apply-btn {
     height: 48px;
     font-size: 14px;
-  }
-}
-</style>
-
-@media (max-width: 1440px) {
-  .community-grid-section {
-    padding: 44px 60px;
-  }
-
-  .community-grid {
-    gap: 40px;
-  }
-}
-
-@media (max-width: 1024px) {
-  .hero-section {
-    margin-top: 100px;
-  }
-
-  .hero-title {
-    font-size: 42px;
-  }
-
-  .hero-subtitle {
-    font-size: 22px;
-  }
-
-  .search-input-wrapper input {
-    font-size: 20px;
-  }
-
-  .category-pill {
-    font-size: 18px;
-    padding: 12px 20px;
-  }
-
-  .community-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 32px;
-  }
-
-  .community-grid-section {
-    padding: 40px 40px;
-  }
-}
-
-@media (max-width: 768px) {
-  .hero-section {
-    padding: 56px 20px 36px;
-    gap: 36px;
-    margin-top: 80px;
-  }
-
-  .hero-title {
-    font-size: 36px;
-  }
-
-  .hero-subtitle {
-    font-size: 20px;
-  }
-
-  .search-input-wrapper {
-    padding: 14px 16px;
-
-    input {
-      font-size: 18px;
-    }
-  }
-
-  .category-wrapper {
-    flex-direction: row;
-    align-items: center;
-    gap: 10px;
-    padding: 0 20px;
-  }
-
-  .mobile-filter-btn {
-    display: flex;
-  }
-
-  .category-pills {
-    flex-wrap: nowrap;
-    flex: 1;
-    padding: 0;
-    justify-content: flex-start;
-  }
-
-  .category-pill {
-    font-size: 16px;
-    padding: 10px 18px;
-    flex-shrink: 0;
-  }
-
-  .filter-controls {
-    display: none;
-  }
-
-  .card-title {
-    font-size: 22px;
-  }
-
-  .card-description {
-    font-size: 18px;
-  }
-}
-
-@media (max-width: 600px) {
-  .hero-section {
-    padding: 60px 20px 40px;
-    gap: 32px;
-    margin-top: 54px;
-  }
-
-  .hero-content {
-    gap: 12px;
-  }
-
-  .hero-title {
-    font-size: 24px;
-  }
-
-  .hero-subtitle {
-    font-size: 12px;
-  }
-
-  .search-container {
-    max-width: 100%;
-  }
-
-  .search-input-wrapper {
-    padding: 8px 20px;
-    border-radius: 14px;
-
-    .search-icon {
-      width: 18px;
-      height: 18px;
-    }
-
-    input {
-      font-size: 16px;
-    }
-  }
-
-  .category-section {
-    padding: 18px 0;
-  }
-
-  .category-wrapper {
-    gap: 10px;
-    padding: 0 20px;
-  }
-
-  .mobile-filter-btn {
-    width: 24px;
-    height: 24px;
-
-    svg {
-      width: 24px;
-      height: 24px;
-    }
-  }
-
-  .category-pills {
-    gap: 10px;
-    padding: 0;
-  }
-
-  .category-pill {
-    font-size: 14px;
-    padding: 8px 14px;
-  }
-
-  .community-grid {
-    grid-template-columns: 1fr;
-    gap: 32px;
-  }
-
-  .community-grid-section {
-    padding: 40px 16px;
-    gap: 40px;
-  }
-
-  .card-image {
-    border-radius: 14px;
-  }
-
-  .card-content {
-    gap: 8px;
-  }
-
-  .card-title {
-    font-size: 18px;
-  }
-
-  .card-description {
-    font-size: 12px;
-    line-height: 130%;
   }
 }
 </style>
