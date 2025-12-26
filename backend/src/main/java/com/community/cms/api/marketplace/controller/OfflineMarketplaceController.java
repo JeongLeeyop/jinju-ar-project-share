@@ -1,0 +1,138 @@
+package com.community.cms.api.marketplace.controller;
+
+import com.community.cms.api.marketplace.dto.OfflineMarketplaceDto;
+import com.community.cms.api.marketplace.service.OfflineMarketplaceService;
+import com.community.cms.api.user.repository.UserRepository;
+import com.community.cms.entity.User;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.web.bind.annotation.*;
+
+import javax.validation.Valid;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * 오프라인 장터 Controller
+ */
+@Slf4j
+@RestController
+@RequestMapping("/api/marketplace/offline")
+@RequiredArgsConstructor
+public class OfflineMarketplaceController {
+
+    private final OfflineMarketplaceService offlineMarketplaceService;
+    private final UserRepository userRepository;
+
+    /**
+     * 현재 인증된 사용자 조회
+     */
+    private User validateAndGetCurrentUser(UserDetails userDetails) {
+        if (userDetails == null || userDetails.getUsername() == null) {
+            log.error("Unauthenticated access attempt detected");
+            throw new RuntimeException("인증되지 않은 접근입니다");
+        }
+        return userRepository.findByUserId(userDetails.getUsername())
+                .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다"));
+    }
+
+    /**
+     * 오프라인 장터 생성 (커뮤니티 관리자만)
+     */
+    @PostMapping("/{channelUid}")
+    public ResponseEntity<?> createOfflineMarketplace(
+            @PathVariable String channelUid,
+            @Valid @RequestBody OfflineMarketplaceDto.CreateRequest request,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        try {
+            User user = validateAndGetCurrentUser(userDetails);
+            OfflineMarketplaceDto result = offlineMarketplaceService.createOfflineMarketplace(
+                    request, channelUid, user.getUid());
+            return ResponseEntity.ok(result);
+        } catch (RuntimeException e) {
+            log.error("Failed to create offline marketplace: {}", e.getMessage());
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+    }
+
+    /**
+     * 채널의 오프라인 장터 목록 조회
+     */
+    @GetMapping("/{channelUid}")
+    public ResponseEntity<?> getChannelOfflineMarketplaces(
+            @PathVariable String channelUid,
+            @RequestParam(defaultValue = "true") boolean activeOnly) {
+        try {
+            List<OfflineMarketplaceDto> result = offlineMarketplaceService
+                    .getChannelOfflineMarketplaces(channelUid, activeOnly);
+            return ResponseEntity.ok(result);
+        } catch (RuntimeException e) {
+            log.error("Failed to get offline marketplaces: {}", e.getMessage());
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+    }
+
+    /**
+     * 오프라인 장터 상세 조회
+     */
+    @GetMapping("/detail/{uid}")
+    public ResponseEntity<?> getOfflineMarketplace(@PathVariable String uid) {
+        try {
+            OfflineMarketplaceDto result = offlineMarketplaceService.getOfflineMarketplace(uid);
+            return ResponseEntity.ok(result);
+        } catch (RuntimeException e) {
+            log.error("Failed to get offline marketplace: {}", e.getMessage());
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+    }
+
+    /**
+     * 오프라인 장터 수정
+     */
+    @PutMapping("/{uid}")
+    public ResponseEntity<?> updateOfflineMarketplace(
+            @PathVariable String uid,
+            @Valid @RequestBody OfflineMarketplaceDto.UpdateRequest request,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        try {
+            User user = validateAndGetCurrentUser(userDetails);
+            OfflineMarketplaceDto result = offlineMarketplaceService.updateOfflineMarketplace(
+                    uid, request, user.getUid());
+            return ResponseEntity.ok(result);
+        } catch (RuntimeException e) {
+            log.error("Failed to update offline marketplace: {}", e.getMessage());
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+    }
+
+    /**
+     * 오프라인 장터 삭제
+     */
+    @DeleteMapping("/{uid}")
+    public ResponseEntity<?> deleteOfflineMarketplace(
+            @PathVariable String uid,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        try {
+            User user = validateAndGetCurrentUser(userDetails);
+            offlineMarketplaceService.deleteOfflineMarketplace(uid, user.getUid());
+            return ResponseEntity.ok().build();
+        } catch (RuntimeException e) {
+            log.error("Failed to delete offline marketplace: {}", e.getMessage());
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+    }
+}

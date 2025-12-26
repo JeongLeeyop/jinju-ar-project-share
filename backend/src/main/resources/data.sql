@@ -1,0 +1,30 @@
+INSERT INTO royalrise.channel (uid, domain, introduce, name, price, private_status, user_uid) VALUES ('10', 'domain1', '청년 사업가를 위한 커뮤니티입니다. 정부지원 사업 정보 공유 등...', '청년사업가 오형래', 0, false, '1');
+INSERT INTO royalrise.channel (uid, domain, introduce, name, price, private_status, user_uid) VALUES ('11', 'domain2', '전국의 소상공인분들을 위한 다양한 지원 정책 등을 소개합니다...', '한국소상공인진흥공단', 30000, false, '2');
+INSERT INTO royalrise.channel (uid, domain, introduce, name, price, private_status, user_uid) VALUES ('12', 'domain3', '골드 등급을 위한 다양한 정보와 온라인 강좌를 준비했습니다...', '리그 오브 레전드 골드방', 0, false, '3');
+INSERT INTO royalrise.channel (uid, domain, introduce, name, price, private_status, user_uid) VALUES ('13', 'domain4', '창업을 준비하고 계신다면 반드시!!! 정부지원 사업을 고려해 보세요!', '정부지원 사업이란?', 0, true, '4');
+INSERT INTO royalrise.channel (uid, domain, introduce, name, price, private_status, user_uid) VALUES ('14', 'domain5', '창업을 준비하고 계신다면 반드시!!! 정부지원 사업을 고려해 보세요!', '정부지원 사업이란?', 0, false, '5');
+INSERT INTO royalrise.channel (uid, domain, introduce, name, price, private_status, user_uid) VALUES ('15', 'domain5', '창업을 준비하고 계신다면 반드시!!! 정부지원 사업을 고려해 보세요!', '정부지원 사업이란?', 0, false, '5');
+
+
+INSERT INTO royalrise.channel_category (uid, create_date, depth, descript, name, parent_uid, view_order) VALUES ('1', '2024-11-11 02:14:37', 0, null, '사업계획서/창업', null, 0);
+INSERT INTO royalrise.channel_category (uid, create_date, depth, descript, name, parent_uid, view_order) VALUES ('2', '2024-11-11 02:14:37', 0, null, 'SNS', null, 0);
+INSERT INTO royalrise.channel_category (uid, create_date, depth, descript, name, parent_uid, view_order) VALUES ('3', '2024-11-11 02:14:37', 0, null, '마케팅', null, 0);
+INSERT INTO royalrise.channel_category (uid, create_date, depth, descript, name, parent_uid, view_order) VALUES ('4', '2024-11-11 02:14:37', 0, null, '요리', null, 0);
+INSERT INTO royalrise.channel_category (uid, create_date, depth, descript, name, parent_uid, view_order) VALUES ('5', '2024-11-11 02:14:37', 0, null, '리그', null, 0);
+INSERT INTO royalrise.channel_category (uid, create_date, depth, descript, name, parent_uid, view_order) VALUES ('6', '2024-11-11 02:14:37', 0, null, '오브', null, 0);
+INSERT INTO royalrise.channel_category (uid, create_date, depth, descript, name, parent_uid, view_order) VALUES ('7', '2024-11-11 02:14:37', 0, null, '레전드/게임', null, 0);
+INSERT INTO royalrise.channel_category (uid, create_date, depth, descript, name, parent_uid, view_order) VALUES ('8', '2024-11-11 02:14:37', 0, null, '헬스/운동', null, 0);
+
+INSERT INTO royalrise.board_skin (code, name) VALUES ('default', '일반 게시판');
+INSERT INTO royalrise.board_skin (code, name) VALUES ('faq', 'FAQ 게시판');
+INSERT INTO royalrise.board_skin (code, name) VALUES ('plan', '강의계획');
+INSERT INTO royalrise.board_skin (code, name) VALUES ('qna', '문의 게시판');
+
+INSERT INTO royalrise.board (uid, site_uid, skin, name, file_count_limit, file_size_limit, file_use_state, list_size, auth_read, auth_write, auth_reply, auth_comment, private_state, reply_state, comment_state, secret_state, notice_state, create_date) VALUES ('0900fcc1-5420-40d4-a628-019d8ed33497', null, 'default', '숙박 사업자 메뉴얼', 3, 10, 1, 10, 'GUEST', 'MEMBER', 'MEMBER', 'MEMBER', 0, 0, 0, 0, 0, '2024-04-30 10:27:06');
+INSERT INTO royalrise.board (uid, site_uid, skin, name, file_count_limit, file_size_limit, file_use_state, list_size, auth_read, auth_write, auth_reply, auth_comment, private_state, reply_state, comment_state, secret_state, notice_state, create_date) VALUES ('4360c542-4861-4b23-9a29-215336b67976', null, 'qna', '1:1문의(관리자)', 1, 5, 1, 10, 'MEMBER', 'MEMBER', 'MANAGER', 'MEMBER', 0, 1, 0, 0, 0, '2024-06-26 11:05:25');
+INSERT INTO royalrise.board (uid, site_uid, skin, name, file_count_limit, file_size_limit, file_use_state, list_size, auth_read, auth_write, auth_reply, auth_comment, private_state, reply_state, comment_state, secret_state, notice_state, create_date) VALUES ('5c955248-4573-4039-a92f-6b6f2169d91d', null, 'default', '외식 사업자 메뉴얼', 1, 10, 1, 10, 'GUEST', 'MEMBER', 'MEMBER', 'MEMBER', 0, 0, 0, 0, 0, '2024-04-30 10:29:28');
+INSERT INTO royalrise.board (uid, site_uid, skin, name, file_count_limit, file_size_limit, file_use_state, list_size, auth_read, auth_write, auth_reply, auth_comment, private_state, reply_state, comment_state, secret_state, notice_state, create_date) VALUES ('6369e1b3-560e-4141-8ecd-ce8bc3ac5d47', null, 'default', '사업자 공지사항', 2, 5, 1, 10, 'MEMBER', 'MANAGER', 'MEMBER', 'MEMBER', 0, 0, 0, 0, 0, '2024-02-25 21:08:37');
+INSERT INTO royalrise.board (uid, site_uid, skin, name, file_count_limit, file_size_limit, file_use_state, list_size, auth_read, auth_write, auth_reply, auth_comment, private_state, reply_state, comment_state, secret_state, notice_state, create_date) VALUES ('67ec3f65-555e-41fe-a202-9608b7939c1f', null, 'default', '공지사항', 1, 5, 0, 10, 'GUEST', 'MANAGER', 'MEMBER', 'MEMBER', 0, 0, 0, 0, 0, '2023-10-31 16:36:38');
+INSERT INTO royalrise.board (uid, site_uid, skin, name, file_count_limit, file_size_limit, file_use_state, list_size, auth_read, auth_write, auth_reply, auth_comment, private_state, reply_state, comment_state, secret_state, notice_state, create_date) VALUES ('74f59e08-cf5e-42ed-ae3e-781ba429d88c', null, 'qna', '1:1문의', 1, 5, 0, 10, 'MEMBER', 'MEMBER', 'MANAGER', 'MEMBER', 0, 1, 0, 1, 0, '2023-10-26 23:34:44');
+INSERT INTO royalrise.board (uid, site_uid, skin, name, file_count_limit, file_size_limit, file_use_state, list_size, auth_read, auth_write, auth_reply, auth_comment, private_state, reply_state, comment_state, secret_state, notice_state, create_date) VALUES ('97bd9ed7-96d2-42b5-a6f8-c1ad06b82ea6', null, 'faq', 'FAQ', 1, 5, 1, 10, 'GUEST', 'MEMBER', 'MEMBER', 'MEMBER', 0, 0, 0, 0, 0, '2024-01-24 13:46:08');
+INSERT INTO royalrise.board (uid, site_uid, skin, name, file_count_limit, file_size_limit, file_use_state, list_size, auth_read, auth_write, auth_reply, auth_comment, private_state, reply_state, comment_state, secret_state, notice_state, create_date) VALUES ('eb75b244-6830-4ab4-b1ba-4bf411e45d5c', null, 'default', '체험 사업자 메뉴얼', 1, 10, 1, 10, 'GUEST', 'MEMBER', 'MEMBER', 'MEMBER', 0, 0, 0, 0, 0, '2024-04-30 10:29:37');

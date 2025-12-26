@@ -1,0 +1,59 @@
+package com.community.cms.api.space.dto;
+
+import com.community.cms.entity.SpacePostComment;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.*;
+
+import java.time.LocalDateTime;
+
+/**
+ * 공간 게시글 댓글 응답 DTO
+ */
+@Getter
+@Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class SpacePostCommentDto {
+
+    private String uid;
+    private String postUid;
+    private String userUid;
+    private String writer;
+    private String content;
+
+    @JsonProperty("isDeleted")
+    private boolean isDeleted;
+
+    @JsonProperty("isAuthor")
+    private boolean isAuthor;  // 현재 사용자가 작성자인지
+
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
+
+    /**
+     * Entity to DTO
+     */
+    public static SpacePostCommentDto from(SpacePostComment comment) {
+        return SpacePostCommentDto.builder()
+                .uid(comment.getUid())
+                .postUid(comment.getPost() != null ? comment.getPost().getUid() : null)
+                .userUid(comment.getUserUid())
+                .writer(comment.getWriter())
+                .content(comment.getContent())
+                .isDeleted(comment.isDeleted())
+                .isAuthor(false)  // 서비스에서 설정
+                .createdAt(comment.getCreatedAt())
+                .updatedAt(comment.getUpdatedAt())
+                .build();
+    }
+
+    /**
+     * Entity to DTO with user context
+     */
+    public static SpacePostCommentDto from(SpacePostComment comment, String currentUserUid) {
+        SpacePostCommentDto dto = from(comment);
+        dto.setAuthor(comment.getUserUid().equals(currentUserUid));
+        return dto;
+    }
+}

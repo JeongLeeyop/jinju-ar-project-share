@@ -1,0 +1,13 @@
+[{"couponName":"가입 축하 이벤트 쿠폰","couponType":"자동발행","eventName":"신규가입","discountType":"할인률","discountAmount":null,"discountRate":"5%","minimumAmount":"","dateRange":"","validationDate":7},
+{"couponName":"첫 구매 감사 이벤트 쿠폰","couponType":"자동발행","eventName":"첫구매","discountType":"할인률","discountAmount":null,"discountRate":"5%","minimumAmount":"","dateRange":"","validationDate":7},
+{"couponName":"생일을 축하합니다 쿠폰","couponType":"자동발행","eventName":"생일쿠폰","discountType":"할인률","discountAmount":null,"discountRate":"5%","minimumAmount":"","dateRange":"","validationDate":7},
+{"couponName":"고객 감사 쿠폰","couponType":"자동발행","eventName":"일정금액 이상","discountType":"할인률","discountAmount":null,"discountRate":"5%","minimumAmount":"","dateRange":"","validationDate":7},
+{"couponName":"2023년 4월 특별이벤트","couponType":"고객 다운로드","eventName":"","discountType":"할인금액","discountAmount":null,"discountRate":"1000원","minimumAmount":"1000원","dateRange":"2023.04.01 ~ 2023.04.30","validationDate":null},
+{"couponName":"2023년 5월 특별이벤트","couponType":"고객 다운로드","eventName":"","discountType":"할인금액","discountAmount":null,"discountRate":"5000원","minimumAmount":"5000원","dateRange":"2023.05.01 ~ 2023.05.31","validationDate":null},
+{"couponName":"2023년 6월 특별이벤트","couponType":"고객 다운로드","eventName":"","discountType":"할인금액","discountAmount":null,"discountRate":"6000원","minimumAmount":"5000원","dateRange":"2023.06.01 ~ 2023.06.30","validationDate":null},
+{"couponName":"2023년 7월 특별이벤트","couponType":"고객 다운로드","eventName":"","discountType":"할인금액","discountAmount":null,"discountRate":"7000원","minimumAmount":"5000원","dateRange":"2023.07.01 ~ 2023.07.31","validationDate":null},
+{"couponName":"2023년 8월 특별이벤트","couponType":"고객 다운로드","eventName":"","discountType":"할인금액","discountAmount":null,"discountRate":"8000원","minimumAmount":"5000원","dateRange":"2023.08.01 ~ 2023.07.31","validationDate":null},
+{"couponName":"2023년 9월 특별이벤트","couponType":"고객 다운로드","eventName":"","discountType":"할인금액","discountAmount":null,"discountRate":"9000원","minimumAmount":"5000원","dateRange":"2023.09.01 ~ 2023.09.30","validationDate":null},
+{"couponName":"2023년 10월 특별이벤트","couponType":"고객 다운로드","eventName":"","discountType":"할인금액","discountAmount":null,"discountRate":"10000원","minimumAmount":"5000원","dateRange":"2023.10.01 ~ 2023.10.31","validationDate":null},
+{"couponName":"2023년 11월 특별이벤트","couponType":"고객 다운로드","eventName":"","discountType":"할인금액","discountAmount":null,"discountRate":"11000원","minimumAmount":"5000원","dateRange":"2023.11.01 ~ 2023.11.30","validationDate":null},
+{"couponName":"2023년 12월 특별이벤트","couponType":"고객 다운로드","eventName":"","discountType":"할인금액","discountAmount":null,"discountRate":"12000원","minimumAmount":"5000원","dateRange":"2023.12.01 ~ 2023.12.31","validationDate":null}]
