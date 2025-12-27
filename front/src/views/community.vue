@@ -634,6 +634,12 @@ export default class extends Vue {
   margin-left: auto;
 }
 
+@media screen and (max-width: 1400px) {
+  .posts-container {
+    padding: 20px;
+  }
+}
+
 @media screen and (max-width: 768px) {
   .post-header {display: block;}
   .post-header-right {
@@ -952,6 +958,9 @@ export default class extends Vue {
 }
 
 .write-post-btn-fixed {
+  position: fixed;
+  left: 30px;
+  bottom: 20px;
   width: 210px;
   height: 50px;
   padding: 0;

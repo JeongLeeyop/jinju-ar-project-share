@@ -250,7 +250,7 @@ export default class extends Vue {
 
 .activity-main {
   margin-left: 267px;
-  padding: 80px;
+  padding: 160px 30px 20px;
   flex: 1;
   min-height: calc(100vh - 124px);
   display: flex;
@@ -651,6 +651,12 @@ export default class extends Vue {
 }
 
 /* Tablet Design */
+@media screen and (max-width: 1200px) {
+  .activity-main {
+    gap: 40px;
+  } 
+}
+
 @media screen and (max-width: 1024px) {
   .activity-main {
     margin-left: 0;

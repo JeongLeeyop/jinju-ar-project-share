@@ -86,8 +86,7 @@ export default class extends Vue {
     width: 380px;
     min-width: 320px;
     min-height: 70vh;
-    margin: 30px;
-    margin-top: 110px;
+    margin: 220px 30px 0 0;
     border: 2px solid #EBEBEB;
     border-radius: 10px;
     padding: 40px;
@@ -197,16 +196,12 @@ export default class extends Vue {
 }
 
 @media screen and (max-width: 1800px) {
-  .participants-panel {
-    right: 30px;
-  }
 }
 
 @media screen and (max-width: 1600px) {
   .participants-panel {
     width: 320px;
     padding: 30px;
-    right: 20px;
   }
 
   .participants-title,
@@ -216,23 +211,25 @@ export default class extends Vue {
   }
 }
 
-@media screen and (max-width: 1400px) {
+@media screen and (max-width: 1024px) {
   .participants-panel {
-    position: static;
-    max-height: none;
-    margin-top: 20px;
+    width: 200px;
+    margin-right: 10px;
+    min-width: 230px;
+    margin-top: 200px;
+    padding: 30px 25px;
   }
 }
 
 @media screen and (max-width: 768px) {
   .participants-panel {
+    border-top: 1px solid #EBEBEB;
     width: 100%;
-    height: 100%;
+    min-height: unset;
     margin: 0;
     padding: 30px;
     border: none;
     border-radius: 0;
-    min-height: auto;
   }
 
   .participants-content {

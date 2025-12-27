@@ -710,11 +710,10 @@ export default class CommunitySpace extends Vue {
 }
 
 .space-main {
-  flex: 1;
-  min-width: 0; /* Allows flex item to shrink below its content size */
   padding-bottom: 100px;
   position: relative;
   margin-left: 270px; /* Sidebar width */
+  padding: 120px 40px 100px 40px;
   padding-left: 40px;
   padding-right: 40px;
 }
@@ -1256,14 +1255,10 @@ display: flex;
 }
 
 @media screen and (max-width: 1024px) {
-  .community-space-page {
-    flex-direction: column;
-  }
-
   .space-main {
-    margin-left: 0; /* Remove sidebar margin on mobile */
-    padding-left: 40px;
-    padding-right: 40px;
+    margin-left: 240px; /* Remove sidebar margin on mobile */
+    padding-left: 20px;
+    padding-right: 20px;
   }
 
   .space-header {
@@ -1303,8 +1298,8 @@ display: flex;
 
   .space-main {
     margin-left: 0;
-    padding: 0;
     border: none;
+    padding: 30px 0 0;
   }
 
   .space-header {
@@ -1331,10 +1326,8 @@ display: flex;
   }
 
   .post-card {
-    padding: 30px 0;
+    padding: 30px 20px;
     border-bottom: 2px solid #EBEBEB;
-    border-left: none;
-    border-right: none;
 
     &:first-child {
       padding-top: 20px;
@@ -1376,10 +1369,6 @@ display: flex;
 }
 
 @media screen and (max-width: 600px) {
-  .space-main {
-    padding: 0;
-  }
-
   .space-header {
     padding: 16px 16px 12px;
   }
@@ -1397,14 +1386,6 @@ display: flex;
 
   .posts-container {
     padding: 0 16px;
-  }
-
-  .post-card {
-    padding: 20px 0;
-
-    &:first-child {
-      padding-top: 16px;
-    }
   }
 
   .post-title {
@@ -1467,6 +1448,11 @@ display: flex;
   }
 }
 
+
+@media screen and (max-width: 500px) {
+  .space-main {padding: 20px 0; }
+}
+
 /* Element UI Message z-index fix */
 ::v-deep .el-message {
   z-index: 9999 !important;
@@ -1474,10 +1460,13 @@ display: flex;
 }
 
 /* Write Dialog Styles - Matching community.vue exactly */
+.el-dialog {
+  width: clamp(60vw, 2vw, 80px);
+}
 ::v-deep .community-post-form.dialog-wrap {
   .el-dialog {
     // max-width: 1200px;
-    width: 50%;
+    width: clamp(60vw, 2vw, 80px);
     border-radius: 10px;
   }
 

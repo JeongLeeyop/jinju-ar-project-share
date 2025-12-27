@@ -1126,6 +1126,11 @@ export default class extends Vue {
   }
 
   .header-logo {
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
     gap: 10px;
 
     .logo-text {
@@ -1133,7 +1138,8 @@ export default class extends Vue {
     }
 
     .member-badge {
-      padding: 4px 6px;
+      width: 100%;
+      max-width: 250px;
 
       span {
         font-size: 11px;

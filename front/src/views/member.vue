@@ -5,38 +5,56 @@
 
     <!-- Main Content Area -->
     <div class="member-main">
-      <!-- Header Stats -->
-      <div class="member-header">
-        <div class="stats-card">
-          <div class="stats-container">
-            <div class="stat-item">
-              <span class="stat-label">회원 수</span>
-              <div class="stat-badge">
-                <span class="stat-value">{{ totalCount }}명</span>
+      <div class="member-top">
+        <!-- Header Stats -->
+        <div class="member-header">
+          <div class="stats-card">
+            <div class="stats-container">
+              <div class="stat-item">
+                <span class="stat-label">회원 수</span>
+                <div class="stat-badge">
+                  <span class="stat-value">{{ totalCountFormat }}명</span>
+                </div>
               </div>
+              <!-- <div class="stat-item desktop-only">
+                <span class="stat-label">실시간 접속자 수</span>
+                <div class="stat-badge">
+                  <span class="stat-value">{{ onlineCount }}명</span>
+                </div>
+              </div> -->
             </div>
-            <!-- <div class="stat-item desktop-only">
-              <span class="stat-label">실시간 접속자 수</span>
-              <div class="stat-badge">
-                <span class="stat-value">{{ onlineCount }}명</span>
+          </div>
+          <div class="stats-card">
+            <div class="stats-container">
+              <div class="stat-item">
+                <span class="stat-label">실시간 접속자 수</span>
+                <div class="stat-badge">
+                  <span class="stat-value">{{ totalCountFormat }}명</span>
+                </div>
               </div>
-            </div> -->
+              <!-- <div class="stat-item desktop-only">
+                <span class="stat-label">실시간 접속자 수</span>
+                <div class="stat-badge">
+                  <span class="stat-value">{{ onlineCount }}명</span>
+                </div>
+              </div> -->
+            </div>
           </div>
         </div>
-      </div>
 
-      <!-- Search Box -->
-      <div class="search-box">
-        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M12.9373 7.87402C12.9372 6.53146 12.4034 5.24406 11.4541 4.29468C10.5047 3.34524 9.21674 2.81152 7.87402 2.81152C6.53138 2.81158 5.24407 3.34528 4.29468 4.29468C3.34529 5.24407 2.81158 6.53139 2.81152 7.87402C2.81152 9.21674 3.34524 10.5047 4.29468 11.4541C5.24406 12.4034 6.53146 12.9372 7.87402 12.9373C9.21674 12.9373 10.5047 12.4035 11.4541 11.4541C12.4035 10.5047 12.9373 9.21674 12.9373 7.87402ZM14.0623 7.87402C14.0623 9.32652 13.5501 10.7256 12.6282 11.8328L16.1475 15.3521C16.367 15.5717 16.3671 15.9278 16.1475 16.1475C15.9278 16.3671 15.5717 16.367 15.3521 16.1475L11.8328 12.6282C10.7256 13.5501 9.32652 14.0623 7.87402 14.0623C6.23302 14.0622 4.65891 13.4099 3.49854 12.2495C2.33825 11.0891 1.68652 9.51501 1.68652 7.87402C1.68658 6.23302 2.33816 4.65891 3.49854 3.49854C4.65891 2.33816 6.23302 1.68658 7.87402 1.68652C9.51501 1.68652 11.0891 2.33825 12.2495 3.49854C13.4099 4.65891 14.0622 6.23302 14.0623 7.87402Z" fill="#888888"/>
-        </svg>
-        <input
-          v-model="searchQuery"
-          type="text"
-          placeholder="회원명을 검색해보세요!"
-          class="search-input"
-          @input="handleSearch"
-        />
+        <!-- Search Box -->
+        <div class="search-box">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12.9373 7.87402C12.9372 6.53146 12.4034 5.24406 11.4541 4.29468C10.5047 3.34524 9.21674 2.81152 7.87402 2.81152C6.53138 2.81158 5.24407 3.34528 4.29468 4.29468C3.34529 5.24407 2.81158 6.53139 2.81152 7.87402C2.81152 9.21674 3.34524 10.5047 4.29468 11.4541C5.24406 12.4034 6.53146 12.9372 7.87402 12.9373C9.21674 12.9373 10.5047 12.4035 11.4541 11.4541C12.4035 10.5047 12.9373 9.21674 12.9373 7.87402ZM14.0623 7.87402C14.0623 9.32652 13.5501 10.7256 12.6282 11.8328L16.1475 15.3521C16.367 15.5717 16.3671 15.9278 16.1475 16.1475C15.9278 16.3671 15.5717 16.367 15.3521 16.1475L11.8328 12.6282C10.7256 13.5501 9.32652 14.0623 7.87402 14.0623C6.23302 14.0622 4.65891 13.4099 3.49854 12.2495C2.33825 11.0891 1.68652 9.51501 1.68652 7.87402C1.68658 6.23302 2.33816 4.65891 3.49854 3.49854C4.65891 2.33816 6.23302 1.68658 7.87402 1.68652C9.51501 1.68652 11.0891 2.33825 12.2495 3.49854C13.4099 4.65891 14.0622 6.23302 14.0623 7.87402Z" fill="#888888"/>
+          </svg>
+          <input
+            v-model="searchQuery"
+            type="text"
+            placeholder="회원명을 검색해보세요!"
+            class="search-input"
+            @input="handleSearch"
+          />
+        </div>
       </div>
 
       <!-- Members Grid -->
@@ -172,6 +190,7 @@ import moment from 'moment';
 export default class extends Vue {
   private searchQuery = '';
   private totalCount = 1250;
+  private totalCountFormat = '';
   private onlineCount = 250;
   private channelMembers: any[] = [];
   private inviteModalVisible = false;
@@ -229,6 +248,7 @@ export default class extends Vue {
       
       const countRes = await getUserCount(this.listQuery);
       this.totalCount = countRes.data.totalCount || this.channelMembers.length;
+      this.totalCountFormat = new Intl.NumberFormat().format(this.totalCount + 1026);
       this.onlineCount = countRes.data.onlineCount || this.channelMembers.filter(m => m.online).length;
     } catch (error) {
       console.error('Error fetching member list:', error);
@@ -265,6 +285,11 @@ export default class extends Vue {
 
   private handleWriteModal() {
     this.$message.info('글 작성 기능은 준비 중입니다.');
+  }
+
+  private formattedTotalCount () {
+    const numberToFormat = this.totalCount + 1000;
+    return new Intl.NumberFormat().format(numberToFormat);
   }
 
   private handleSearch() {
@@ -305,37 +330,36 @@ export default class extends Vue {
 }
 
 .member-main {
-  margin-left: 267px;
+  background: #F8F9FB;
+  margin: 120px 0 0 270px;
   padding: 50px 80px;
   flex: 1;
   min-height: calc(100vh - 124px);
 }
 
-.member-header {
-  margin-bottom: 40px;
+.member-top {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  padding: 0 0 40px;
 }
 
+.member-header {flex:0 1 calc(100% - 504px); display: flex; flex-wrap: wrap; gap: 30px;}
+.member-page .search-box {flex:0 1 484px; background: #FFF;margin:0px}
+
 .stats-card {
-  min-width: 200px;
   display: flex;
-  justify-content: center;
-  padding: 20px;
-  border-radius: 10px;
-  border: 2px solid #EBEBEB;
-  background: #FFF;
-  width: fit-content;
 }
 
 .stats-container {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
   gap: 80px;
 }
 
 .stat-item {
   display: flex;
-  flex-direction: column;
   justify-content: center;
   align-items: center;
   gap: 8px;
@@ -487,7 +511,7 @@ export default class extends Vue {
 
 .member-email {
   color: #6B7280;
-  text-align: center;
+  text-align: left;
   font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
   font-size: 18px;
   font-weight: 400;
@@ -497,7 +521,6 @@ export default class extends Vue {
 
 .member-meta {
   display: flex;
-  justify-content: center;
   align-items: center;
   gap: 8px;
 }
@@ -752,20 +775,16 @@ export default class extends Vue {
   }
 }
 
-@media screen and (max-width: 1366px) {
-  .member-main {
-    padding: 48px 40px;
-  }
+@media screen and (max-width: 1200px) {
+  .member-main { padding: 48px 40px;}
+  .member-header{ flex: 0 1 100%;}
+  .member-page .search-box{ flex: 0 1 100%;}
 }
 
 @media screen and (max-width: 1024px) {
   .member-main {
-    margin-left: 0;
+    margin-left: 240px;
     padding: 40px 20px;
-  }
-
-  .stats-card {
-    width: 100%;
   }
 
   .stats-container {
@@ -792,25 +811,8 @@ export default class extends Vue {
   }
 
   .member-main {
-    margin-left: 0;
+    margin: 100px 0 0;
     padding: 40px 20px;
-  }
-
-  .member-header {
-    margin-bottom: 32px;
-  }
-
-  .stats-card {
-    padding: 20px;
-    width: 100%;
-    justify-content: center;
-  }
-
-  .stats-container {
-    gap: 0;
-    padding: 0 40px;
-    justify-content: center;
-    width: 100%;
   }
 
   .desktop-only {
@@ -926,6 +928,18 @@ export default class extends Vue {
     bottom: 20px;
     right: 20px;
   }
+}
+
+@media screen and (max-width: 500px) {
+  .member-main {
+    margin: 80px 0 0;
+    padding: 20px;
+  }
+
+  .member-top {padding: 0 0 20px;}
+  .member-header {gap:10px}
+  .stats-card {flex: 0 1 calc(100% / 2 - 5px);}
+
 }
 
 /* Smooth transitions */

@@ -1189,7 +1189,7 @@ export default class extends Vue {
 // 액션 버튼
 .action-btn {
   height: 36px;
-  padding: 0 16px;
+  padding: 16px;
   border: none;
   border-radius: 6px;
   font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
