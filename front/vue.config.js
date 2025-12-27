@@ -1,6 +1,6 @@
 const path = require('path');
 
-const devPort = 3000;
+const devPort = 3001;
 
 function resolve(dir) {
   return path.join(__dirname, dir);
