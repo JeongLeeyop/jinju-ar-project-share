@@ -31,3 +31,13 @@ export const approval = (uid: any) => request({
   url: `${PATH}/approval/${uid}`,
   method: 'put',
 });
+
+export const rejectMember = (uid: any) => request({
+  url: `${PATH}/reject/${uid}`,
+  method: 'delete',
+});
+
+export const removeMember = (uid: any) => request({
+  url: `${PATH}/${uid}`,
+  method: 'delete',
+});

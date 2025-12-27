@@ -67,7 +67,7 @@
             <thead>
               <tr>
                 <th>회원명</th>
-                <th>이메일</th>
+                <th>이메일/아이디</th>
                 <th>가입일</th>
                 <th>상태</th>
                 <th>관리</th>
@@ -80,14 +80,14 @@
                     <div class="member-avatar-placeholder">
                       <i class="el-icon-user"></i>
                     </div>
-                    <span class="member-name">{{ member.name }}</span>
+                    <span class="member-name">{{ member.user?.actualName || '-' }}</span>
                   </div>
                 </td>
-                <td>{{ member.email }}</td>
-                <td>{{ formatDate(member.joinedAt) }}</td>
+                <td>{{ member.user?.email || member.user?.userId || '-' }}</td>
+                <td>{{ formatDate(member.createDate) }}</td>
                 <td>
-                  <span class="status-badge" :class="member.status">
-                    {{ getStatusLabel(member.status) }}
+                  <span class="status-badge" :class="member.approvalStatus ? 'active' : 'pending'">
+                    {{ member.approvalStatus ? '활동중' : '대기중' }}
                   </span>
                 </td>
                 <td>
@@ -127,20 +127,21 @@
                   <i class="el-icon-user"></i>
                 </div>
                 <div class="member-details">
-                  <h3 class="member-name">{{ pending.name }}</h3>
-                  <p class="member-email">{{ pending.email }}</p>
+                  <h3 class="member-name">{{ pending.user?.actualName || '-' }}</h3>
+                  <p class="member-email">{{ pending.user?.email || pending.user?.userId || '-' }}</p>
                 </div>
               </div>
-              <span class="pending-date">{{ formatDate(pending.requestedAt) }}</span>
+              <span class="pending-date">{{ formatDate(pending.createDate) }}</span>
             </div>
 
-            <div v-if="pending.message" class="pending-message">
-              <p class="message-label">가입 신청 메시지</p>
-              <p class="message-content">{{ pending.message }}</p>
+            <div v-if="pending.introduce" class="pending-message">
+              <p class="message-label">자기소개</p>
+              <p class="message-content">{{ pending.introduce }}</p>
             </div>
 
             <div class="pending-actions">
               <button 
+                v-if="pending.answerList && pending.answerList.length > 0"
                 class="action-btn secondary" 
                 @click="openSurveyModal(pending)"
               >
@@ -148,7 +149,7 @@
               </button>
               <button 
                 class="action-btn secondary" 
-                @click="rejectMember(pending)"
+                @click="rejectMemberAction(pending)"
               >
                 거절
               </button>
@@ -199,8 +200,8 @@
                   <i class="el-icon-user"></i>
                 </div>
                 <div class="member-details">
-                  <h3 class="member-name">{{ member.name }}</h3>
-                  <p class="member-email">{{ member.email }}</p>
+                  <h3 class="member-name">{{ member.user?.actualName || '-' }}</h3>
+                  <p class="member-email">{{ member.user?.email || member.user?.userId || '-' }}</p>
                 </div>
               </div>
               <button 
@@ -220,7 +221,7 @@
               >
                 {{ getPermissionLabel(perm) }}
               </span>
-              <span v-if="member.permissions.length === 0" class="no-permission">
+              <span v-if="!member.permissions || member.permissions.length === 0" class="no-permission">
                 부여된 권한 없음
               </span>
             </div>
@@ -329,30 +330,27 @@
               <i class="el-icon-user"></i>
             </div>
             <div class="applicant-info">
-              <h4>{{ selectedPending.name }}</h4>
-              <p>{{ selectedPending.email }}</p>
+              <h4>{{ selectedPending.user?.actualName || '-' }}</h4>
+              <p>{{ selectedPending.user?.email || selectedPending.user?.userId || '-' }}</p>
             </div>
           </div>
 
+          <div v-if="selectedPending.introduce" class="survey-item">
+            <h4 class="survey-question">자기소개</h4>
+            <p class="survey-answer">{{ selectedPending.introduce }}</p>
+          </div>
+
           <div class="survey-questions">
-            <div class="survey-item">
-              <h4 class="survey-question">1. 커뮤니티 참여 동기가 무엇인가요?</h4>
-              <p class="survey-answer">{{ selectedPending.survey?.question1 || '응답 없음' }}</p>
+            <div 
+              v-for="(answer, index) in selectedPending.answerList" 
+              :key="index"
+              class="survey-item"
+            >
+              <h4 class="survey-question">{{ index + 1 }}. {{ answer.title || '질문' }}</h4>
+              <p class="survey-answer">{{ answer.answer || '응답 없음' }}</p>
             </div>
-
-            <div class="survey-item">
-              <h4 class="survey-question">2. 주로 관심 있는 분야는 무엇인가요?</h4>
-              <p class="survey-answer">{{ selectedPending.survey?.question2 || '응답 없음' }}</p>
-            </div>
-
-            <div class="survey-item">
-              <h4 class="survey-question">3. 어떤 활동에 참여하고 싶으신가요?</h4>
-              <p class="survey-answer">{{ selectedPending.survey?.question3 || '응답 없음' }}</p>
-            </div>
-
-            <div class="survey-item">
-              <h4 class="survey-question">4. 추가로 전하고 싶은 말씀이 있나요?</h4>
-              <p class="survey-answer">{{ selectedPending.survey?.question4 || '응답 없음' }}</p>
+            <div v-if="!selectedPending.answerList || selectedPending.answerList.length === 0" class="survey-item">
+              <p class="survey-answer">설문 응답이 없습니다.</p>
             </div>
           </div>
 
@@ -399,8 +397,8 @@
             <i class="el-icon-user"></i>
           </div>
           <div class="member-details">
-            <h4>{{ selectedMember.name }}</h4>
-            <p>{{ selectedMember.email }}</p>
+            <h4>{{ selectedMember.user?.actualName || '-' }}</h4>
+            <p>{{ selectedMember.user?.email || selectedMember.user?.userId || '-' }}</p>
           </div>
         </div>
 
@@ -438,33 +436,47 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
+import { Component, Vue, Watch } from 'vue-property-decorator';
 import CommunitySidebar from './components/communitySidebar.vue';
+import { getChannelMemberList, approval, rejectMember, removeMember } from '@/api/channelMember';
+import { getMemberPermissions, bulkUpdatePermissions, getAllPermissionTypes } from '@/api/channelMemberPermission';
+import { ChannelModule } from '@/store/modules/channel';
 
-// 임시 인터페이스
+// API 응답에 맞는 인터페이스
 interface Member {
+  idx: number;
   uid: string;
-  name: string;
-  email: string;
-  profileImage: string;
-  joinedAt: string;
-  status: 'active' | 'banned';
+  userUid: string;
+  channelUid: string;
+  approvalStatus: boolean;
+  createDate: string;
+  user?: {
+    uid: string;
+    userId: string;
+    actualName: string;
+    email?: string;
+    iconFileUid?: string;
+  };
   permissions: string[];
+  isOnline?: boolean;
 }
 
 interface PendingMember {
+  idx: number;
   uid: string;
-  name: string;
-  email: string;
-  profileImage: string;
-  requestedAt: string;
-  message?: string;
-  survey?: {
-    question1: string;
-    question2: string;
-    question3: string;
-    question4: string;
+  userUid: string;
+  channelUid: string;
+  approvalStatus: boolean;
+  createDate: string;
+  user?: {
+    uid: string;
+    userId: string;
+    actualName: string;
+    email?: string;
+    iconFileUid?: string;
   };
+  introduce?: string;
+  answerList?: any[];
 }
 
 interface Space {
@@ -487,123 +499,19 @@ export default class extends Vue {
   private searchKeyword = '';
   private permissionSearchKeyword = '';
 
-  // 회원 목록 (덤프 데이터)
-  private members: Member[] = [
-    {
-      uid: 'mem-1',
-      name: '정이욥',
-      email: 'kim@example.com',
-      profileImage: 'https://i.pravatar.cc/150?img=1',
-      joinedAt: '2025-01-15T10:30:00',
-      status: 'active',
-      permissions: ['write', 'comment', 'like', 'marketplace'],
-    },
-    {
-      uid: 'mem-2',
-      name: '오형래',
-      email: 'lee@example.com',
-      profileImage: 'https://i.pravatar.cc/150?img=2',
-      joinedAt: '2025-02-20T14:20:00',
-      status: 'active',
-      permissions: ['write', 'comment', 'like', 'space_join', 'chat_join', 'schedule_attend', 'course_attend'],
-    },
-    {
-      uid: 'mem-3',
-      name: '배은별',
-      email: 'park@example.com',
-      profileImage: 'https://i.pravatar.cc/150?img=3',
-      joinedAt: '2025-03-10T09:15:00',
-      status: 'active',
-      permissions: ['write', 'comment', 'like'],
-    },
-    {
-      uid: 'mem-4',
-      name: '이은경',
-      email: 'choi@example.com',
-      profileImage: 'https://i.pravatar.cc/150?img=4',
-      joinedAt: '2025-04-05T16:45:00',
-      status: 'active',
-      permissions: ['write', 'comment', 'like', 'space_join', 'chat_join', 'marketplace', 'schedule_attend', 'schedule_create', 'course_attend', 'offline_point_deduct'],
-    },
-    {
-      uid: 'mem-5',
-      name: '이주현',
-      email: 'jung@example.com',
-      profileImage: 'https://i.pravatar.cc/150?img=5',
-      joinedAt: '2025-05-12T11:20:00',
-      status: 'banned',
-      permissions: [],
-    },
-  ];
+  // 페이지네이션
+  private currentPage = 1;
+  private pageSize = 20;
+  private totalMembers = 0;
 
-  // 가입 승인 대기 (덤프 데이터)
-  private pendingMembers: PendingMember[] = [
-    {
-      uid: 'pend-1',
-      name: '정이욥2',
-      email: 'kang@example.com',
-      profileImage: 'https://i.pravatar.cc/150?img=6',
-      requestedAt: '2025-12-24T10:30:00',
-      message: '친구 추천으로 가입하게 되었습니다. 잘 부탁드립니다!',
-      survey: {
-        question1: '지역 사회 공동체 활동에 관심이 있어서 가입하게 되었습니다.',
-        question2: '문화/예술 분야와 지역 봉사 활동에 관심이 많습니다.',
-        question3: '오프라인 모임과 온라인 강좌에 적극적으로 참여하고 싶습니다.',
-        question4: '좋은 인연들을 만나고 싶습니다. 잘 부탁드립니다!',
-      },
-    },
-    {
-      uid: 'pend-2',
-      name: '홍길동',
-      email: 'yoon@example.com',
-      profileImage: 'https://i.pravatar.cc/150?img=7',
-      requestedAt: '2025-12-25T14:20:00',
-      message: '지역 공동체에 관심이 많아 가입 신청합니다.',
-      survey: {
-        question1: '이웃과 함께하는 지역 커뮤니티를 만들고 싶어서 가입했습니다.',
-        question2: '스포츠/레저, 취미생활 공유에 관심 있습니다.',
-        question3: '동호회 활동과 정기 모임에 참여하고 싶습니다.',
-        question4: '함께 성장하는 커뮤니티를 기대합니다.',
-      },
-    },
-    {
-      uid: 'pend-3',
-      name: '한소희',
-      email: 'han@example.com',
-      profileImage: 'https://i.pravatar.cc/150?img=8',
-      requestedAt: '2025-12-26T09:15:00',
-      survey: {
-        question1: '창업과 비즈니스 네트워킹 기회를 찾기 위해 가입했습니다.',
-        question2: '비즈니스와 IT/기술 분야에 관심이 많습니다.',
-        question3: '세미나와 워크샵에 참여하고 멘토링을 받고 싶습니다.',
-        question4: '좋은 비즈니스 인맥을 쌓고 싶습니다.',
-      },
-    },
-  ];
+  // 회원 목록 (API에서 로드)
+  private members: Member[] = [];
 
-  // 초대 가능한 공간 (덤프 데이터)
-  private availableSpaces: Space[] = [
-    {
-      uid: 'space-1',
-      name: '자유 게시판',
-      spaceType: 'BOARD',
-    },
-    {
-      uid: 'space-2',
-      name: '공지사항',
-      spaceType: 'BOARD',
-    },
-    {
-      uid: 'space-3',
-      name: '전체 채팅방',
-      spaceType: 'CHAT',
-    },
-    {
-      uid: 'space-4',
-      name: '친목 채팅방',
-      spaceType: 'CHAT',
-    },
-  ];
+  // 가입 승인 대기 (API에서 로드)
+  private pendingMembers: PendingMember[] = [];
+
+  // 초대 가능한 공간 (API에서 로드 또는 필요시 유지)
+  private availableSpaces: Space[] = [];
 
   // 초대 모달
   private inviteModalVisible = false;
@@ -644,8 +552,8 @@ export default class extends Vue {
     if (!this.searchKeyword) return this.members;
     const keyword = this.searchKeyword.toLowerCase();
     return this.members.filter(member => 
-      member.name.toLowerCase().includes(keyword) || 
-      member.email.toLowerCase().includes(keyword)
+      (member.user?.actualName || '').toLowerCase().includes(keyword) || 
+      (member.user?.email || '').toLowerCase().includes(keyword)
     );
   }
 
@@ -653,16 +561,84 @@ export default class extends Vue {
     if (!this.permissionSearchKeyword) return this.members;
     const keyword = this.permissionSearchKeyword.toLowerCase();
     return this.members.filter(member => 
-      member.name.toLowerCase().includes(keyword) || 
-      member.email.toLowerCase().includes(keyword)
+      (member.user?.actualName || '').toLowerCase().includes(keyword) || 
+      (member.user?.email || '').toLowerCase().includes(keyword)
     );
   }
 
+  get channelUid() {
+    return this.$route.params.domain || '';
+  }
+
   mounted() {
-    // 실제 API 연동시 데이터 로드
-    // this.loadMembers();
-    // this.loadPendingMembers();
-    // this.loadAvailableSpaces();
+    this.loadMembers();
+    this.loadPendingMembers();
+  }
+
+  @Watch('$route.params.domain')
+  private onDomainChange() {
+    this.loadMembers();
+    this.loadPendingMembers();
+  }
+
+  /**
+   * 승인된 회원 목록 조회
+   */
+  private async loadMembers() {
+    if (!this.channelUid) return;
+
+    try {
+      this.loadingMembers = true;
+      this.loadingPermissions = true;
+      
+      const response = await getChannelMemberList({
+        channelUid: this.channelUid,
+        isHolding: false, // 승인된 회원만
+        page: this.currentPage,
+        size: this.pageSize,
+      });
+
+      if (response.data && response.data.content) {
+        this.members = response.data.content.map((m: any) => ({
+          ...m,
+          permissions: [], // 권한은 별도 API로 로드
+        }));
+        this.totalMembers = response.data.totalElements || 0;
+      }
+    } catch (error) {
+      console.error('회원 목록 조회 실패:', error);
+      this.$message.error('회원 목록을 불러오지 못했습니다.');
+    } finally {
+      this.loadingMembers = false;
+      this.loadingPermissions = false;
+    }
+  }
+
+  /**
+   * 가입 대기 회원 목록 조회
+   */
+  private async loadPendingMembers() {
+    if (!this.channelUid) return;
+
+    try {
+      this.loadingPending = true;
+      
+      const response = await getChannelMemberList({
+        channelUid: this.channelUid,
+        isHolding: true, // 대기중인 회원만
+        page: 1,
+        size: 100,
+      });
+
+      if (response.data && response.data.content) {
+        this.pendingMembers = response.data.content;
+      }
+    } catch (error) {
+      console.error('가입 대기 목록 조회 실패:', error);
+      this.$message.error('가입 대기 목록을 불러오지 못했습니다.');
+    } finally {
+      this.loadingPending = false;
+    }
   }
 
   private handleSpaceSelect(spaceId: string) {
@@ -685,9 +661,10 @@ export default class extends Vue {
 
   // 회원 추방 확인
   private async confirmBanMember(member: Member) {
+    const memberName = member.user?.actualName || '회원';
     try {
-      const confirm = await this.$confirm(
-        `${member.name}님을 추방하시겠습니까? 추방된 회원은 커뮤니티에 접근할 수 없습니다.`,
+      await this.$confirm(
+        `${memberName}님을 추방하시겠습니까? 추방된 회원은 커뮤니티에 접근할 수 없습니다.`,
         '회원 추방',
         {
           confirmButtonText: '추방',
@@ -695,10 +672,7 @@ export default class extends Vue {
           type: 'warning',
         },
       );
-
-      if (confirm) {
-        await this.banMember(member);
-      }
+      await this.banMember(member);
     } catch (error) {
       if (error === 'cancel') return;
     }
@@ -706,17 +680,18 @@ export default class extends Vue {
 
   // 회원 추방
   private async banMember(member: Member) {
+    const memberName = member.user?.actualName || '회원';
     try {
-      // TODO: 실제 API 호출
-      // await banMember(member.uid);
+      // 실제 API 호출
+      await removeMember(member.uid);
 
-      // 임시 딜레이
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // 목록에서 제거
+      const index = this.members.findIndex(m => m.uid === member.uid);
+      if (index > -1) {
+        this.members.splice(index, 1);
+      }
 
-      // 상태 업데이트
-      member.status = 'banned';
-
-      this.$message.success(`${member.name}님이 추방되었습니다`);
+      this.$message.success(`${memberName}님이 추방되었습니다`);
     } catch (error: any) {
       const message = error.response?.data?.message || '회원 추방에 실패했습니다';
       this.$message.error(message);
@@ -725,12 +700,10 @@ export default class extends Vue {
 
   // 가입 승인
   private async approveMember(pending: PendingMember) {
+    const memberName = pending.user?.actualName || '회원';
     try {
-      // TODO: 실제 API 호출
-      // await approveMember(pending.uid);
-
-      // 임시 딜레이
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // 실제 API 호출
+      await approval(pending.uid);
 
       // 목록에서 제거
       const index = this.pendingMembers.findIndex(m => m.uid === pending.uid);
@@ -738,7 +711,10 @@ export default class extends Vue {
         this.pendingMembers.splice(index, 1);
       }
 
-      this.$message.success(`${pending.name}님의 가입을 승인했습니다`);
+      // 회원 목록 새로고침
+      await this.loadMembers();
+
+      this.$message.success(`${memberName}님의 가입을 승인했습니다`);
     } catch (error: any) {
       const message = error.response?.data?.message || '가입 승인에 실패했습니다';
       this.$message.error(message);
@@ -746,10 +722,11 @@ export default class extends Vue {
   }
 
   // 가입 거절
-  private async rejectMember(pending: PendingMember) {
+  private async rejectMemberAction(pending: PendingMember) {
+    const memberName = pending.user?.actualName || '회원';
     try {
-      const confirm = await this.$confirm(
-        `${pending.name}님의 가입 신청을 거절하시겠습니까?`,
+      await this.$confirm(
+        `${memberName}님의 가입 신청을 거절하시겠습니까?`,
         '가입 거절',
         {
           confirmButtonText: '거절',
@@ -758,21 +735,16 @@ export default class extends Vue {
         },
       );
 
-      if (confirm) {
-        // TODO: 실제 API 호출
-        // await rejectMember(pending.uid);
+      // 실제 API 호출
+      await rejectMember(pending.uid);
 
-        // 임시 딜레이
-        await new Promise(resolve => setTimeout(resolve, 1000));
-
-        // 목록에서 제거
-        const index = this.pendingMembers.findIndex(m => m.uid === pending.uid);
-        if (index > -1) {
-          this.pendingMembers.splice(index, 1);
-        }
-
-        this.$message.success(`${pending.name}님의 가입 신청을 거절했습니다`);
+      // 목록에서 제거
+      const index = this.pendingMembers.findIndex(m => m.uid === pending.uid);
+      if (index > -1) {
+        this.pendingMembers.splice(index, 1);
       }
+
+      this.$message.success(`${memberName}님의 가입 신청을 거절했습니다`);
     } catch (error: any) {
       if (error === 'cancel') return;
       const message = error.response?.data?.message || '가입 거절에 실패했습니다';
@@ -849,7 +821,7 @@ export default class extends Vue {
     
     const pending = this.selectedPending;
     this.closeSurveyModal();
-    await this.rejectMember(pending);
+    await this.rejectMemberAction(pending);
   }
 
   // 권한 라벨 가져오기
@@ -859,10 +831,24 @@ export default class extends Vue {
   }
 
   // 권한 모달 열기
-  private openPermissionModal(member: Member) {
+  private async openPermissionModal(member: Member) {
     this.selectedMember = member;
-    this.permissionForm.permissions = [...member.permissions];
+    this.permissionForm.permissions = [];
     this.permissionModalVisible = true;
+
+    // 권한 로드
+    try {
+      const response = await getMemberPermissions(member.idx);
+      if (response.data && response.data.permissions) {
+        this.permissionForm.permissions = response.data.permissions
+          .filter((p: any) => p.hasPermission)
+          .map((p: any) => p.permissionType);
+      }
+    } catch (error) {
+      console.error('권한 로드 실패:', error);
+      // 기존 로컬 데이터 사용
+      this.permissionForm.permissions = [...(member.permissions || [])];
+    }
   }
 
   // 권한 모달 닫기
@@ -879,14 +865,17 @@ export default class extends Vue {
     try {
       this.submittingPermission = true;
 
-      // TODO: 실제 API 호출
-      // await updateMemberPermissions({
-      //   memberUid: this.selectedMember.uid,
-      //   permissions: this.permissionForm.permissions,
-      // });
+      // 권한 데이터 구성
+      const permissionData = this.availablePermissions.map(perm => ({
+        permissionType: perm.value,
+        hasPermission: this.permissionForm.permissions.includes(perm.value),
+      }));
 
-      // 임시 딜레이
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // 실제 API 호출
+      await bulkUpdatePermissions({
+        channelMemberIdx: this.selectedMember.idx,
+        permissions: permissionData,
+      });
 
       // 로컬 데이터 업데이트
       this.selectedMember.permissions = [...this.permissionForm.permissions];

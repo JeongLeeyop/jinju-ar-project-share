@@ -12,6 +12,7 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.session.SessionRegistry;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -43,8 +44,8 @@ public class ChannelMemberController {
 
     @GetMapping
     public ResponseEntity<Page<ChannelMemberDto.detail>> list(
-        @PageableDefault(size=10, page=0)Pageable pageable,
-        @AuthenticationPrincipal SinghaUser authUser, ChannelMemberSearch search) {
+            @PageableDefault(size = 10, page = 0) Pageable pageable,
+            @AuthenticationPrincipal SinghaUser authUser, ChannelMemberSearch search) {
         // domain → uid 변환
         if (search.getChannelUid() != null) {
             String actualChannelUid = channelRepository.findByDomain(search.getChannelUid())
@@ -57,15 +58,37 @@ public class ChannelMemberController {
 
     @GetMapping("userCount")
     public ResponseEntity<ChannelMemberDto.count> userCount(
-        @AuthenticationPrincipal SinghaUser authUser, ChannelMemberSearch search) {
+            @AuthenticationPrincipal SinghaUser authUser, ChannelMemberSearch search) {
         return ResponseEntity.ok(channelMemberService.userCount(authUser, search));
     }
-    
+
     @PutMapping("approval/{uid}")
     public ResponseEntity approval(
-        @AuthenticationPrincipal SinghaUser authUser,
-			@PathVariable("uid") ChannelMember channelMember) {
+            @AuthenticationPrincipal SinghaUser authUser,
+            @PathVariable("uid") ChannelMember channelMember) {
         channelMemberService.approval(channelMember, authUser);
+        return ResponseEntity.ok().build();
+    }
+
+    /**
+     * 가입 신청 거절
+     */
+    @DeleteMapping("reject/{uid}")
+    public ResponseEntity reject(
+            @AuthenticationPrincipal SinghaUser authUser,
+            @PathVariable("uid") ChannelMember channelMember) {
+        channelMemberService.reject(channelMember, authUser);
+        return ResponseEntity.ok().build();
+    }
+
+    /**
+     * 회원 추방
+     */
+    @DeleteMapping("{uid}")
+    public ResponseEntity remove(
+            @AuthenticationPrincipal SinghaUser authUser,
+            @PathVariable("uid") ChannelMember channelMember) {
+        channelMemberService.remove(channelMember, authUser);
         return ResponseEntity.ok().build();
     }
 }
