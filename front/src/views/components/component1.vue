@@ -317,7 +317,6 @@ export default class extends Vue {
 
 <style scoped>
 .community-card {
-  width: 373px;
   background: #fff;
   border: 1px solid #EBEBEB;
   border-radius: 10px;
@@ -348,6 +347,7 @@ export default class extends Vue {
 }
 
 .community-type {
+  text-align: left;
   color: #888;
   font-family: Pretendard, -apple-system, sans-serif;
   font-size: 14px;
@@ -356,6 +356,7 @@ export default class extends Vue {
 }
 
 .community-name {
+  text-align: left;
   color: #222;
   font-family: Pretendard, -apple-system, sans-serif;
   font-size: 20px;

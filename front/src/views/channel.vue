@@ -5,7 +5,7 @@
         <div class="channel-hero-section">
           <div class="hero-image-container">
             <slot v-if="channel && channel.coverImageList && channel.coverImageList.length > 0">
-              <el-carousel indicator-position="outside" height="428px" class="desktop-carousel">
+              <el-carousel indicator-position="outside" height="350px" class="desktop-carousel">
                 <el-carousel-item v-for="item in channel.coverImageList" :key="item.uid">
                   <img :src="apiUrl + '/attached-file/' + item.fileUid" class="hero-image">
                 </el-carousel-item>
@@ -107,7 +107,6 @@
                   <div class="stat-label">개설자</div>
                   <div class="stat-value">{{ channel?.creatorName || '오형래' }} 님</div>
                 </div>
-                <div class="stat-divider"></div>
                 <div class="stat-item">
                   <div class="stat-label">공개여부</div>
                   <div class="stat-value">
@@ -115,12 +114,10 @@
                     <slot v-else>공개</slot>
                   </div>
                 </div>
-                <div class="stat-divider"></div>
                 <div class="stat-item">
                   <div class="stat-label">회원수</div>
                   <div class="stat-value">{{ channel?.memberCount || 0 }}명</div>
                 </div>
-                <div class="stat-divider"></div>
                 <div class="stat-item">
                   <div class="stat-label">카테고리명</div>
                   <div class="stat-value">{{ channel?.categoryName || '지역' }}</div>
@@ -414,7 +411,9 @@ export default class extends Vue {
 }
 
 .channel-content-wrapper {
+  width: 100%;
   max-width: 1200px;
+  margin: 0 auto;
   flex: 0 1 100%;
 }
 
@@ -430,7 +429,6 @@ export default class extends Vue {
 
 .hero-image {
   width: 100%;
-  height: 428px;
   object-fit: cover;
   display: block;
 }
@@ -451,15 +449,20 @@ export default class extends Vue {
 }
 
 .channel-info-section {
-  max-width: 1200px;
-  gap: 40px;
+  flex: 0 1 100%;
   display: flex;
+  flex-wrap: wrap;
+  gap: 40px;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
 .desktop-layout {
+  flex: 0 1 100%; //모바일 레이아웃 숨어 있어서..
   display: flex;
+  flex-wrap: wrap;
   gap: 40px;
-  width: 100%;
 }
 
 .mobile-unified-card {
@@ -471,7 +474,6 @@ export default class extends Vue {
   align-items: center;
   margin-bottom: 16px;
   flex-wrap: wrap;
-  gap: 8px;
 }
 
 .stat-item {
@@ -479,17 +481,11 @@ export default class extends Vue {
   align-items: center;
   gap: 14px;
   padding: 0 32px;
+  position: relative;
 }
 
-.stat-item:first-child {
-  padding-left: 0;
-}
-
-.stat-divider {
-  width: 1px;
-  height: 20px;
-  background: #444;
-}
+.stat-item::after {display: block; content: ''; width: 1px; height: 20px; background: #444; position: absolute; top: 50%; right: 0px; transform: translateY(-50%);}
+.stat-item:last-child:after {display: none;}
 
 .stat-label {
   color: #222;
@@ -519,11 +515,11 @@ export default class extends Vue {
 }
 
 .channel-info-inner {
-  flex: 0 1 70%;
+  flex: 0 1 calc(100% - 380px);
 }
 
 .component-container {
-  flex: 0 1 30%;
+  flex: 0 1 340px;
 }
 
 @media (max-width: 1024px) {
@@ -545,23 +541,43 @@ export default class extends Vue {
   .component-container {
     position: static;
     width: 100%;
-    max-width: 500px;
   }
 }
 
-@media (max-width: 768px) {
+@media screen and (max-width: 1024px) {
   .channel-main {
-    padding: 0;
-    background: #FFF;
+    padding: 32px;
   }
+
+  .stat-item {
+    padding: 0 20px;
+  }
+
+  .stat-label {
+    font-size: 18px;
+  }
+
+  .stat-value {
+    font-size: 16px;
+  }
+
+  .stat-item-mobile {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .info-description {
+    padding: 24px;
+    font-size: 16px;
+  }
+}
+
+@media screen and (max-width: 768px) {
+  .channel-main {padding: 20px; background: #FFF;}
 
   .channel-layout {
     gap: 0;
-  }
-
-  .channel-content-wrapper {
-    max-width: 100%;
-    width: 100%;
   }
 
   .channel-hero-section {
@@ -607,8 +623,8 @@ export default class extends Vue {
     display: flex;
     flex-direction: column;
     gap: 20px;
-    width: calc(100% - 40px);
-    margin: 20px;
+    width: 100%;
+    margin: 20px 0;
     padding: 20px;
     border: 1px solid #EBEBEB;
     border-radius: 10px;
@@ -646,6 +662,7 @@ export default class extends Vue {
   }
 
   .community-name-mobile {
+    text-align: left;
     color: #222;
     font-family: Pretendard, -apple-system, sans-serif;
     font-size: 18px;
@@ -759,33 +776,6 @@ export default class extends Vue {
 
   .join-button-mobile:hover {
     background: #0532CC;
-  }
-}
-
-@media (min-width: 769px) and (max-width: 1024px) {
-  .channel-main {
-    padding: 32px;
-  }
-
-  .hero-image {
-    height: 320px;
-  }
-
-  .stat-item {
-    padding: 0 20px;
-  }
-
-  .stat-label {
-    font-size: 18px;
-  }
-
-  .stat-value {
-    font-size: 16px;
-  }
-
-  .info-description {
-    padding: 24px;
-    font-size: 16px;
   }
 }
 </style>

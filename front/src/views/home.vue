@@ -29,22 +29,22 @@
             <path d="M10.5 6H20.25M10.5 6C10.5 6.39782 10.342 6.77936 10.0607 7.06066C9.77936 7.34196 9.39782 7.5 9 7.5C8.60218 7.5 8.22064 7.34196 7.93934 7.06066C7.65804 6.77936 7.5 6.39782 7.5 6M10.5 6C10.5 5.60218 10.342 5.22064 10.0607 4.93934C9.77936 4.65804 9.39782 4.5 9 4.5C8.60218 4.5 8.22064 4.65804 7.93934 4.93934C7.65804 5.22064 7.5 5.60218 7.5 6M7.5 6H3.75M10.5 18H20.25M10.5 18C10.5 18.3978 10.342 18.7794 10.0607 19.0607C9.77936 19.342 9.39782 19.5 9 19.5C8.60218 19.5 8.22064 19.342 7.93934 19.0607C7.65804 18.7794 7.5 18.3978 7.5 18M10.5 18C10.5 17.6022 10.342 17.2206 10.0607 16.9393C9.77936 16.658 9.39782 16.5 9 16.5C8.60218 16.5 8.22064 16.658 7.93934 16.9393C7.65804 17.2206 7.5 17.6022 7.5 18M7.5 18H3.75M16.5 12H20.25M16.5 12C16.5 12.3978 16.342 12.7794 16.0607 13.0607C15.7794 13.342 15.3978 13.5 15 13.5C14.6022 13.5 14.2206 13.342 13.9393 13.0607C13.658 12.7794 13.5 12.3978 13.5 12M16.5 12C16.5 11.6022 16.342 11.2206 16.0607 10.9393C15.7794 10.658 15.3978 10.5 15 10.5C14.6022 10.5 14.2206 10.658 13.9393 10.9393C13.658 11.2206 13.5 11.6022 13.5 12M13.5 12H3.75" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
         </button>
-        <div class="category-pills">
-          <button
-            :class="['category-pill', { active: listQuery.categoryUid === 'all' }]"
-            @click="handleChangeCategory('all')"
-          >
-            전체보기
-          </button>
-          <button
-            v-for="category in categoryList.slice(0, 8)"
-            :key="category.uid"
-            :class="['category-pill', { active: listQuery.categoryUid === category.uid }]"
-            @click="handleChangeCategory(category.uid)"
-          >
-            {{ category.name }}
-          </button>
-        </div>
+          <div class="category-pills">
+            <button
+              :class="['category-pill', { active: listQuery.categoryUid === 'all' }]"
+              @click="handleChangeCategory('all')"
+            >
+              전체보기
+            </button>
+            <button
+              v-for="category in categoryList.slice(0, 8)"
+              :key="category.uid"
+              :class="['category-pill', { active: listQuery.categoryUid === category.uid }]"
+              @click="handleChangeCategory(category.uid)"
+            >
+              {{ category.name }}
+            </button>
+          </div>
         <div class="filter-controls">
           <button class="filter-button" @click="handleFilter()">
             <span>필터</span>
@@ -467,14 +467,12 @@ export default class extends Vue {
   }
 }
 
-.category-pills { flex: 0 1 calc(100% - 110px) ;display: flex; align-items: center; gap: 10px; flex-wrap: wrap; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none;
+.category-pills { flex: 0 1 calc(100% - 110px) ;display: flex; align-items: center; gap: 10px; flex-wrap: wrap; overflow-x: auto; -webkit-overflow-scrolling: touch; overflow-y: hidden;}
+.category-pills::-webkit-scrollbar{width:5px}
+.category-pills::-webkit-scrollbar-thumb{background-color:#272c8f;border-radius:10px}
+.category-pills::-webkit-scrollbar-track{background-color:#d2d2d2;border-radius:10px}
 
-  &::-webkit-scrollbar {
-    display: none;
-  }
-}
-
-.category-pill { flex: 0 1 calc(20% - 8px);
+.category-pill { 
   padding: 14px 24px;
   border-radius: 100px;
   color: #8A8A8A;
@@ -528,44 +526,8 @@ export default class extends Vue {
   }
 }
 
-@media screen and (max-width: 768px) {
-  .category-section {padding: 20px 0 30px;}
-  .category-wrapper {padding: 0 0 0 20px; flex-direction: column-reverse;position: relative; gap: 3px;}
-  .category-pills {flex: 0 1 calc(100% - 50px);width: 100%; overflow-x: scroll;}
-  
-}
-
-@media screen and (max-width: 600px) {
-  .category-section {padding: 10px 0 30px;}
-  .category-pills {flex: 0 1 calc(100% - 50px); flex-wrap: unset;width: 100%; overflow-x: scroll;padding: 0 0 20px;}
-  .category-pills::-webkit-scrollbar{width:5px;}
-  .category-pills::-webkit-scrollbar-thumb{background-color:#272c8f;border-radius:10px}
-  .category-pills::-webkit-scrollbar-track{background-color:#d2d2d2;border-radius:10px}
-  .category-pill {flex: 0 1 100%;}
-  .filter-controls {}
-}
-
-.filter-controls {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.filter-button {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 8px;
-  height: 46px;
-  padding: 0 16px;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  transition: opacity 0.3s ease;
-
-  &:hover {
-    opacity: 0.7;
-  }
+.filter-controls { display: flex; align-items: center; gap: 8px;}
+.filter-button { display: flex; justify-content: center; align-items: center; gap: 8px; height: 46px; padding: 0 16px; background: transparent; border: none; cursor: pointer; transition: opacity 0.3s ease; &:hover{ opacity: 0.7;}
 
   span {
     color: #222;
@@ -579,6 +541,31 @@ export default class extends Vue {
   svg {
     flex-shrink: 0;
   }
+}
+
+@media screen and (max-width: 1200px) {
+  .category-pill {flex: 0 1 calc(20% - 8px);}
+}
+@media screen and (max-width: 768px) {
+  .category-section {padding: 20px 0 30px;}
+  .category-wrapper {padding: 0 0 0 20px; flex-direction: column-reverse;position: relative; gap: 3px;}
+  .filter-button { padding: 0;}
+  .category-pills {flex: 0 1 calc(100% - 50px);width: 100%;}
+  
+}
+
+@media screen and (max-width: 600px) {
+  .category-section {padding: 10px 0 30px;}
+  .category-pills {flex: 0 1 calc(100% - 50px); flex-wrap: unset;width: 100%;padding: 0 0 15px;overflow-x: scroll;}
+  .category-pills::-webkit-scrollbar{height:6px;}
+  .category-pills::-webkit-scrollbar-thumb{background-color:#0F64EF;border-radius:100px}
+  .category-pills::-webkit-scrollbar-track{background-color:#d2d2d2;border-radius:100px}
+  .category-pill {flex: 0 1 100%;}
+}
+
+@media screen and (max-width: 500px) {
+  .category-pills {padding-right:20px;}
+  .category-pill {padding: 10px; font-size: 15px;}
 }
 
 .community-grid-wrapper { background: #F8F9FB;}
@@ -668,6 +655,7 @@ export default class extends Vue {
   }
 
   ::v-deep .el-dialog__header {
+    position: relative;
     padding: 28px 32px;
     border-bottom: 2px solid #EBEBEB;
     background: #FFF;
@@ -681,10 +669,10 @@ export default class extends Vue {
     }
 
     .el-dialog__headerbtn {
-      top: 28px;
+      top: 50%;
       right: 32px;
-      width: 32px;
-      height: 32px;
+      transform: translateY(-50%);
+      padding-top: 2px;
 
       .el-dialog__close {
         color: #888;
@@ -843,22 +831,10 @@ export default class extends Vue {
 
 @media (max-width: 768px) {
   .filter-dialog {
-    ::v-deep .el-dialog {
-      width: 90% !important;
-      border-radius: 16px;
-    }
+    ::v-deep .el-dialog { width: 90% !important; border-radius: 16px;}
 
-    ::v-deep .el-dialog__header {
-      padding: 24px;
-
-      .el-dialog__title {
-        font-size: 20px;
-      }
-
-      .el-dialog__headerbtn {
-        top: 24px;
-        right: 24px;
-      }
+    ::v-deep .el-dialog__header { padding: 24px; 
+      .el-dialog__title{ font-size: 20px;} 
     }
 
     ::v-deep .el-dialog__body {
@@ -889,6 +865,8 @@ export default class extends Vue {
     flex: 1;
     width: 100%;
   }
+  .filter-reset-btn {padding: 10px 0;}
+  .filter-apply-btn {line-height: 35px;padding: 5px 0;}
 }
 
 @media (max-width: 600px) {
@@ -927,20 +905,13 @@ export default class extends Vue {
     gap: 8px;
   }
 
-  .filter-option-btn {
-    padding: 8px 16px;
-    font-size: 13px;
-  }
-
   .filter-footer {
     padding: 16px 20px;
     gap: 8px;
   }
 
-  .filter-reset-btn,
-  .filter-apply-btn {
-    height: 48px;
-    font-size: 14px;
+  @media screen and (max-width: 500px) {
+    .filter-reset-btn {padding: 10px 0;}
   }
 }
 </style>

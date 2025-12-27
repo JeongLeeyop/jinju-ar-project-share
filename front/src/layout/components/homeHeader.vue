@@ -1,5 +1,5 @@
 <template>
-  <div class="header home-header">
+  <div class="header home-header" :class="isInCommunity ? 'community-header': '' ">
     <div class="header-container">
       <button class="mobile-menu-btn" @click="toggleMobileMenu">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -583,6 +583,10 @@ export default class extends Vue {
   .header-left {flex: 0 1 200px;}
 }
 
+@media screen and (max-width: 1024px) {
+  .header-left {flex: 0 1 150px;}
+}
+
 @media screen and (max-width: 768px) {
   .header-container {padding: 15px 0;}
   .header-left {flex: 0 1 calc(100% - 70px);}
@@ -663,7 +667,7 @@ export default class extends Vue {
 }
 
 .header-nav {
-  flex: 0 1 calc(100% - 300px - 120px);
+  flex: 0 1 calc(100% - 300px - 310px);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -671,15 +675,15 @@ export default class extends Vue {
 }
 
 @media screen and (max-width: 1440px) {
-  .header-nav {flex: 0 1 calc(100% - 250px - 120px)}
+  .header-nav {flex: 0 1 calc(100% - 250px - 310px)}
 }
 
 @media screen and (max-width: 1200px) {
-  .header-nav {flex: 0 1 calc(100% - 200px - 120px)}
+  .header-nav {flex: 0 1 calc(100% - 200px - 310px)}
 }
 
 @media screen and (max-width: 1024px) {
-  .header-nav {flex: 0 1 calc(100% - 200px - 120px)}
+  .header-nav {flex: 0 1 calc(100% - 150px - 255px)}
 }
 
 .nav-item {
@@ -716,8 +720,10 @@ export default class extends Vue {
   }
 }
 
-.header-content {
-  flex: 0 1 120px;
+.header-content{ flex: 0 1 310px;}
+
+@media screen and (max-width: 1024px) {
+  .header-content{ flex: 0 1 255px;}
 }
 
 .aside-btn {
@@ -726,10 +732,10 @@ export default class extends Vue {
   gap: 20px;
 }
 
-.user-section {
-  display: flex;
-  align-items: center;
-  gap: 20px;
+.user-section{ display: flex; align-items: center; gap: 20px;}
+
+@media screen and (max-width: 1024px) {
+  .user-section{display: flex; align-items: center; gap: 15px;}
 }
 
 .notification-btn {
@@ -784,10 +790,10 @@ export default class extends Vue {
   }
 }
 
-.user-avatar {
-  width: 36px;
-  height: 36px;
-  flex-shrink: 0;
+.user-avatar{ width: 36px; height: 36px; flex-shrink: 0;}
+
+@media screen and (max-width:1024px) {
+  .user-avatar{ width: 30px; height: 30px;}
 }
 
 .user-name-text {
@@ -836,7 +842,7 @@ export default class extends Vue {
   }
 }
 
-@media (max-width: 1024px) {
+@media screen and (max-width: 1024px) {
   .header-nav { position: static; transform: none; gap: 16px;}
 
   .nav-item { padding: 0 10px; gap: 4px; 
@@ -858,7 +864,7 @@ export default class extends Vue {
   }
 
   .user-section {
-    gap: 16px;
+    gap: 10px;
   }
 
   .user-name-text {
@@ -1138,6 +1144,9 @@ export default class extends Vue {
       font-size: 12px;
     }
   }
+}
+@media screen and (max-width: 1024px) {
+  .notification-btn{ width: 30px; height: 30px; }
 }
 
 @media (max-width: 600px) {

@@ -226,7 +226,10 @@ setting-wrap은 사용자도 사용함
 	font-weight: 600;
 }
 
-.home-header{background:#FFF;padding:0 70px;justify-content:space-between;gap:30px;float:unset;border-bottom:2px solid #EBEBEB}
+.home-header{background:#FFF;padding:0 70px;border-bottom:2px solid #EBEBEB}
+
+.community-header {}
+.community-header .header-container {padding: 0;}
 
 @media screen and (max-width: 1440px) {
 	.home-header{padding:0;}
@@ -1650,7 +1653,7 @@ setting-wrap은 사용자도 사용함
 .el-carousel {
 	text-align: center;
 	margin: 0 auto;
-	max-width: 1084px;
+	max-width: 1200px;
 	width: 100%;
 }
 
@@ -1678,7 +1681,7 @@ setting-wrap은 사용자도 사용함
 
 .el-carousel__container {
 	height: 576px;
-	max-width: 1084px;
+	max-width: 1200px;
 }
 
 /* 
@@ -2688,8 +2691,6 @@ setting-wrap은 사용자도 사용함
 
 .content-container {
 	display: flex;
-	margin-top: 120px;
-
 	.setting-wrap {
 		box-sizing: content-box;
 		flex: 0 1 100%;
