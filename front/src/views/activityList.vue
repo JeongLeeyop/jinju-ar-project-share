@@ -378,16 +378,20 @@ export default class extends Vue {
 
 .filters-container {
   display: flex;
-  align-items: center;
+  flex-wrap: wrap;
   gap: 20px;
+  align-items: center;
 }
 
 .period-buttons {
+  height: 52px;
+  flex: 0 1 calc(100% - 536px);
   display: flex;
   gap: 20px;
 }
 
 .period-btn {
+  width: 100px;
   height: 52px;
   background: #CECECE;
   border: none;
@@ -442,6 +446,7 @@ export default class extends Vue {
   flex: 1;
   gap: 8px;
   transition: border-color 0.3s ease;
+  position: relative;
 
   &:focus-within {
     border-color: #073DFF;
@@ -450,6 +455,13 @@ export default class extends Vue {
   svg {
     flex-shrink: 0;
   }
+}
+
+.date-input-wrapper svg {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  transform: translateY(-50%);
 }
 
 .date-input {
@@ -659,8 +671,7 @@ export default class extends Vue {
 
 @media screen and (max-width: 1024px) {
   .activity-main {
-    margin-left: 0;
-    padding: 40px 32px;
+    margin-left: 240px;
     gap: 40px;
   }
 
@@ -717,12 +728,13 @@ export default class extends Vue {
   }
 
   .activity-main {
-    padding: 40px 20px;
-    gap: 32px;
+    margin: 0;
+    padding: 140px 20px 20px;
+    gap: 20px;
   }
 
   .section-title {
-    font-size: 18px;
+    font-size: 24px;
   }
 
   .filters-container {
@@ -789,15 +801,8 @@ export default class extends Vue {
   }
 }
 
-@media screen and (max-width: 600px) {
-  .activity-main {
-    padding: 32px 16px;
-  }
-
-  .section-title {
-    font-size: 16px;
-  }
-
+@media screen and (max-width: 500px) {
+  .activity-main {padding: 110px 20px 20px;}
   .activity-description,
   .activity-date {
     font-size: 16px;
