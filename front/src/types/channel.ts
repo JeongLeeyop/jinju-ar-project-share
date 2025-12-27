@@ -1,35 +1,39 @@
 export interface IChannel {
-  uid: ''
-  name: ''
-  introduce: ''
-  privateStatus: false
-  price: null
-  domain: ''
-  userUid: ''
-  password: ''
-  memberCount: 0
-  myJoinStatus: false
-  myApprovalStatus: false
-  myChannelStatus: false
-  categoryList: []
-  iconImageList: []
-  coverImageList: []
-  questionList: []
+  uid: string
+  name: string
+  introduce: string
+  privateStatus: boolean
+  price: number | null
+  domain: string
+  userUid: string
+  password: string
+  memberCount: number
+  myJoinStatus: boolean
+  myApprovalStatus: boolean
+  myChannelStatus: boolean
+  creatorName?: string
+  categoryName?: string
+  categoryList: any[]
+  iconImageList: any[]
+  coverImageList: any[]
+  questionList: any[]
 }
 
+
 export interface IChannelAdd {
-  uid: ''
-  name: ''
-  introduce: ''
-  privateStatus: false
-  price: null
-  domain: ''
-  userUid: ''
-  password: ''
-  memberCount: 0
-  myJoinStatus: false
-  myChannelStatus: false
-  iconImageList: []
-  coverImageList: []
-  questionList: []
+  uid: string
+  name: string
+  introduce: string
+  privateStatus: boolean
+  price: number | null
+  domain: string
+  userUid: string
+  password: string
+  memberCount: number
+  myJoinStatus: boolean
+  myChannelStatus: boolean
+  iconImageList: any[]
+  coverImageList: any[]
+  questionList: any[]
 }
+

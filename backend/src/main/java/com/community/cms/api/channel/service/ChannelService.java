@@ -66,31 +66,42 @@ import lombok.AllArgsConstructor;
 
 public interface ChannelService {
     ChannelDto.detail detail(SinghaUser authUser, String uid);
+
     ChannelDto.detail domainDetail(SinghaUser authUser, String domain);
+
     List<ChannelDto.detail> list(SinghaUser authUser, ChannelSearch search);
+
     Page<ChannelDto.detail> list(SinghaUser authUser, ChannelSearch search, Pageable pageable);
+
     ChannelDto.myList myList(SinghaUser authUser);
-    void add(SinghaUser authUser, ChannelDto.add addDto );
-    void update(SinghaUser authUser, Channel Channel, ChannelDto.update updateDto );
+
+    void add(SinghaUser authUser, ChannelDto.add addDto);
+
+    void update(SinghaUser authUser, Channel Channel, ChannelDto.update updateDto);
+
     void delete(SinghaUser authUser, Channel Channel);
+
     boolean checkDomainDuplicate(String domain);
+
     void join(SinghaUser authUser, ChannelMemberDto.add addDto);
+
     boolean validateCode(Channel channel, String code);
+
     Long getMemberCountByDomain(String domain);
 }
 
 @Service
 @AllArgsConstructor
 class ChannelServiceImpl implements ChannelService {
-    
+
     private final ChannelRepository channelRepository;
     // private final ChannelUserRepository channelUserRepository;
     // private final ChannelRecordRepository channelRecordRepository;
     private final UserRepository userRepository;
-    
+
     @Autowired
     PushAlarmService pushAlarmService;
-    
+
     @Autowired
     PushNotificationService pushNotificationService;
 
@@ -99,10 +110,10 @@ class ChannelServiceImpl implements ChannelService {
 
     @Autowired
     PointHistoryService pointHistoryService;
-    
+
     @Autowired
     UserFcmTokenRepository userFcmTokenRepository;
-    
+
     @Autowired
     ChannelMemberRepository channelMemberRepository;
 
@@ -111,30 +122,32 @@ class ChannelServiceImpl implements ChannelService {
 
     @Autowired
     EventHistoryRepository eventHistoryRepository;
-    
+
     @Autowired
     EventHistoryService eventHistoryService;
 
     @Autowired
     ChannelLevelRepository channelLevelRepository;
-    
+
     @Autowired
     ChannelLevelDefaultRepository channelLevelDefaultRepository;
 
     @Autowired
     ChannelLevelSettingRepository channelLevelSettingRepository;
-    
+
     @Autowired
     ChannelLevelSettingDefaultRepository channelLevelSettingDefaultRepository;
-    
+
     @Autowired
     ChannelUseCategoryRepository channelUseCateogryRepository;
-    
+
     @Autowired
     ChannelQuestionRepository channelQuestionRepository;
 
     @Autowired
     private SessionRegistry sessionRegistry;
+
+    private final UserRepository userRepository;
 
     @Override
     public ChannelDto.detail detail(SinghaUser authUser, String uid) {
@@ -142,23 +155,40 @@ class ChannelServiceImpl implements ChannelService {
         Optional<Channel> optional = channelRepository.findById(uid);
         optional.orElseThrow(() -> new NotFoundException(NotFound.CHANNEL));
         ChannelDto.detail dto = ChannelMapper.INSTANCE.entityToDetail(optional.get());
-        
+
+        // 개설자 이름 설정
+        Optional<User> creator = userRepository.findById(dto.getUserUid());
+        if (creator.isPresent()) {
+            dto.setCreatorName(creator.get().getActualName());
+        }
+
+        // 카테고리 이름 설정 (첫 번째 카테고리)
+        if (dto.getCategoryList() != null && !dto.getCategoryList().isEmpty()) {
+            // categoryList의 첫 번째 항목에서 카테고리 이름 추출
+            if (dto.getCategoryList().get(0).getCategory() != null) {
+                dto.setCategoryName(dto.getCategoryList().get(0).getCategory().getName());
+            }
+        }
+
         // 현재 로그인된 유저의 가입 유무를 확인
-        if(authUser != null) {
-            Optional<ChannelMember> channelMember = channelMemberRepository.findByUserUidAndChannelUid(authUser.getUser().getUid(), dto.getUid());
+        if (authUser != null) {
+            Optional<ChannelMember> channelMember = channelMemberRepository
+                    .findByUserUidAndChannelUid(authUser.getUser().getUid(), dto.getUid());
             dto.setMyJoinStatus(channelMember.isPresent());
             dto.setMyApprovalStatus(channelMember.isPresent() && channelMember.get().isApprovalStatus());
         }
-        // ChannelUser result = channelUserRepository.findByUserUidAndChannelUid(authUser.getUser().getUid(), uid);
-        // if (result != null) { 
-            // dto.setUserJoinStatus(true);
-            // dto.setChannelUser(ChannelUserMapper.INSTANCE.entityToDetail(result));
+        // ChannelUser result =
+        // channelUserRepository.findByUserUidAndChannelUid(authUser.getUser().getUid(),
+        // uid);
+        // if (result != null) {
+        // dto.setUserJoinStatus(true);
+        // dto.setChannelUser(ChannelUserMapper.INSTANCE.entityToDetail(result));
         // } else dto.setUserJoinStatus(false);
-        
+
         // int cnt2 = channelRecordRepository.countTodayChannel(user.getUid(), uid);
         // if(cnt2 > 0) dto.setTodayWriteStatus(true);
         // else dto.setTodayWriteStatus(false);
-        
+
         return dto;
     }
 
@@ -167,33 +197,53 @@ class ChannelServiceImpl implements ChannelService {
         Optional<Channel> optional = channelRepository.findByDomain(domain);
         optional.orElseThrow(() -> new NotFoundException(NotFound.CHANNEL));
         ChannelDto.detail dto = ChannelMapper.INSTANCE.entityToDetail(optional.get());
+
+        // 개설자 이름 설정
+        Optional<User> creator = userRepository.findById(dto.getUserUid());
+        if (creator.isPresent()) {
+            dto.setCreatorName(creator.get().getActualName());
+        }
+
+        // 카테고리 이름 설정 (첫 번째 카테고리)
+        if (dto.getCategoryList() != null && !dto.getCategoryList().isEmpty()) {
+            // categoryList의 첫 번째 항목에서 카테고리 이름 추출
+            if (dto.getCategoryList().get(0).getCategory() != null) {
+                dto.setCategoryName(dto.getCategoryList().get(0).getCategory().getName());
+            }
+        }
+
         // 현재 로그인된 유저의 가입 유무를 확인
-        if(authUser != null) {
-            Optional<ChannelMember> channelMember = channelMemberRepository.findByUserUidAndChannelUid(authUser.getUser().getUid(), dto.getUid());
+        if (authUser != null) {
+            Optional<ChannelMember> channelMember = channelMemberRepository
+                    .findByUserUidAndChannelUid(authUser.getUser().getUid(), dto.getUid());
             dto.setMyJoinStatus(channelMember.isPresent());
             dto.setMyApprovalStatus(channelMember.isPresent() && channelMember.get().isApprovalStatus());
             // 크리에이터인 경우, 내 커뮤니티인지 확인
-            if(authUser.getAuthorities().stream().anyMatch(authority -> authority.getAuthority().equals("ROLE_CREATOR"))) {
+            if (authUser.getAuthorities().stream()
+                    .anyMatch(authority -> authority.getAuthority().equals("ROLE_CREATOR"))) {
                 dto.setMyChannelStatus(dto.getUserUid().equals(authUser.getUser().getUid()));
             } else {
                 dto.setMyChannelStatus(false);
             }
-            // TO-DO 소개페이지는 카운트 안되게 해야함            
-            eventHistoryService.visitAdd(new EventHistoryDto.add(EventType.VISIT.toString(),authUser.getUser().getUid(), dto.getUid(), null, null, null, null));
+            // TO-DO 소개페이지는 카운트 안되게 해야함
+            eventHistoryService.visitAdd(new EventHistoryDto.add(EventType.VISIT.toString(),
+                    authUser.getUser().getUid(), dto.getUid(), null, null, null, null));
         }
 
         // 온라인 접속자 수 확인
         List<Object> allPrincipals = sessionRegistry.getAllPrincipals();
-        List<String> userList = allPrincipals.stream().filter(principal -> principal instanceof SinghaUser).map(principal -> {
-            SinghaUser principalMap = (SinghaUser) principal;
-                return principalMap.getUser().getUid();
-            }).collect(Collectors.toList());
-        dto.setOnlineCount(channelMemberRepository.countByChannelUidAndUserUidInAndApprovalStatus(dto.getUid(), userList, true));
+        List<String> userList = allPrincipals.stream().filter(principal -> principal instanceof SinghaUser)
+                .map(principal -> {
+                    SinghaUser principalMap = (SinghaUser) principal;
+                    return principalMap.getUser().getUid();
+                }).collect(Collectors.toList());
+        dto.setOnlineCount(
+                channelMemberRepository.countByChannelUidAndUserUidInAndApprovalStatus(dto.getUid(), userList, true));
 
         return dto;
     }
 
-    /* 
+    /*
      * TODO
      * 가입여부 : myJoinStatus 처리
      */
@@ -201,30 +251,37 @@ class ChannelServiceImpl implements ChannelService {
     public List<ChannelDto.detail> list(SinghaUser authUser, ChannelSearch search) {
         // search.setUserUid(authUser.getUser().getUid());
         return null;
-        // return channelRepository.findAll(search.search()).stream().map(entity -> ChannelMapper.INSTANCE.entityToDetailMyFlag(entity, search)).collect(Collectors.toList());
+        // return channelRepository.findAll(search.search()).stream().map(entity ->
+        // ChannelMapper.INSTANCE.entityToDetailMyFlag(entity,
+        // search)).collect(Collectors.toList());
     }
-    
+
     @Override
     public Page<ChannelDto.detail> list(SinghaUser authUser, ChannelSearch search, Pageable pageable) {
-        return channelRepository.findAll(search.search(), pageable).map(entity -> ChannelMapper.INSTANCE.entityToDetail(entity));
+        return channelRepository.findAll(search.search(), pageable)
+                .map(entity -> ChannelMapper.INSTANCE.entityToDetail(entity));
     }
-    
+
     @Override
     public ChannelDto.myList myList(SinghaUser authUser) {
-        if (authUser == null) throw new UserNotFoundException("잘못된 접근입니다.");
+        if (authUser == null)
+            throw new UserNotFoundException("잘못된 접근입니다.");
         ChannelDto.myList dto = new ChannelDto.myList();
-        dto.setJoinList(channelRepository.findByChannelMemberUserUid(authUser.getUser().getUid()).stream().map(entity -> ChannelMapper.INSTANCE.entityToList(entity)).collect(Collectors.toList()));
-        dto.setMyList(channelRepository.findByUserUid(authUser.getUser().getUid()).stream().map(entity -> ChannelMapper.INSTANCE.entityToList(entity)).collect(Collectors.toList()));
+        dto.setJoinList(channelRepository.findByChannelMemberUserUid(authUser.getUser().getUid()).stream()
+                .map(entity -> ChannelMapper.INSTANCE.entityToList(entity)).collect(Collectors.toList()));
+        dto.setMyList(channelRepository.findByUserUid(authUser.getUser().getUid()).stream()
+                .map(entity -> ChannelMapper.INSTANCE.entityToList(entity)).collect(Collectors.toList()));
         return dto;
     }
 
     @Transactional
     @Override
     public void add(SinghaUser authUser, ChannelDto.add addDto) {
-        if (!authUser.getAuthorities().stream().anyMatch(authority -> authority.getAuthority().equals("ROLE_CREATOR"))) {
+        if (!authUser.getAuthorities().stream()
+                .anyMatch(authority -> authority.getAuthority().equals("ROLE_CREATOR"))) {
             throw new UserAccessDeniedException();
         }
-        if(!this.checkDomainDuplicate(addDto.getDomain())) {
+        if (!this.checkDomainDuplicate(addDto.getDomain())) {
             throw new DomainDuplicateException();
         }
         Channel entity = null;
@@ -233,37 +290,39 @@ class ChannelServiceImpl implements ChannelService {
         entity.setUserUid(user.getUid());
         entity = channelRepository.save(entity);
 
-         // 기본레벨 세팅
-         List<ChannelLevelDefault> levelList = channelLevelDefaultRepository.findAllByUseYnOrderByLevel(true);
-         for(ChannelLevelDefault levelDefault : levelList) {
-             ChannelLevel level = new ChannelLevel();
-             level.setChannelUid(entity.getUid());
-             level.setDescription(levelDefault.getDescription());
-             level.setIcon(levelDefault.getIcon());
-             level.setLevel(levelDefault.getLevel());
-             level.setName(levelDefault.getName());
- 
-             level = channelLevelRepository.save(level);
- 
-             List<ChannelLevelSettingDefault> settingList = channelLevelSettingDefaultRepository.findAllByUseYnAndLevel(true, levelDefault.getLevel());
-             for(ChannelLevelSettingDefault settingDefault : settingList) {
-                 ChannelLevelSetting setting = new ChannelLevelSetting();
-                 setting.setChannelLevelIdx(level.getIdx());
-                 setting.setEventType(settingDefault.getEventType());
-                 setting.setGoal(settingDefault.getGoal());
- 
-                 channelLevelSettingRepository.save(setting);
-             }
-         }
+        // 기본레벨 세팅
+        List<ChannelLevelDefault> levelList = channelLevelDefaultRepository.findAllByUseYnOrderByLevel(true);
+        for (ChannelLevelDefault levelDefault : levelList) {
+            ChannelLevel level = new ChannelLevel();
+            level.setChannelUid(entity.getUid());
+            level.setDescription(levelDefault.getDescription());
+            level.setIcon(levelDefault.getIcon());
+            level.setLevel(levelDefault.getLevel());
+            level.setName(levelDefault.getName());
+
+            level = channelLevelRepository.save(level);
+
+            List<ChannelLevelSettingDefault> settingList = channelLevelSettingDefaultRepository
+                    .findAllByUseYnAndLevel(true, levelDefault.getLevel());
+            for (ChannelLevelSettingDefault settingDefault : settingList) {
+                ChannelLevelSetting setting = new ChannelLevelSetting();
+                setting.setChannelLevelIdx(level.getIdx());
+                setting.setEventType(settingDefault.getEventType());
+                setting.setGoal(settingDefault.getGoal());
+
+                channelLevelSettingRepository.save(setting);
+            }
+        }
     }
-    
+
     @Transactional
     @Override
     public void update(SinghaUser authUser, Channel entity, ChannelDto.update updateDto) {
-        if (!authUser.getAuthorities().stream().anyMatch(authority -> authority.getAuthority().equals("ROLE_CREATOR"))) {
+        if (!authUser.getAuthorities().stream()
+                .anyMatch(authority -> authority.getAuthority().equals("ROLE_CREATOR"))) {
             throw new UserAccessDeniedException();
         }
-        /* 
+        /*
          * TODO
          * 수정할 채널의 소유자 uid와 현재 로그인한 사용자의 uid와 일치하지 않을 경우 예외
          */
@@ -272,14 +331,13 @@ class ChannelServiceImpl implements ChannelService {
 
         entity = ChannelMapper.INSTANCE.updateDtoToEntity(updateDto, entity);
 
-        
-        if(updateDto.isQuestionChangeFlag()) {
+        if (updateDto.isQuestionChangeFlag()) {
             List<ChannelQuestion> existingQuestions = entity.getQuestionList(); // 기존 질문 리스트
             List<ChannelQuestionDto.update> dtoList = updateDto.getQuestionList();
             existingQuestions.clear();
 
             int index = 0;
-            for(ChannelQuestionDto.update dto : dtoList) {
+            for (ChannelQuestionDto.update dto : dtoList) {
                 ChannelQuestion cq = new ChannelQuestion();
                 cq.setChannelUid(entity.getUid());
                 cq.setTitle(dto.getTitle());
@@ -290,12 +348,12 @@ class ChannelServiceImpl implements ChannelService {
 
         // TODO updateDate추가
         // entity.setUpdateDate(LocalDateTime.now());
-		channelRepository.save(entity);
+        channelRepository.save(entity);
     }
-    
+
     @Override
     public void delete(SinghaUser authUser, Channel Channel) {
-		channelRepository.delete(Channel);
+        channelRepository.delete(Channel);
     }
 
     @Override
@@ -306,12 +364,15 @@ class ChannelServiceImpl implements ChannelService {
     @Transactional
     @Override
     public void join(SinghaUser authUser, ChannelMemberDto.add addDto) {
-        if (authUser == null) throw new UserNotFoundException();
-        if(channelMemberRepository.findByUserUidAndChannelUid(authUser.getUser().getUid(), addDto.getChannelUid()).isPresent()) {
+        if (authUser == null)
+            throw new UserNotFoundException();
+        if (channelMemberRepository.findByUserUidAndChannelUid(authUser.getUser().getUid(), addDto.getChannelUid())
+                .isPresent()) {
             throw new AlreadyJoinChannelException();
         }
-        Channel channel = channelRepository.findById(addDto.getChannelUid()).orElseThrow(() -> new NotFoundException(NotFound.CHANNEL));
-        if(channel.getUserUid().equals(authUser.getUser().getUid())) {
+        Channel channel = channelRepository.findById(addDto.getChannelUid())
+                .orElseThrow(() -> new NotFoundException(NotFound.CHANNEL));
+        if (channel.getUserUid().equals(authUser.getUser().getUid())) {
             throw new NotVaildJoinChannelException("본인의 커뮤니티에는 가입할 수 없습니다.");
         }
         ChannelMember entity = new ChannelMember();
@@ -324,8 +385,9 @@ class ChannelServiceImpl implements ChannelService {
         entity.setApprovalStatus(false);
 
         // 해당 채널의 설정된 레벨1로 이동
-        Optional<ChannelLevel> channelLevel = channelLevelRepository.findByChannelUidAndLevel(addDto.getChannelUid(), 1);
-        if(channelLevel.isPresent()) {
+        Optional<ChannelLevel> channelLevel = channelLevelRepository.findByChannelUidAndLevel(addDto.getChannelUid(),
+                1);
+        if (channelLevel.isPresent()) {
             entity.setChannelLevelIdx(channelLevel.get().getIdx());
         }
         channelMemberRepository.save(entity);
@@ -335,7 +397,7 @@ class ChannelServiceImpl implements ChannelService {
         pushAlarmDto.setUserUid(channel.getUserUid());
         pushAlarmDto.setTitle("커뮤니티 가입 요청");
         pushAlarmDto.setContent("[" + channel.getName() + "] 커뮤니티에 가입 요청이 들어왔습니다.");
-        pushAlarmDto.setLink("/creator/"+channel.getDomain()+"/memberSetting");
+        pushAlarmDto.setLink("/creator/" + channel.getDomain() + "/memberSetting");
         pushAlarmDto.setUserUidList(null);
         pushAlarmService.add(pushAlarmDto);
 
@@ -366,15 +428,16 @@ class ChannelServiceImpl implements ChannelService {
     }
 
     // @Override
-    // public void updateSecretStatus(SinghaUser authUser, ChannelDto.updateSecretStatus updateDto){
-    //     Optional<Channel> optional = channelRepository.findById(updateDto.getIdx());
-    //     if (optional.isPresent()) {
-    //         Channel entity = optional.get();
-    //         if(authUser.getUser().getUid().equals(entity.getUserUid())){
-    //             entity.setSecretStatus(updateDto.isSecretStatus());
-    //             channelRepository.save(entity);
-    //         }else throw new BadRequestException(BadRequest.NOT_MINE);
-    //     } else throw new NotFoundException(NotFound.Channel);
+    // public void updateSecretStatus(SinghaUser authUser,
+    // ChannelDto.updateSecretStatus updateDto){
+    // Optional<Channel> optional = channelRepository.findById(updateDto.getIdx());
+    // if (optional.isPresent()) {
+    // Channel entity = optional.get();
+    // if(authUser.getUser().getUid().equals(entity.getUserUid())){
+    // entity.setSecretStatus(updateDto.isSecretStatus());
+    // channelRepository.save(entity);
+    // }else throw new BadRequestException(BadRequest.NOT_MINE);
+    // } else throw new NotFoundException(NotFound.Channel);
     // }
 
     private void clearRelation(Channel entity) {

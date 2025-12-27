@@ -40,6 +40,8 @@ public class ChannelDto {
         private Integer price;
         private String domain;
         private String userUid;
+        private String creatorName; // 개설자 이름
+        private String categoryName; // 카테고리 이름 (첫 번째 카테고리)
         private int memberCount;
         private Long onlineCount;
         private Boolean myJoinStatus;

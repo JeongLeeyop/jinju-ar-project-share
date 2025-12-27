@@ -22,9 +22,10 @@ public class ChannelUseCategoryDto {
         private String uid;
         private String categoryUid;
         private String channelUid;
+        private ChannelCategoryDto.detail category; // 카테고리 정보
         // private int viewOrder; //순서
         // public void getCategoryUid(String categoryUid) {
-            // this.uid = categoryUid;
+        // this.uid = categoryUid;
         // }
     }
 

@@ -51,7 +51,7 @@
               <div class="stats-column">
                 <div class="stat-item-mobile">
                   <div class="stat-label-mobile">개설자</div>
-                  <div class="stat-value-mobile">{{ channel?.creatorName || '오형래' }} 님</div>
+                  <div class="stat-value-mobile">{{ channel?.creatorName || '' }} 님</div>
                 </div>
                 <div class="stat-item-mobile">
                   <div class="stat-label-mobile">공개여부</div>
@@ -68,7 +68,7 @@
                 </div>
                 <div class="stat-item-mobile">
                   <div class="stat-label-mobile">카테고리명</div>
-                  <div class="stat-value-mobile">{{ channel?.categoryName || '지역' }}</div>
+                  <div class="stat-value-mobile">{{ displayCategoryName }}</div>
                 </div>
               </div>
             </div>
@@ -90,7 +90,10 @@
 
             <div class="card-join-btn-mobile">
               <el-button v-if="communityCheck()" @click="handleJoin()" class="join-button-mobile">
-                <slot v-if="channel?.myJoinStatus === null || !channel?.myJoinStatus">
+                <slot v-if="channel?.myChannelStatus">
+                  커뮤니티 입장
+                </slot>
+                <slot v-else-if="channel?.myJoinStatus === null || !channel?.myJoinStatus">
                   커뮤니티 가입하기
                 </slot>
                 <slot v-else-if="!channel?.myApprovalStatus">가입 요청중</slot>
@@ -105,7 +108,7 @@
               <div class="info-stats">
                 <div class="stat-item">
                   <div class="stat-label">개설자</div>
-                  <div class="stat-value">{{ channel?.creatorName || '오형래' }} 님</div>
+                  <div class="stat-value">{{ channel?.creatorName || '' }} 님</div>
                 </div>
                 <div class="stat-item">
                   <div class="stat-label">공개여부</div>
@@ -120,7 +123,7 @@
                 </div>
                 <div class="stat-item">
                   <div class="stat-label">카테고리명</div>
-                  <div class="stat-value">{{ channel?.categoryName || '지역' }}</div>
+                  <div class="stat-value">{{ displayCategoryName }}</div>
                 </div>
               </div>
               <div class="info-description">
@@ -289,13 +292,26 @@ export default class extends Vue {
     }
   }
 
+  get displayCategoryName() {
+    if (this.channel?.categoryName) {
+      return this.channel.categoryName;
+    }
+    if (this.channel?.categoryList && Array.isArray(this.channel.categoryList) && this.channel.categoryList.length > 0) {
+      const categories = this.channel.categoryList.map((cat: any) => cat.category?.name || cat.name).filter(Boolean);
+      return categories.join(', ') || '-';
+    }
+    return '-';
+  }
+
+
   private handleJoin() {
     if (!UserModule.isLogin) {
         this.modalVisible = false;
         this.userModalVisible = true;
     } else if (UserModule.isLogin) {
       if (this.channel?.myChannelStatus) {
-        this.$message.warning('본인의 커뮤니티에는 가입하실 수 없습니다.');
+        // 본인 채널인 경우 바로 입장
+        this.$router.push({ name: 'CommunityMain', params: { domain: this.$route.params.domain } });
       } else if (this.channel?.myJoinStatus && !this.channel?.myApprovalStatus) {
         this.$message.warning('가입 승인 대기중입니다.');
       } else if (this.channel?.myJoinStatus && this.channel?.myApprovalStatus) {

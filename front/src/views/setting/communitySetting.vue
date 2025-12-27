@@ -13,14 +13,16 @@
           <!-- Icon Image Upload -->
           <div class="form-group">
             <label class="form-label">커뮤니티 아이콘 이미지 등록</label>
-            <div class="upload-box">
+            <!-- Upload Box - shown when no image -->
+            <div v-if="form.iconImageList.length === 0" class="upload-box">
               <div class="upload-content">
                 <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M6.25 34.375V5.625C6.25 3.89964 7.64964 2.5 9.375 2.5H17.5C21.8098 2.5 25.9434 4.21165 28.9909 7.25911C32.0384 10.3066 33.75 14.4402 33.75 18.75V34.375C33.75 36.1004 32.3504 37.5 30.625 37.5H9.375C7.64964 37.5 6.25 36.1004 6.25 34.375ZM18.75 28.75V21.7676L15.8838 24.6338C15.3956 25.1219 14.6044 25.1219 14.1162 24.6338C13.6281 24.1456 13.6281 23.3544 14.1162 22.8662L19.1162 17.8662L19.2106 17.7799C19.7016 17.3794 20.4261 17.4085 20.8838 17.8662L25.8838 22.8662C26.3719 23.3544 26.3719 24.1456 25.8838 24.6338C25.3956 25.1219 24.6044 25.1219 24.1162 24.6338L21.25 21.7676V28.75C21.25 29.4404 20.6904 30 20 30C19.3096 30 18.75 29.4404 18.75 28.75ZM23.75 11.875C23.75 12.0408 23.8151 12.2005 23.9323 12.3177C24.0495 12.4349 24.2092 12.5 24.375 12.5H26.875C28.0209 12.5 29.1372 12.7861 30.1286 13.3187C29.4463 11.7322 28.4681 10.2715 27.2233 9.02669C25.978 7.78136 24.5169 6.80213 22.9297 6.11979C23.4629 7.11167 23.75 8.2284 23.75 9.375V11.875ZM8.75 34.375C8.75 34.7196 9.03036 35 9.375 35H30.625C30.9696 35 31.25 34.7196 31.25 34.375V19.375C31.25 18.2147 30.7895 17.1014 29.9691 16.2809C29.1486 15.4605 28.0353 15 26.875 15H24.375C23.5462 15 22.7508 14.6713 22.1647 14.0853C21.5787 13.4992 21.25 12.7038 21.25 11.875V9.375C21.25 8.21468 20.7895 7.1014 19.9691 6.28092C19.1486 5.46045 18.0353 5 16.875 5H9.375C9.03036 5 8.75 5.28036 8.75 5.625V34.375Z" fill="#6B7280"/>
                 </svg>
                 <span class="upload-hint">추천 이미지 사이즈: 128 x 128</span>
                 <el-upload
-                  action='/api/channel/upload'
+                  :action="`${apiUrl}/channel/upload`"
+                  :headers="requestHeaders"
                   ref="iconImageUpload"
                   :before-upload="(file) => handleBeforeUpload(file, 'icon')"
                   :on-success="(file) => handleUploadSuccess(file, 'icon')"
@@ -32,6 +34,21 @@
                 >
                   <button type="button" class="upload-btn">등록하기</button>
                 </el-upload>
+              </div>
+            </div>
+            <!-- Image Preview - shown when image is uploaded -->
+            <div v-else class="image-preview-container">
+              <div v-for="(image, index) in form.iconImageList" :key="index" class="image-preview-item">
+                <img :src="image.url" :alt="image.name" class="preview-image" />
+                <div class="image-info">
+                  <span class="image-name">{{ image.name }}</span>
+                  <button type="button" class="remove-image-btn" @click="handleRemoveFile(image, 'icon')">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M12 4L4 12M4 4L12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    삭제
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -80,14 +97,16 @@
           <!-- Cover Image Upload -->
           <div class="form-group">
             <label class="form-label">커뮤니티 대표 이미지 등록</label>
-            <div class="upload-box">
+            <!-- Upload Box - shown when no image -->
+            <div v-if="form.coverImageList.length === 0" class="upload-box">
               <div class="upload-content">
                 <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M6.25 34.375V5.625C6.25 3.89964 7.64964 2.5 9.375 2.5H17.5C21.8098 2.5 25.9434 4.21165 28.9909 7.25911C32.0384 10.3066 33.75 14.4402 33.75 18.75V34.375C33.75 36.1004 32.3504 37.5 30.625 37.5H9.375C7.64964 37.5 6.25 36.1004 6.25 34.375ZM18.75 28.75V21.7676L15.8838 24.6338C15.3956 25.1219 14.6044 25.1219 14.1162 24.6338C13.6281 24.1456 13.6281 23.3544 14.1162 22.8662L19.1162 17.8662L19.2106 17.7799C19.7016 17.3794 20.4261 17.4085 20.8838 17.8662L25.8838 22.8662C26.3719 23.3544 26.3719 24.1456 25.8838 24.6338C25.3956 25.1219 24.6044 25.1219 24.1162 24.6338L21.25 21.7676V28.75C21.25 29.4404 20.6904 30 20 30C19.3096 30 18.75 29.4404 18.75 28.75ZM23.75 11.875C23.75 12.0408 23.8151 12.2005 23.9323 12.3177C24.0495 12.4349 24.2092 12.5 24.375 12.5H26.875C28.0209 12.5 29.1372 12.7861 30.1286 13.3187C29.4463 11.7322 28.4681 10.2715 27.2233 9.02669C25.978 7.78136 24.5169 6.80213 22.9297 6.11979C23.4629 7.11167 23.75 8.2284 23.75 9.375V11.875ZM8.75 34.375C8.75 34.7196 9.03036 35 9.375 35H30.625C30.9696 35 31.25 34.7196 31.25 34.375V19.375C31.25 18.2147 30.7895 17.1014 29.9691 16.2809C29.1486 15.4605 28.0353 15 26.875 15H24.375C23.5462 15 22.7508 14.6713 22.1647 14.0853C21.5787 13.4992 21.25 12.7038 21.25 11.875V9.375C21.25 8.21468 20.7895 7.1014 19.9691 6.28092C19.1486 5.46045 18.0353 5 16.875 5H9.375C9.03036 5 8.75 5.28036 8.75 5.625V34.375Z" fill="#6B7280"/>
                 </svg>
                 <span class="upload-hint">추천 이미지 사이즈: 1084 x 576</span>
                 <el-upload
-                  action='/api/channel/upload'
+                  :action="`${apiUrl}/channel/upload`"
+                  :headers="requestHeaders"
                   ref="coverImageUpload"
                   :before-upload="(file) => handleBeforeUpload(file, 'cover')"
                   :on-success="(file) => handleUploadSuccess(file, 'cover')"
@@ -98,6 +117,36 @@
                   :file-list="form.coverImageList"
                 >
                   <button type="button" class="upload-btn">등록하기</button>
+                </el-upload>
+              </div>
+            </div>
+            <!-- Image Preview - shown when images are uploaded -->
+            <div v-else class="image-preview-container cover-preview">
+              <div v-for="(image, index) in form.coverImageList" :key="index" class="image-preview-item cover-item">
+                <img :src="image.url" :alt="image.name" class="preview-image cover-preview-image" />
+                <div class="image-info">
+                  <span class="image-name">{{ image.name }}</span>
+                  <button type="button" class="remove-image-btn" @click="handleRemoveFile(image, 'cover')">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M12 4L4 12M4 4L12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    삭제
+                  </button>
+                </div>
+              </div>
+              <!-- Add more button if under limit -->
+              <div v-if="form.coverImageList.length < coverImageLimit" class="add-more-container">
+                <el-upload
+                  :action="`${apiUrl}/channel/upload`"
+                  :headers="requestHeaders"
+                  ref="coverImageUploadMore"
+                  :before-upload="(file) => handleBeforeUpload(file, 'cover')"
+                  :on-success="(file) => handleUploadSuccess(file, 'cover')"
+                  :limit="coverImageLimit"
+                  :on-exceed="handleExceedCover"
+                  :show-file-list="false"
+                >
+                  <button type="button" class="add-more-btn">+ 추가</button>
                 </el-upload>
               </div>
             </div>
@@ -208,6 +257,7 @@ import {
 } from '@/api/channel';
 import { ChannelModule } from '@/store/modules/channel';
 import { Form } from 'element-ui';
+import { getToken } from '@/utils/cookies';
 
 @Component({
   name: 'CommunitySetting',
@@ -234,6 +284,12 @@ export default class extends Vue {
   private apiUrl = process.env.VUE_APP_BASE_API;
 
   private clientApiUrl = process.env.VUE_APP_CLIENT_API;
+
+  get requestHeaders() {
+    return {
+      Authorization: `Bearer ${getToken()}`,
+    };
+  }
 
   private iconImageLimit = 1;
 
@@ -363,12 +419,14 @@ export default class extends Vue {
         name: res.originalName,
         url: `${this.apiUrl}/attached-file/${res.uid}`,
       });
+      this.$message.success('아이콘 이미지가 업로드되었습니다.');
     } else if (type === 'cover') {
       this.form.coverImageList.push({
         fileUid: res.uid,
         name: res.originalName,
         url: `${this.apiUrl}/attached-file/${res.uid}`,
       });
+      this.$message.success('대표 이미지가 업로드되었습니다.');
     }
   }
 
@@ -742,6 +800,132 @@ export default class extends Vue {
   padding-top: 8px;
 }
 
+.image-preview-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  
+  &.cover-preview {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+}
+
+.image-preview-item {
+  border: 1px solid #CECECE;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #FFF;
+  transition: all 0.2s;
+
+  &:hover {
+    border-color: #073DFF;
+    box-shadow: 0 2px 8px rgba(7, 61, 255, 0.1);
+  }
+
+  &.cover-item {
+    display: flex;
+    flex-direction: column;
+  }
+}
+
+.preview-image {
+  width: 100%;
+  height: 128px;
+  object-fit: cover;
+  display: block;
+  
+  &.cover-preview-image {
+    height: 180px;
+  }
+}
+
+.image-info {
+  padding: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  background: #F8F9FB;
+}
+
+.image-name {
+  flex: 1;
+  color: #222;
+  font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.remove-image-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border: 1px solid #E74C3C;
+  border-radius: 6px;
+  background: #FFF;
+  color: #E74C3C;
+  font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+
+  svg {
+    flex-shrink: 0;
+  }
+
+  &:hover {
+    background: #E74C3C;
+    color: #FFF;
+  }
+}
+
+.add-more-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 240px;
+  border: 1px dashed #CECECE;
+  border-radius: 10px;
+  background: #F8F9FB;
+  transition: all 0.2s;
+
+  &:hover {
+    border-color: #073DFF;
+    background: #F0F4FF;
+  }
+}
+
+.add-more-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 120px;
+  height: 48px;
+  border: 1px solid #073DFF;
+  border-radius: 8px;
+  background: #FFF;
+  color: #073DFF;
+  font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    background: #073DFF;
+    color: #FFF;
+  }
+}
+
+
 @media (min-width: 769px) and (max-width: 1024px) {
   .community-setting-page {
     padding: 40px 30px;
@@ -854,6 +1038,18 @@ export default class extends Vue {
 
   .form-actions {
     padding-top: 16px;
+  }
+
+  .image-preview-container.cover-preview {
+    grid-template-columns: 1fr;
+  }
+
+  .preview-image.cover-preview-image {
+    height: 150px;
+  }
+
+  .add-more-container {
+    min-height: 180px;
   }
 }
 
