@@ -36,6 +36,7 @@ public class SpaceController {
     /**
      * 현재 인증된 사용자 검증 및 반환
      * UserDetails에서 username을 가져와 DB에서 User 엔티티 조회
+     * 
      * @param userDetails @AuthenticationPrincipal로 주입된 UserDetails
      * @return 검증된 User 엔티티 (null 가능 - 공개 공간 접근 시)
      */
@@ -51,6 +52,7 @@ public class SpaceController {
 
     /**
      * 인증이 필수인 경우 사용자 검증
+     * 
      * @param userDetails @AuthenticationPrincipal로 주입된 UserDetails
      * @return 검증된 User 엔티티
      */
@@ -71,16 +73,15 @@ public class SpaceController {
     public ResponseEntity<?> createSpace(
             @Valid @RequestBody SpaceCreateRequest request,
             @AuthenticationPrincipal UserDetails currentUser) {
-        
+
         try {
             User user = requireAuthenticatedUser(currentUser);
-            
+
             SpaceDto spaceDto = spaceService.createSpace(
-                    request, 
-                    user.getUid(), 
-                    user.getActualName()
-            );
-            
+                    request,
+                    user.getUid(),
+                    user.getActualName());
+
             return ResponseEntity.ok(spaceDto);
         } catch (IllegalStateException e) {
             // 공간 생성 제한 등의 비즈니스 로직 예외
@@ -108,7 +109,7 @@ public class SpaceController {
     public ResponseEntity<SpaceDto> getSpace(
             @PathVariable String spaceUid,
             @AuthenticationPrincipal UserDetails currentUser) {
-        
+
         User user = validateAndGetCurrentUser(currentUser);
         String userUid = user != null ? user.getUid() : null;
         SpaceDto spaceDto = spaceService.getSpace(spaceUid, userUid);
@@ -123,7 +124,7 @@ public class SpaceController {
     public ResponseEntity<List<SpaceDto>> getSpacesByChannel(
             @PathVariable String channelUid,
             @AuthenticationPrincipal UserDetails currentUser) {
-        
+
         User user = validateAndGetCurrentUser(currentUser);
         String userUid = user != null ? user.getUid() : null;
         List<SpaceDto> spaces = spaceService.getSpacesByChannel(channelUid, userUid);
@@ -137,7 +138,7 @@ public class SpaceController {
     @GetMapping("/my")
     public ResponseEntity<List<SpaceDto>> getMySpaces(
             @AuthenticationPrincipal UserDetails currentUser) {
-        
+
         User user = requireAuthenticatedUser(currentUser);
         List<SpaceDto> spaces = spaceService.getMySpaces(user.getUid());
         return ResponseEntity.ok(spaces);
@@ -152,7 +153,7 @@ public class SpaceController {
             @RequestParam String channelUid,
             @RequestParam String keyword,
             @AuthenticationPrincipal UserDetails currentUser) {
-        
+
         User user = validateAndGetCurrentUser(currentUser);
         String userUid = user != null ? user.getUid() : null;
         List<SpaceDto> spaces = spaceService.searchSpaces(
@@ -169,7 +170,7 @@ public class SpaceController {
             @PathVariable String channelUid,
             @PathVariable Space.SpaceType spaceType,
             @AuthenticationPrincipal UserDetails currentUser) {
-        
+
         User user = validateAndGetCurrentUser(currentUser);
         String userUid = user != null ? user.getUid() : null;
         List<SpaceDto> spaces = spaceService.getSpacesByType(
@@ -185,9 +186,8 @@ public class SpaceController {
     public ResponseEntity<Page<SpaceDto>> getSpacesPaged(
             @PathVariable String channelUid,
             @AuthenticationPrincipal UserDetails currentUser,
-            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) 
-            Pageable pageable) {
-        
+            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+
         User user = validateAndGetCurrentUser(currentUser);
         String userUid = user != null ? user.getUid() : null;
         Page<SpaceDto> spaces = spaceService.getSpacesPaged(
@@ -204,14 +204,13 @@ public class SpaceController {
             @PathVariable String spaceUid,
             @Valid @RequestBody SpaceUpdateRequest request,
             @AuthenticationPrincipal UserDetails currentUser) {
-        
+
         User user = validateAndGetCurrentUser(currentUser);
         SpaceDto spaceDto = spaceService.updateSpace(
-                spaceUid, request, 
-                user.getUid(), 
-                user.getActualName()
-        );
-        
+                spaceUid, request,
+                user.getUid(),
+                user.getActualName());
+
         return ResponseEntity.ok(spaceDto);
     }
 
@@ -223,7 +222,7 @@ public class SpaceController {
     public ResponseEntity<Map<String, String>> deleteSpace(
             @PathVariable String spaceUid,
             @AuthenticationPrincipal UserDetails currentUser) {
-        
+
         User user = validateAndGetCurrentUser(currentUser);
         spaceService.deleteSpace(spaceUid, user.getUid());
         return ResponseEntity.ok(Map.of("message", "공간이 삭제되었습니다."));
@@ -237,7 +236,7 @@ public class SpaceController {
     public ResponseEntity<Map<String, String>> hardDeleteSpace(
             @PathVariable String spaceUid,
             @AuthenticationPrincipal UserDetails currentUser) {
-        
+
         User user = validateAndGetCurrentUser(currentUser);
         spaceService.hardDeleteSpace(spaceUid, user.getUid());
         return ResponseEntity.ok(Map.of("message", "공간이 영구 삭제되었습니다."));
@@ -252,14 +251,13 @@ public class SpaceController {
             @PathVariable String spaceUid,
             @PathVariable String userUid,
             @AuthenticationPrincipal UserDetails currentUser) {
-        
+
         User user = validateAndGetCurrentUser(currentUser);
         spaceService.addMember(
-                spaceUid, userUid, 
-                user.getUid(), 
-                user.getActualName()
-        );
-        
+                spaceUid, userUid,
+                user.getUid(),
+                user.getActualName());
+
         return ResponseEntity.ok(Map.of("message", "멤버가 추가되었습니다."));
     }
 
@@ -272,14 +270,13 @@ public class SpaceController {
             @PathVariable String spaceUid,
             @PathVariable String userUid,
             @AuthenticationPrincipal UserDetails currentUser) {
-        
+
         User user = validateAndGetCurrentUser(currentUser);
         spaceService.removeMember(
-                spaceUid, userUid, 
-                user.getUid(), 
-                user.getActualName()
-        );
-        
+                spaceUid, userUid,
+                user.getUid(),
+                user.getActualName());
+
         return ResponseEntity.ok(Map.of("message", "멤버가 제거되었습니다."));
     }
 
@@ -291,7 +288,7 @@ public class SpaceController {
     public ResponseEntity<Map<String, String>> leaveSpace(
             @PathVariable String spaceUid,
             @AuthenticationPrincipal UserDetails currentUser) {
-        
+
         User user = validateAndGetCurrentUser(currentUser);
         spaceService.leaveSpace(spaceUid, user.getUid());
         return ResponseEntity.ok(Map.of("message", "공간을 나갔습니다."));
@@ -302,12 +299,10 @@ public class SpaceController {
      * GET /api/spaces/{spaceUid}/members
      */
     @GetMapping("/{spaceUid}/members")
-    public ResponseEntity<List<User>> getSpaceMembers(
-            @PathVariable String spaceUid,
-            @AuthenticationPrincipal UserDetails currentUser) {
-        
-        User user = validateAndGetCurrentUser(currentUser);
-        List<User> members = spaceService.getSpaceMembers(spaceUid, user.getUid());
+    public ResponseEntity<List<SpaceMemberDto>> getSpaceMembers(
+            @PathVariable String spaceUid) {
+        log.info("Getting members for space: {}", spaceUid);
+        List<SpaceMemberDto> members = spaceService.getSpaceMembers(spaceUid);
         return ResponseEntity.ok(members);
     }
 
@@ -320,7 +315,7 @@ public class SpaceController {
             @PathVariable String spaceUid,
             @PathVariable String newAdminUid,
             @AuthenticationPrincipal UserDetails currentUser) {
-        
+
         User user = validateAndGetCurrentUser(currentUser);
         spaceService.transferAdmin(spaceUid, newAdminUid, user.getUid());
         return ResponseEntity.ok(Map.of("message", "관리자가 변경되었습니다."));
@@ -335,7 +330,7 @@ public class SpaceController {
             @PathVariable String spaceUid,
             @RequestParam(required = false) String search,
             @AuthenticationPrincipal UserDetails currentUser) {
-        
+
         User user = requireAuthenticatedUser(currentUser);
         List<Map<String, String>> users = spaceService.getInvitableUsers(spaceUid, user.getUid(), search);
         return ResponseEntity.ok(users);
@@ -350,26 +345,24 @@ public class SpaceController {
             @PathVariable String spaceUid,
             @RequestBody Map<String, List<String>> requestBody,
             @AuthenticationPrincipal UserDetails currentUser) {
-        
+
         try {
             User user = requireAuthenticatedUser(currentUser);
             List<String> userUids = requestBody.get("userUids");
-            
+
             if (userUids == null || userUids.isEmpty()) {
                 return ResponseEntity.badRequest()
                         .body(Map.of("message", "초대할 사용자를 선택해주세요."));
             }
-            
+
             int invitedCount = spaceService.inviteMultipleUsers(
-                    spaceUid, userUids, 
-                    user.getUid(), 
-                    user.getActualName()
-            );
-            
+                    spaceUid, userUids,
+                    user.getUid(),
+                    user.getActualName());
+
             return ResponseEntity.ok(Map.of(
                     "message", invitedCount + "명의 사용자를 초대했습니다.",
-                    "count", invitedCount
-            ));
+                    "count", invitedCount));
         } catch (IllegalArgumentException e) {
             log.warn("초대 실패: {}", e.getMessage());
             return ResponseEntity.badRequest()
@@ -381,4 +374,3 @@ public class SpaceController {
         }
     }
 }
-

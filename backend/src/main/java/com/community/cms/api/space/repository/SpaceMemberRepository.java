@@ -1,6 +1,7 @@
 package com.community.cms.api.space.repository;
 
 import com.community.cms.entity.SpaceMember;
+import com.community.cms.entity.SpaceMember.SpaceMemberId;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -11,7 +12,7 @@ import java.util.Optional;
  * SpaceMember Repository
  */
 @Repository
-public interface SpaceMemberRepository extends JpaRepository<SpaceMember, Long> {
+public interface SpaceMemberRepository extends JpaRepository<SpaceMember, SpaceMemberId> {
 
     /**
      * 공간 멤버 여부 확인
@@ -42,4 +43,9 @@ public interface SpaceMemberRepository extends JpaRepository<SpaceMember, Long> 
      * 공간 멤버 삭제
      */
     void deleteBySpaceUidAndUserUid(String spaceUid, String userUid);
+
+    /**
+     * 공간별 멤버 조회
+     */
+    List<SpaceMember> findBySpaceUid(String spaceUid);
 }

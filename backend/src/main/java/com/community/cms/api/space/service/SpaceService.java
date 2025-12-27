@@ -2,12 +2,15 @@ package com.community.cms.api.space.service;
 
 import com.community.cms.api.space.dto.*;
 import com.community.cms.api.space.repository.SpaceInvitationRepository;
+import com.community.cms.api.space.repository.SpaceMemberRepository;
 import com.community.cms.api.space.repository.SpaceRepository;
 import com.community.cms.api.user.repository.UserRepository;
+import com.community.cms.api.channel.repository.ChannelRepository;
 import com.community.cms.entity.Space;
 import com.community.cms.entity.SpaceInvitation;
 import com.community.cms.entity.SpaceMember;
 import com.community.cms.entity.User;
+import com.community.cms.entity2.Channel;
 import com.community.cms.util.ActivityLogHelper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -34,7 +37,9 @@ public class SpaceService {
 
     private final SpaceRepository spaceRepository;
     private final SpaceInvitationRepository invitationRepository;
+    private final SpaceMemberRepository spaceMemberRepository;
     private final UserRepository userRepository;
+    private final ChannelRepository channelRepository;
     private final ActivityLogHelper activityLogHelper;
 
     /**
@@ -318,17 +323,22 @@ public class SpaceService {
     /**
      * 공간 멤버 목록 조회
      */
-    public List<User> getSpaceMembers(String spaceUid, String currentUserUid) {
+    public List<SpaceMemberDto> getSpaceMembers(String spaceUid) {
+        // Space 존재 확인
         Space space = spaceRepository.findById(spaceUid)
-                .orElseThrow(() -> new IllegalArgumentException("공간을 찾을 수 없습니다."));
+                .orElseThrow(() -> new RuntimeException("공간을 찾을 수 없습니다"));
 
-        // 접근 권한 확인
-        validateAccess(space, currentUserUid);
+        // SpaceMember 목록 조회
+        List<SpaceMember> spaceMembers = spaceMemberRepository.findBySpaceUid(spaceUid);
 
-        // SpaceMember를 통해 User 목록 반환
-        return space.getSpaceMembers().stream()
-                .map(SpaceMember::getUser)
-                .filter(user -> user != null)
+        // User 정보를 DTO로 변환
+        return spaceMembers.stream()
+                .map(spaceMember -> {
+                    User user = userRepository.findByUid(spaceMember.getUserUid())
+                            .orElse(null);
+                    return user != null ? SpaceMemberDto.from(user) : null;
+                })
+                .filter(dto -> dto != null)
                 .collect(Collectors.toList());
     }
 
@@ -516,10 +526,11 @@ public class SpaceService {
     }
 
     /**
-     * 관리자 권한 확인
+     * 관리자 권한 검증 (공간 관리자만 허용)
      */
     private void validateAdmin(Space space, String userUid) {
-        if (!space.isAdmin(userUid)) {
+        // 공간 관리자 체크
+        if (!space.getAdminUid().equals(userUid)) {
             throw new IllegalAccessError("공간 관리자만 수행할 수 있습니다.");
         }
     }

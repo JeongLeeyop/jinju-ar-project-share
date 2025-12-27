@@ -21,31 +21,50 @@
 
       <div class="chat-container">
         <!-- Notice Section (Collapsible) -->
-        <div class="notice-section" :class="{ collapsed: noticeCollapsed }">
+        <div class="notice-section" :class="{ collapsed: noticeCollapsed }" v-if="currentNotice">
           <div class="notice-content">
-            <p class="notice-text">
-              공지사항 예시입니다. 공지사항은 오른쪽에 북마크로 공지사항을 표시해다. 공지사항 예시입니다. 공지사항은니다. 공지사항 예시입니다. 예시입니다. 예시입니다. 예시입니다. 예시입니다. 예시입니다. 예시입니다. 예시입니다. 예시입니다. ...
-            </p>
-            <button class="toggle-btn" @click="noticeCollapsed = !noticeCollapsed">
+            <p class="notice-text" ref="noticeText">{{ currentNotice.text }}</p>
+            <button 
+              v-if="isNoticeOverflow" 
+              class="toggle-btn" 
+              @click="noticeCollapsed = !noticeCollapsed"
+            >
               <svg width="24" height="28" viewBox="0 0 24 28" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M20 10L12.5 17.5L5 10" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
             </button>
           </div>
+          <div class="notice-meta">
+            <span class="notice-author">{{ currentNotice.userName }}</span>
+            <span class="notice-date">{{ formatNoticeDate(currentNotice.createdAt) }}</span>
+            <button 
+              v-if="isAdmin" 
+              class="notice-delete-btn" 
+              @click="handleDeleteNotice"
+            >삭제</button>
+          </div>
         </div>
 
         <!-- Chat Messages -->
-        <div class="chat-messages">
+        <div class="chat-messages" ref="chatMessages">
+          <div v-if="isLoading" class="loading-indicator">
+            <i class="el-icon-loading"></i> 메시지 불러오는 중...
+          </div>
+          <div v-else-if="messages.length === 0" class="no-messages">
+            아직 메시지가 없습니다. 첫 번째 메시지를 보내보세요!
+          </div>
           <div 
-            v-for="(message, index) in messages" 
-            :key="index"
+            v-else
+            v-for="message in messages" 
+            :key="message.id"
             class="message-wrapper"
             :class="{ 'message-sent': message.isSent, 'message-received': !message.isSent }"
           >
             <div v-if="!message.isSent" class="message-left">
               <div class="message-header">
                 <div class="user-avatar">
-                  <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <img v-if="message.userAvatar" :src="message.userAvatar" alt="avatar" />
+                  <svg v-else width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <circle cx="18" cy="18" r="18" fill="#D9D9D9"/>
                     <mask id="mask0" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="0" y="0" width="36" height="36">
                       <circle cx="18" cy="18" r="18" fill="#D9D9D9"/>
@@ -59,7 +78,7 @@
                 <span class="user-name">{{ message.userName }}</span>
                 <span class="message-time">{{ message.time }}</span>
               </div>
-              <div class="message-bubble">
+              <div class="message-bubble" @contextmenu.prevent="showContextMenu($event, message)">
                 <p class="message-text">{{ message.text }}</p>
                 <div class="bubble-tail left-tail"></div>
               </div>
@@ -67,7 +86,7 @@
 
             <div v-else class="message-right">
               <span class="message-time">{{ message.time }}</span>
-              <div class="message-bubble sent-bubble">
+              <div class="message-bubble sent-bubble" @contextmenu.prevent="showContextMenu($event, message)">
                 <p class="message-text">{{ message.text }}</p>
                 <div class="bubble-tail right-tail"></div>
               </div>
@@ -78,13 +97,17 @@
         <!-- Message Input -->
         <div class="message-input-section">
           <input
+            ref="messageInput"
             type="text"
             class="message-input"
             placeholder="채팅메세지를 작성하세요!"
             v-model="newMessage"
             @keyup.enter="sendMessage"
+            :disabled="isSending"
           />
-          <button class="send-btn" @click="sendMessage">채팅입력</button>
+          <button class="send-btn" @click="sendMessage" :disabled="isSending || !newMessage.trim()">
+            {{ isSending ? '전송 중...' : '채팅입력' }}
+          </button>
         </div>
       </div>
     </div>
@@ -101,17 +124,51 @@
       <ParticipantsList
         :participants="participants"
         :participantCount="participantCount"
-        @invite="handleInvite"
+        :isAdmin="isAdmin"
+        :isPublic="isPublic"
+        @invite="openInviteModal"
       />
     </div>
+
+    <!-- Context Menu -->
+    <div 
+      v-if="contextMenu.visible" 
+      class="context-menu"
+      :style="{ top: contextMenu.y + 'px', left: contextMenu.x + 'px' }"
+      @click.stop
+    >
+      <div class="context-menu-item" @click="setAsNotice" v-if="isAdmin">
+        <i class="el-icon-bell"></i> 공지로 등록
+      </div>
+      <div class="context-menu-item" @click="copyMessage">
+        <i class="el-icon-document-copy"></i> 복사
+      </div>
+      <div 
+        class="context-menu-item delete" 
+        @click="deleteMessage" 
+        v-if="contextMenu.message && (contextMenu.message.isSent || isAdmin)"
+      >
+        <i class="el-icon-delete"></i> 삭제
+      </div>
+    </div>
+    <div v-if="contextMenu.visible" class="context-menu-overlay" @click="hideContextMenu"></div>
+
+    <!-- Invite Modal -->    <SpaceInviteModal
+      :visible.sync="inviteModalVisible"
+      :space-uid="spaceId"
+      @invited="handleInvited"
+    />
   </div>
 </template>
 
 <script lang="ts">
 import { Component, Vue, Watch } from 'vue-property-decorator';
+import { UserModule } from '@/store/modules/user';
+import chatService, { ChatMessage, ChatNotice } from '@/api/chatService';
 import CommunitySidebar from './components/communitySidebar.vue';
 import ParticipantsList from './components/ParticipantsList.vue';
-import chatService, { ChatMessage } from '@/api/chatService';
+import SpaceInviteModal from '@/components/SpaceInviteModal.vue';
+import { getSpace, getSpaceMembers } from '@/api/space';
 
 interface DisplayMessage {
   id: string;
@@ -121,6 +178,7 @@ interface DisplayMessage {
   isSent: boolean;
   userId: string;
   userAvatar?: string;
+  createdAt?: Date; // 원본 timestamp 저장
 }
 
 interface Participant {
@@ -134,150 +192,260 @@ interface Participant {
   components: {
     CommunitySidebar,
     ParticipantsList,
+    SpaceInviteModal,
   },
 })
-export default class extends Vue {
+export default class CommunityChat extends Vue {
   private spaceId = '';
-  private spaceName = '산청등산모임';
+  private spaceName = '';
   private spaceColor = '#FF5858';
   private noticeCollapsed = false;
   private newMessage = '';
-  private participantCount = 15;
-  // private messages: DisplayMessage[] = [];
-  private unsubscribe: (() => void) | null = null;
+  private participantCount = 0;
+  private messages: DisplayMessage[] = [];
+  private unsubscribeMessages: (() => void) | null = null;
+  private unsubscribeNotice: (() => void) | null = null;
   private isLoading = false;
   private isSending = false;
   private showParticipants = false;
-
-  private messages: DisplayMessage[] = [
-    {
-      id: '1',
-      userName: '오형래',
-      time: 'AM 09:51',
-      text: '오늘 비가 많이 와서 사전 등산\n일정은 취소해야 할 듯..',
-      isSent: false,
-      userId: 'user_123',
-      userAvatar: '',
-    },
-    {
-      id: '2',
-      userName: '나',
-      time: 'AM 09:51',
-      text: '오늘 비가 많이 와서 사전 등산\n일정은 취소해야 할 듯..',
-      isSent: true,
-      userId: 'user_789',
-      userAvatar: '',
-    },
-    {
-      id: '3',
-      userName: '이명관',
-      time: 'AM 09:51',
-      text: '밖에 비 많이 오나요?',
-      isSent: false,
-      userId: 'user_456',
-      userAvatar: '',
-    },
-  ];
+  private isAdmin = false;
+  private isPublic = false;
+  private currentNotice: ChatNotice | null = null;
+  private participants: Participant[] = [];
   
-  // 현재 로그인한 사용자 정보 (임시 - 실제로는 Vuex store나 auth service에서 가져와야 함)
-  private currentUser = {
-    id: 'user_' + Math.random().toString(36).substr(2, 9),
-    name: '나',
-    avatar: '',
+  private isLoadingMore = false;
+  private hasMoreMessages = true;
+  private messageLimit = 10;
+  private isInitialLoad = true;
+  private isNoticeOverflow = false;
+
+  private contextMenu = {
+    visible: false,
+    x: 0,
+    y: 0,
+    message: null as DisplayMessage | null,
   };
 
-  private participants: Participant[] = [
-    { id: 1, name: '이명관' },
-    { id: 2, name: '오형래' },
-    { id: 3, name: '이명관' },
-  ];
+  // 초대 모달 관련
+  private inviteModalVisible = false;
+
+  private get currentUser() {
+    return {
+      id: UserModule.userId || '',
+      name: UserModule.actualName || UserModule.userId || '',
+      avatar: '',
+    };
+  }
 
   async mounted() {
-    this.spaceId = this.$route.params.spaceId || 'default-space';
+    this.spaceId = this.$route.params.spaceId || '';
+    this.spaceName = this.$route.query.spaceName as string || '';
     
-    // Firebase 실시간 리스너 등록
-    // await this.initializeChat();
+    if (this.spaceId) {
+      await this.initializeChat();
+    }
+
+    document.addEventListener('click', this.hideContextMenu);
+    
+    this.$nextTick(() => {
+      const chatMessages = this.$refs.chatMessages as HTMLElement;
+      if (chatMessages) {
+        chatMessages.addEventListener('scroll', this.handleScroll);
+      }
+    });
   }
 
   beforeDestroy() {
-    // 컴포넌트 파괴 시 리스너 해제
-    if (this.unsubscribe) {
-      this.unsubscribe();
+    if (this.unsubscribeMessages) {
+      this.unsubscribeMessages();
+    }
+    if (this.unsubscribeNotice) {
+      this.unsubscribeNotice();
+    }
+    document.removeEventListener('click', this.hideContextMenu);
+    
+    const chatMessages = this.$refs.chatMessages as HTMLElement;
+    if (chatMessages) {
+      chatMessages.removeEventListener('scroll', this.handleScroll);
     }
   }
 
   @Watch('$route.params.spaceId')
   private async onSpaceIdChange(newSpaceId: string) {
     if (newSpaceId && newSpaceId !== this.spaceId) {
-      // 이전 리스너 해제
-      if (this.unsubscribe) {
-        this.unsubscribe();
+      if (this.unsubscribeMessages) {
+        this.unsubscribeMessages();
+      }
+      if (this.unsubscribeNotice) {
+        this.unsubscribeNotice();
       }
       
       this.spaceId = newSpaceId;
+      this.spaceName = this.$route.query.spaceName as string || '';
       await this.initializeChat();
     }
   }
 
-  /**
-   * 채팅 초기화 - Firebase 리스너 등록
-   */
   private async initializeChat() {
     try {
       this.isLoading = true;
-      
-      // 실시간 메시지 수신 리스너 등록
-      this.unsubscribe = chatService.onMessagesChange(
+      this.messages = [];
+
+      await chatService.getOrCreateChatSpace(
+        this.spaceId,
+        this.spaceName || '채팅 공간',
+        this.spaceColor,
+        this.currentUser.id,
+      );
+
+      this.unsubscribeMessages = chatService.onMessagesChange(
         this.spaceId,
         (firebaseMessages: ChatMessage[]) => {
-          this.messages = firebaseMessages.map((msg) => this.convertToDisplayMessage(msg));
+          console.log('Received messages from Firebase:', firebaseMessages.length, firebaseMessages);
           
-          // 새 메시지가 추가되면 자동 스크롤
+          // 초기 로딩인 경우에만 메시지 전체 교체
+          if (this.isInitialLoad) {
+            this.messages = firebaseMessages.map((msg) => this.convertToDisplayMessage(msg));
+            console.log('Converted messages:', this.messages.length, this.messages);
+            this.isInitialLoad = false;
+            // 초기 로딩 시 즉시 맨 아래로 스크롤 (애니메이션 없이)
+            this.$nextTick(() => {
+              setTimeout(() => {
+                this.scrollToBottom(false);
+              }, 100);
+            });
+          } else {
+            // 새 메시지가 추가된 경우 (실시간 업데이트)
+            // 기존 메시지와 비교하여 새로운 메시지만 추가
+            const existingIds = new Set(this.messages.map(m => m.id));
+            const newMessages = firebaseMessages.filter(msg => !existingIds.has(msg.id));
+            
+            if (newMessages.length > 0) {
+              const convertedNew = newMessages.map((msg) => this.convertToDisplayMessage(msg));
+              this.messages = [...this.messages, ...convertedNew];
+              this.$nextTick(() => {
+                this.scrollToBottom();
+              });
+            }
+          }
+        },
+        this.messageLimit,
+      );
+
+      this.unsubscribeNotice = chatService.onNoticeChange(
+        this.spaceId,
+        (notice: ChatNotice | null) => {
+          this.currentNotice = notice;
+          // 공지사항이 변경되면 오버플로우 체크
           this.$nextTick(() => {
-            this.scrollToBottom();
+            this.checkNoticeOverflow();
           });
         },
       );
 
-      // 채팅 공간 정보 로드 (옵션)
       await this.loadChatSpaceInfo();
       
     } catch (error) {
-      console.error('Failed to initialize chat:', error);
       this.$message.error('채팅을 불러오는데 실패했습니다.');
     } finally {
       this.isLoading = false;
+      // 로딩 완료 후 맨 아래로 스크롤
+      this.$nextTick(() => {
+        setTimeout(() => {
+          this.scrollToBottom(false);
+        }, 200);
+      });
     }
   }
 
-  /**
-   * 채팅 공간 정보 로드
-   */
   private async loadChatSpaceInfo() {
     try {
+      // Firebase 채팅 공간 정보 로드
       const spaceInfo = await chatService.getChatSpace(this.spaceId);
       if (spaceInfo) {
-        this.spaceName = spaceInfo.name;
-        this.spaceColor = spaceInfo.color;
-        this.participantCount = spaceInfo.participants.length;
+        if (!this.spaceName) {
+          this.spaceName = spaceInfo.name;
+        }
+        this.spaceColor = spaceInfo.color || '#FF5858';
+        this.participantCount = spaceInfo.participants?.length || 0;
+        
+        if (spaceInfo.notice) {
+          this.currentNotice = spaceInfo.notice;
+          // 공지사항 로드 후 오버플로우 체크
+          this.$nextTick(() => {
+            this.checkNoticeOverflow();
+          });
+        }
       }
+
+      // 백엔드 공간 정보 로드 (isPublic, isAdmin 등)
+      try {
+        const response = await getSpace(this.spaceId);
+        if (response.data) {
+          this.isPublic = response.data.isPublic || false;
+          // 백엔드에서 받은 isAdmin 값 사용 (커뮤니티 관리자 포함)
+          this.isAdmin = response.data.isAdmin || false;
+          
+          console.log('Space info loaded:', {
+            spaceId: this.spaceId,
+            isAdmin: this.isAdmin,
+            isPublic: this.isPublic,
+          });
+        }
+      } catch (error) {
+        console.error('Failed to load space info from backend:', error);
+        // 백엔드에서 공간 정보를 가져오지 못한 경우 Firebase 정보로 fallback
+        if (spaceInfo) {
+          this.isAdmin = spaceInfo.createdBy === this.currentUser.id;
+        }
+      }
+
+      // 참여자 목록 로드
+      await this.loadParticipants();
     } catch (error) {
       console.error('Failed to load chat space info:', error);
+      // 에러 무시
     }
   }
 
-  /**
-   * Firebase 메시지를 화면 표시용 메시지로 변환
-   */
+  private async loadParticipants() {
+    try {
+      const response = await getSpaceMembers(this.spaceId);
+      if (response.data && Array.isArray(response.data)) {
+        this.participants = response.data.map((member: any) => ({
+          id: member.uid,
+          name: member.actualName || member.name || '익명',
+          avatar: member.profileImage || member.avatar,
+        }));
+        this.participantCount = this.participants.length;
+      }
+    } catch (error) {
+      console.error('Failed to load participants:', error);
+      // 에러 시 빈 배열 유지
+    }
+  }
+
+  private checkNoticeOverflow() {
+    const noticeText = this.$refs.noticeText as HTMLElement;
+    if (noticeText) {
+      // 텍스트가 2줄을 초과하는지 체크 (scrollHeight > clientHeight)
+      this.isNoticeOverflow = noticeText.scrollHeight > noticeText.clientHeight;
+    } else {
+      this.isNoticeOverflow = false;
+    }
+  }
+
   private convertToDisplayMessage(msg: ChatMessage): DisplayMessage {
+    const createdAtDate = msg.createdAt || new Date();
     return {
       id: msg.id,
       userName: msg.userName,
-      time: this.formatTime(msg.createdAt || new Date()),
+      time: this.formatTime(createdAtDate),
       text: msg.text,
       isSent: msg.userId === this.currentUser.id,
       userId: msg.userId,
       userAvatar: msg.userAvatar,
+      createdAt: createdAtDate instanceof Date ? createdAtDate : new Date(createdAtDate),
     };
   }
 
@@ -291,18 +459,14 @@ export default class extends Vue {
     });
   }
 
-  /**
-   * 메시지 전송
-   */
   private async sendMessage() {
     if (!this.newMessage.trim() || this.isSending) return;
 
     try {
       this.isSending = true;
       const messageText = this.newMessage.trim();
-      this.newMessage = ''; // 입력창 즉시 비우기
+      this.newMessage = '';
 
-      // Firebase에 메시지 저장
       await chatService.sendMessage(
         this.spaceId,
         this.currentUser.id,
@@ -310,37 +474,49 @@ export default class extends Vue {
         messageText,
         this.currentUser.avatar,
       );
-
-      // 실시간 리스너가 자동으로 새 메시지를 추가하므로 별도로 추가하지 않음
       
     } catch (error) {
-      console.error('Failed to send message:', error);
       this.$message.error('메시지 전송에 실패했습니다.');
-      // 실패 시 입력값 복원
-      this.newMessage = this.newMessage || '';
     } finally {
       this.isSending = false;
+      
+      // 메시지 전송 완료 후 입력창에 포커스
+      this.$nextTick(() => {
+        setTimeout(() => {
+          const input = this.$refs.messageInput as HTMLInputElement;
+          if (input) {
+            input.focus();
+          }
+        }, 50);
+      });
     }
   }
 
-  /**
-   * 채팅 영역 하단으로 스크롤
-   */
   private scrollToBottom(smooth: boolean = true) {
-    this.$nextTick(() => {
-      const chatMessages = this.$el.querySelector('.chat-messages');
+    const scrollAction = () => {
+      const chatMessages = this.$refs.chatMessages as HTMLElement;
       if (chatMessages) {
-        chatMessages.scrollTo({
-          top: chatMessages.scrollHeight,
-          behavior: smooth ? 'smooth' : 'auto',
-        });
+        if (smooth) {
+          chatMessages.scrollTo({
+            top: chatMessages.scrollHeight,
+            behavior: 'smooth',
+          });
+        } else {
+          // 즉시 스크롤 (초기 로딩 시)
+          chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
       }
+    };
+    
+    // DOM 업데이트 완료 후 스크롤
+    this.$nextTick(() => {
+      scrollAction();
+      // 이미지 등 비동기 컨텐츠 로딩을 위해 추가 딜레이
+      setTimeout(scrollAction, 50);
+      setTimeout(scrollAction, 150);
     });
   }
 
-  /**
-   * 시간 포맷팅
-   */
   private formatTime(date: Date): string {
     const now = new Date();
     const messageDate = new Date(date);
@@ -351,26 +527,217 @@ export default class extends Vue {
     const displayHours = hours % 12 || 12;
     const displayMinutes = minutes < 10 ? `0${minutes}` : minutes;
     
-    // 오늘 날짜면 시간만, 다른 날이면 날짜도 표시
     if (
       now.getFullYear() === messageDate.getFullYear() &&
       now.getMonth() === messageDate.getMonth() &&
       now.getDate() === messageDate.getDate()
     ) {
       return `${ampm} ${displayHours}:${displayMinutes}`;
-    } else {
-      const month = messageDate.getMonth() + 1;
-      const day = messageDate.getDate();
-      return `${month}/${day} ${ampm} ${displayHours}:${displayMinutes}`;
     }
+    const month = messageDate.getMonth() + 1;
+    const day = messageDate.getDate();
+    return `${month}/${day} ${ampm} ${displayHours}:${displayMinutes}`;
+  }
+
+  private formatNoticeDate(date: Date | any): string {
+    if (!date) return '';
+    
+    let d: Date;
+    
+    // Firestore Timestamp 객체 처리
+    if (date && typeof date.toDate === 'function') {
+      d = date.toDate();
+    } else if (date && typeof date.seconds === 'number') {
+      // Firestore Timestamp 형식 (seconds, nanoseconds)
+      d = new Date(date.seconds * 1000);
+    } else {
+      d = new Date(date);
+    }
+    
+    // 유효한 날짜인지 확인
+    if (isNaN(d.getTime())) return '';
+    
+    const year = d.getFullYear();
+    const month = d.getMonth() + 1;
+    const day = d.getDate();
+    
+    return `${year}.${month}.${day}`;
+  }
+
+  private openInviteModal() {
+    console.log('openInviteModal called', {
+      spaceId: this.spaceId,
+      isAdmin: this.isAdmin,
+      isPublic: this.isPublic,
+    });
+    this.inviteModalVisible = true;
+  }
+
+  private async handleInvited() {
+    this.$message.success('초대가 완료되었습니다.');
+    this.inviteModalVisible = false;
+    await this.loadParticipants();
   }
 
   private handleInvite() {
-    this.$message.info('초대하기 기능은 준비 중입니다.');
+    // deprecated - openInviteModal 사용
+    this.openInviteModal();
   }
 
   private toggleParticipants() {
     this.showParticipants = !this.showParticipants;
+  }
+
+  private showContextMenu(event: MouseEvent, message: DisplayMessage) {
+    event.preventDefault();
+    this.contextMenu = {
+      visible: true,
+      x: event.clientX,
+      y: event.clientY,
+      message,
+    };
+  }
+
+  private hideContextMenu() {
+    this.contextMenu.visible = false;
+  }
+
+  private copyMessage() {
+    if (this.contextMenu.message) {
+      navigator.clipboard.writeText(this.contextMenu.message.text)
+        .then(() => {
+          this.$message.success('메시지가 복사되었습니다.');
+        })
+        .catch(() => {
+          this.$message.error('메시지 복사에 실패했습니다.');
+        });
+    }
+    this.hideContextMenu();
+  }
+
+  private async deleteMessageAction() {
+    if (!this.contextMenu.message) return;
+
+    try {
+      await chatService.deleteMessage(this.contextMenu.message.id);
+      this.$message.success('메시지가 삭제되었습니다.');
+    } catch (error) {
+      this.$message.error('메시지 삭제에 실패했습니다.');
+    }
+    this.hideContextMenu();
+  }
+
+  private deleteMessage() {
+    if (!this.contextMenu.message) return;
+
+    this.$confirm('이 메시지를 삭제하시겠습니까?', '메시지 삭제', {
+      confirmButtonText: '삭제',
+      cancelButtonText: '취소',
+      type: 'warning',
+    })
+    .then(() => this.deleteMessageAction())
+    .catch(() => {});
+  }
+
+  private async setAsNotice() {
+    if (!this.contextMenu.message) return;
+
+    this.$confirm('이 메시지를 공지로 등록하시겠습니까?', '공지 등록', {
+      confirmButtonText: '등록',
+      cancelButtonText: '취소',
+      type: 'info',
+    })
+    .then(async () => {
+      try {
+        const msg = this.contextMenu.message!;
+        await chatService.setNotice(
+          this.spaceId,
+          msg.userId,
+          msg.userName,
+          msg.text,
+        );
+        this.$message.success('공지로 등록되었습니다.');
+      } catch (error) {
+        this.$message.error('공지 등록에 실패했습니다.');
+      }
+    })
+    .catch(() => {});
+
+    this.hideContextMenu();
+  }
+
+  private async handleDeleteNotice() {
+    this.$confirm('공지사항을 삭제하시겠습니까?', '공지 삭제', {
+      confirmButtonText: '삭제',
+      cancelButtonText: '취소',
+      type: 'warning',
+    })
+    .then(async () => {
+      try {
+        await chatService.deleteNotice(this.spaceId);
+        this.currentNotice = null;
+        this.$message.success('공지가 삭제되었습니다.');
+      } catch (error) {
+        this.$message.error('공지 삭제에 실패했습니다.');
+      }
+    })
+    .catch(() => {});
+  }
+
+  private handleScroll() {
+    const chatMessages = this.$refs.chatMessages as HTMLElement;
+    if (!chatMessages) return;
+    
+    if (chatMessages.scrollTop < 100 && !this.isLoadingMore && this.hasMoreMessages) {
+      this.loadMoreMessages();
+    }
+  }
+
+  private async loadMoreMessages() {
+    if (this.isLoadingMore || !this.hasMoreMessages || this.messages.length === 0) return;
+    
+    try {
+      this.isLoadingMore = true;
+      const chatMessages = this.$refs.chatMessages as HTMLElement;
+      const previousScrollHeight = chatMessages?.scrollHeight || 0;
+      
+      // 가장 오래된 메시지의 createdAt timestamp를 기준으로 이전 메시지 로드
+      const oldestMessage = this.messages[0];
+      const oldestTimestamp = oldestMessage?.createdAt;
+      
+      const olderMessages = await chatService.getOlderMessages(
+        this.spaceId,
+        oldestMessage?.id || null,
+        this.messageLimit,
+        oldestTimestamp,
+      );
+      
+      if (olderMessages.length < this.messageLimit) {
+        this.hasMoreMessages = false;
+      }
+      
+      if (olderMessages.length > 0) {
+        // 중복 제거
+        const existingIds = new Set(this.messages.map(m => m.id));
+        const uniqueOlderMessages = olderMessages.filter(msg => !existingIds.has(msg.id));
+        
+        if (uniqueOlderMessages.length > 0) {
+          const convertedMessages = uniqueOlderMessages.map((msg: ChatMessage) => this.convertToDisplayMessage(msg));
+          this.messages = [...convertedMessages, ...this.messages];
+          
+          this.$nextTick(() => {
+            if (chatMessages) {
+              const newScrollHeight = chatMessages.scrollHeight;
+              chatMessages.scrollTop = newScrollHeight - previousScrollHeight;
+            }
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load more messages:', error);
+    } finally {
+      this.isLoadingMore = false;
+    }
   }
 }
 </script>
@@ -383,20 +750,19 @@ export default class extends Vue {
 }
 
 .chat-main {
-  flex: 1;
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  margin: 120px 0 0 270px;
-  min-width: 0;
+    flex: 1;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    margin: 120px 0 0 270px;
+    min-width: 0;
+    padding: 0px 20px 80px 80px;
 }
 
 .space-header {
   position: relative;
-  padding: 40px 40px 20px;
+  padding: 45px 0;
   text-align: left;
-  border-left: 2px solid #EBEBEB;
-  border-right: 2px solid #EBEBEB;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -487,28 +853,30 @@ export default class extends Vue {
 .chat-container {
   flex: 1;
   width: 100%;
-  padding: 20px 40px 100px 40px;
+  padding: 40px 40px 20px;
+  border-radius: 10px;
   display: flex;
   flex-direction: column;
   height: calc(100vh - 120px);
-  border-left: 2px solid #EBEBEB;
-  border-right: 2px solid #EBEBEB;
-  border-bottom: 2px solid #EBEBEB;
-  border-top: none;
+  border: 2px solid #EBEBEB;
   box-sizing: border-box;
 }
 
 .notice-section {
   width: 100%;
-  padding: 30px;
+  padding: 10px 40px;
   border: 2px solid #EBEBEB;
-  border-radius: 8000px;
-  margin-bottom: 30px;
+  border-radius: 50px;
+  margin-bottom: 20px;
   transition: all 0.3s ease;
+  position: relative;
+  min-height: 80px;
+  background: #EBEBEB;
 
   &.collapsed {
     .notice-text {
       -webkit-line-clamp: 1;
+      line-clamp: 1;
     }
 
     .toggle-btn svg {
@@ -517,26 +885,46 @@ export default class extends Vue {
   }
 }
 
+.notice-badge {
+  position: absolute;
+  right: -4px;
+  top: -4px;
+  width: 100px;
+  height: 38px;
+}
+
+.badge-text {
+  position: absolute;
+  left: 19px;
+  top: 9px;
+  color: #FFF;
+  font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 100%;
+}
+
 .notice-content {
   display: flex;
-  justify-content: space-between;
   align-items: flex-start;
-  gap: 20px;
+  gap: 12px;
 }
 
 .notice-text {
   flex: 1;
   color: #222;
   font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
-  font-size: 20px;
+  font-size: 16px;
   font-weight: 400;
-  line-height: 150%;
+  line-height: 1.5;
   margin: 0;
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   overflow: hidden;
   text-overflow: ellipsis;
+  text-align: left;
 }
 
 .toggle-btn {
@@ -548,6 +936,7 @@ export default class extends Vue {
   cursor: pointer;
   flex-shrink: 0;
   transition: transform 0.3s;
+  margin-left: auto;
 
   svg {
     width: 100%;
@@ -559,13 +948,57 @@ export default class extends Vue {
   }
 }
 
+.notice-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.notice-author {
+  color: #222;
+  font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 100%;
+}
+
+.notice-date {
+  color: #CECECE;
+  font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 100%;
+}
+
+.notice-delete-btn {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 10px;
+  background: #FF5858;
+  color: #FFF;
+  font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 100%;
+  cursor: pointer;
+  transition: background 0.2s;
+
+  &:hover {
+    background: #FF3B3B;
+  }
+}
+
 .chat-messages {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 20px 0;
   display: flex;
   flex-direction: column;
   gap: 40px;
+  min-height: 0;
+  max-height: calc(100vh - 350px);
 
   &::-webkit-scrollbar {
     width: 6px;
@@ -584,6 +1017,30 @@ export default class extends Vue {
       background: #999;
     }
   }
+}
+
+.loading-indicator {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  color: #999;
+  font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 100%;
+}
+
+.no-messages {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  color: #999;
+  font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 100%;
 }
 
 .message-wrapper {
@@ -741,6 +1198,44 @@ export default class extends Vue {
   }
 }
 
+.context-menu {
+  position: absolute;
+  z-index: 1000;
+  background: #FFF;
+  border: 1px solid #EBEBEB;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.context-menu-item {
+  padding: 10px 20px;
+  cursor: pointer;
+  color: #222;
+  font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 100%;
+  transition: background 0.2s;
+
+  &:hover {
+    background: #F5F5F5;
+  }
+
+  i {
+    margin-right: 8px;
+  }
+}
+
+.context-menu-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 999;
+}
+
 @media screen and (max-width: 1800px) {
   .chat-container {
     max-width: 1000px;
@@ -852,9 +1347,28 @@ export default class extends Vue {
   }
 
   .notice-section {
-    padding: 14px 20px;
-    border-radius: 8000px;
+    padding: 30px 20px 14px;
+    border-radius: 10px;
     margin-bottom: 20px;
+    min-height: 80px;
+  }
+
+  .notice-badge {
+    width: 80px;
+    height: 30px;
+    right: 0;
+    top: -2px;
+
+    svg {
+      width: 80px;
+      height: 30px;
+    }
+  }
+
+  .badge-text {
+    font-size: 16px;
+    left: 14px;
+    top: 6px;
   }
 
   .notice-text {
@@ -989,6 +1503,73 @@ export default class extends Vue {
   .message-input-section {
     gap: 4px;
     padding-top: 16px;
+  }
+}
+
+.loading-indicator {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40px;
+  color: #888;
+  font-size: 16px;
+
+  i {
+    margin-right: 8px;
+  }
+}
+
+.no-messages {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 60px 20px;
+  color: #888;
+  font-size: 16px;
+  text-align: center;
+}
+
+.context-menu-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 999;
+}
+
+.context-menu {
+  position: fixed;
+  background: #FFF;
+  border: 1px solid #EBEBEB;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  min-width: 150px;
+  overflow: hidden;
+}
+
+.context-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  color: #222;
+  font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.2s;
+
+  &:hover {
+    background: #F5F5F5;
+  }
+
+  &.delete {
+    color: #FF5858;
+  }
+
+  i {
+    font-size: 16px;
   }
 }
 </style>

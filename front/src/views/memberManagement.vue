@@ -541,11 +541,12 @@ export default class extends Vue {
     { value: 'like', label: '좋아요' },
     { value: 'space_join', label: '공간참여대상' },
     { value: 'chat_join', label: '채팅참여대상' },
-    { value: 'marketplace', label: '장터이용권한' },
+    { value: 'marketplace', label: '장터이용' },
+    { value: 'marketplace_create', label: '장터상품등록' },
     { value: 'schedule_attend', label: '일정참여' },
     { value: 'schedule_create', label: '일정생성' },
     { value: 'course_attend', label: '강좌수강' },
-    { value: 'offline_point_deduct', label: '오프라인매장포인트차감권한' },
+    { value: 'offline_point_deduct', label: '오프라인매장관리' },
   ];
 
   get filteredMembers() {
