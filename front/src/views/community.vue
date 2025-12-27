@@ -512,11 +512,9 @@ export default class extends Vue {
 .community-main {
   flex: 1;
   min-width: 0;
-  padding-bottom: 100px;
+  padding: 120px 40px 100px 40px;
   position: relative;
   margin-left: 270px;
-  padding-left: 40px;
-  padding-right: 40px;
 }
 
 .hero-banner {
@@ -630,9 +628,21 @@ export default class extends Vue {
 .post-header-right {
   margin-right: 60px;
   display: flex;
+  justify-content: end;
   align-items: center;
   gap: 15px;
   margin-left: auto;
+}
+
+@media screen and (max-width: 768px) {
+  .post-header {display: block;}
+  .post-header-right {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-right: 0px;
+    margin-left: unset;
+  }
 }
 
 .user-info {
@@ -942,9 +952,6 @@ export default class extends Vue {
 }
 
 .write-post-btn-fixed {
-  position: fixed;
-  left: 30px;
-  bottom: 40px;
   width: 210px;
   height: 50px;
   padding: 0;
@@ -984,7 +991,7 @@ export default class extends Vue {
 /* Tablet Responsive Styles */
 @media screen and (max-width: 1024px) {
   .community-main {
-    margin-left: 0;
+    margin: 0 0 0 240px;
     padding-left: 24px;
     padding-right: 24px;
   }
@@ -1089,7 +1096,7 @@ export default class extends Vue {
 @media screen and (max-width: 768px) {
   .community-main {
     margin-left: 0;
-    padding: 0;
+    padding: 100px 0 80px 0 ;
     padding-bottom: 80px;
   }
 
@@ -1203,7 +1210,7 @@ export default class extends Vue {
     width: 80px;
     height: 30px;
     right: 0;
-    top: 20px;
+    top: 15px;
 
     svg {
       width: 80px;
@@ -1247,6 +1254,10 @@ export default class extends Vue {
   }
 }
 
+@media screen and (max-width: 500px) {
+  .community-main{padding: 80px 0;}
+  .hero-banner { height: 130px;}
+}
 @media screen and (max-width: 480px) {
   .posts-container {
     padding: 16px;

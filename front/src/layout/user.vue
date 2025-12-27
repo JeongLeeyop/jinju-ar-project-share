@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div class="header-container">
+    <div class="header-wrapper">
       <HomeHeader @search="(searchValue) => handleSearch(searchValue)"/>
     </div>
     <div class="content-container">

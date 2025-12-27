@@ -227,7 +227,6 @@ export default class extends Vue {
   padding: 44px 40px;
   border-bottom: 2px solid #EBEBEB;
   background: #FFF;
-  position: relative;
 }
 
 .header-left {
