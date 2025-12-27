@@ -387,8 +387,7 @@ export default class extends Vue {
   position: relative;
   display: flex;
   flex-direction: column;
-  margin-left: 270px;
-  // margin-right: 460px;
+  margin: 120px 0 0 270px;
   min-width: 0;
 }
 
@@ -488,7 +487,7 @@ export default class extends Vue {
 .chat-container {
   flex: 1;
   width: 100%;
-  padding: 0 40px 40px;
+  padding: 20px 40px 100px 40px;
   display: flex;
   flex-direction: column;
   height: calc(100vh - 120px);

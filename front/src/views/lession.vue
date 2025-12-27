@@ -258,7 +258,10 @@ export default class extends Vue {
   flex-direction: column;
 
   @media screen and (max-width: 1024px) {
-    margin-left: 0;
+    margin-left: 240px;
+  }
+  @media screen and (max-width: 768px) {
+    margin-left: 0px;
   }
 }
 
@@ -421,13 +424,13 @@ export default class extends Vue {
 
 .lession-content {
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
   gap: 32px;
-  padding: 40px 20px;
-  flex: 1;
+  padding: 140px 40px 100px 40px;
 }
 
 .lession-card {
+  flex: 0 1 calc(100% / 3 - 32px);
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -441,7 +444,7 @@ export default class extends Vue {
 
 .card-image {
   width: 100%;
-  height: 202px;
+  height: 300px;
   border-radius: 10px;
   overflow: hidden;
 
@@ -643,43 +646,31 @@ export default class extends Vue {
 }
 
 /* Responsive Design */
-@media screen and (max-width: 768px) {
-  .lession-content {
-    padding: 40px 20px;
-    gap: 32px;
-  }
-
-  .lession-card {
-    gap: 16px;
-  }
-
-  .card-image {
-    height: 202px;
-  }
-
-  .card-title {
-    font-size: 18px;
-  }
-
-  .card-description {
-    font-size: 12px;
-    line-height: 150%;
-  }
+@media screen and (max-width: 1440px) {
+  .card-image{ height: 250px;}
 }
 
-@media screen and (max-width: 600px) {
-  .lession-content {
-    padding: 40px 20px;
-  }
+@media screen and (max-width: 1024px) {
+  .lession-content {gap: 20px;padding: 120px 20px 50px 20px;}
+  .lession-card {flex: 0 1 calc(100% / 3 - 14px);}
+  .card-image{ height: 200px;}
+}
 
-  .card-content {
-    gap: 8px;
-  }
+@media screen and (max-width: 768px) {
+  .lession-content { padding: 140px 20px 50px 20px;}
+  .lession-card {flex: 0 1 calc(100% / 2 - 10px);gap: 16px;}
+  .card-image { height: 170px;}
+  .card-title { font-size: 18px;}
+  .card-description{ font-size: 12px; line-height: 150%;}
+}
+
+@media screen and (max-width: 500px) {
+  .lession-content { padding: 100px 20px 50px 20px;}
+  .lession-card {flex: 0 1 calc(100%);}
+  .card-image { height: 180px;}
+  .card-content { gap: 8px;}
 }
 
 @media screen and (max-width: 425px) {
-  .lession-content {
-    padding: 40px 20px;
-  }
 }
 </style>

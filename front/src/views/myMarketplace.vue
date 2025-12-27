@@ -439,8 +439,8 @@ export default class extends Vue {
 
 .my-marketplace-main {
   flex: 1;
-  margin-left: 310px;
-  padding: 40px 60px;
+  margin-left: 270px;
+  padding: 160px 40px 40px;
 }
 
 .page-header {
@@ -553,12 +553,24 @@ export default class extends Vue {
 .product-image-wrapper {
   position: relative;
   width: 100%;
-  padding-top: 100%;
   overflow: hidden;
+  height: 300px;
 
   &.has-status .product-image {
     opacity: 0.5;
   }
+}
+
+@media screen and (max-width: 1400px) {
+  .product-image-wrapper {height: 300px;}
+}
+
+@media screen and (max-width: 1024px) {
+  .product-image-wrapper {height: 220px;}
+}
+
+@media screen and (max-width: 768px) {
+  .product-image-wrapper {height: 200px;}
 }
 
 .product-image {
@@ -657,7 +669,7 @@ export default class extends Vue {
 
 .action-btn {
   flex: 1;
-  height: 40px;
+  padding: 10px;
   border: none;
   border-radius: 8px;
   font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
@@ -867,8 +879,8 @@ export default class extends Vue {
 
 @media screen and (max-width: 1024px) {
   .my-marketplace-main {
-    margin-left: 0;
-    padding: 30px 20px;
+    margin-left: 240px;
+    padding: 160px 20px 40px;
   }
 
   .products-grid {
@@ -878,6 +890,10 @@ export default class extends Vue {
 }
 
 @media screen and (max-width: 768px) {
+  .my-marketplace-main {
+    padding: 140px 20px 40px;
+    margin-left: 0;
+  }
   .page-title {
     font-size: 24px;
   }
@@ -900,10 +916,11 @@ export default class extends Vue {
   }
 }
 
-@media screen and (max-width: 425px) {
-  .my-marketplace-main {
-    padding: 20px 16px;
+@media screen and (max-width: 500px) {
+  .my-marketplace-main{
+    padding: 120px 20px 40px;
   }
+
 
   .page-header {
     margin-bottom: 24px;

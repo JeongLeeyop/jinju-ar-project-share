@@ -441,7 +441,7 @@ export default class extends Vue {
 
 .marketplace-main {
   flex: 1;
-  margin-left: 270px;
+  margin: 120px 0 0 270px;
   padding: 40px;
   position: relative;
 }
@@ -1073,9 +1073,7 @@ export default class extends Vue {
 }
 
 @media screen and (max-width: 1024px) {
-  .marketplace-main {
-    margin-left: 0;
-  }
+  .marketplace-main {margin:120px 0 0 240px}
 
   .write-post-btn-fixed {
     width: 60px;
@@ -1111,6 +1109,7 @@ export default class extends Vue {
 
   .marketplace-main {
     padding: 40px 20px;
+    margin: 100px 0 0 0;
   }
 
   .filter-section {
@@ -1163,5 +1162,9 @@ export default class extends Vue {
     right: 20px;
     top: 20px;
   }
+}
+
+@media screen and (max-width: 500px) {
+  .marketplace-main {margin:80px 0 0 0}
 }
 </style>

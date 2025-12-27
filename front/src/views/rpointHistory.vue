@@ -277,7 +277,7 @@ export default class extends Vue {
 
 .rpoint-main {
   margin-left: 267px;
-  padding: 80px;
+  padding: 160px 30px 20px;
   flex: 1;
   min-height: calc(100vh - 124px);
   display: flex;
@@ -326,7 +326,7 @@ export default class extends Vue {
 .profile-name {
   color: #000;
   font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
-  font-size: 36px;
+  font-size: clamp(28px, 2vw, 36px);
   font-weight: 600;
   line-height: 100%;
   margin: 0;
@@ -401,6 +401,7 @@ export default class extends Vue {
 }
 
 .period-buttons {
+  flex: 0 1 calc(100% / 2 - 10px);
   display: flex;
   gap: 20px;
 }
@@ -427,6 +428,11 @@ export default class extends Vue {
     background: #073DFF;
     box-shadow: 0 2px 8px rgba(7, 61, 255, 0.25);
   }
+}
+
+@media screen and (max-width:1200px) {
+  .filters-container {flex-direction: column-reverse;align-items: start;}
+  .period-buttons {flex: 0 1 100%; display: flex; gap: 20px;}
 }
 
 .date-filters {
@@ -586,38 +592,20 @@ export default class extends Vue {
 }
 
 /* Responsive Design */
-@media screen and (max-width: 1600px) {
-  .rpoint-main {
-    padding: 50px 60px;
-  }
-}
-
-@media screen and (max-width: 1366px) {
-  .rpoint-main {
-    padding: 48px 40px;
-  }
-}
 
 @media screen and (max-width: 1024px) {
-  .rpoint-main {
-    margin-left: 0;
-    padding: 40px;
-  }
-
   .profile-card {
-    flex-direction: column;
     align-items: flex-start;
   }
 
   .profile-info {
-    flex-direction: column;
     align-items: flex-start;
     width: 100%;
     gap: 20px;
   }
 
   .points-section {
-    align-items: flex-start;
+    align-items: flex-end;
   }
 
   .filters-container {
@@ -696,29 +684,32 @@ export default class extends Vue {
   }
 }
 
-@media screen and (max-width: 600px) {
-  .rpoint-main {
-    padding: 20px 16px;
-  }
+@media screen and (max-width: 1024px) {
+  .profile-card {flex-direction: column;}
+  .profile-avatar { width: 80px; height: 80px;}
+  .profile-name-section {flex: 0 1 100%; width: 100%;}
+  .points-section {width: 100%; text-align: right;}
+}
 
-  .profile-avatar {
-    width: 80px;
-    height: 80px;
-  }
+@media screen and (max-width: 768px) {
+ .profile-avatar { width: 50px; height: 50px;}
 
-  .profile-name {
-    font-size: 24px;
-  }
+  .rpoint-main { padding: 140px 30px 20px; margin: 0;}
 
-  .section-title {
-    font-size: 24px;
-  }
+  .profile-name { font-size: 24px;}
+  .section-title { font-size: 24px;}
 
   .history-description,
   .history-date,
   .points-amount,
-  .points-type {
-    font-size: 18px;
-  }
+  .points-type { font-size: 18px;}
+}
+
+@media screen and (max-width: 500px) {
+  .profile-name {font-size: 20px;}
+  .section-title {font-size: 20px;}
+  .points-label {font-size: 20px;}
+  .edit-profile-btn {width: 120px}
+  .rpoint-main {gap: 20px; padding: 120px 20px 20px;}
 }
 </style>

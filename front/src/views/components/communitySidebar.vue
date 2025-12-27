@@ -541,6 +541,11 @@ export default class extends Vue {
   overflow-y: auto;
   z-index: 100;
 }
+
+.community-sidebar::-webkit-scrollbar{width: 5px;}
+.community-sidebar::-webkit-scrollbar-thumb{background-color:#0531CC;border-radius:10px}
+.community-sidebar::-webkit-scrollbar-track{background-color:#d2d2d2;border-radius:10px}
+
 @media screen and (max-width:1024px) {
   .community-sidebar {
     width:240px;
@@ -578,10 +583,18 @@ export default class extends Vue {
   position: fixed;
   left: 0;
   bottom: 0;
-  width: 270px;
+  width: 260px;
   height: 100px;
   background: #FFF;
   z-index: 999;
+}
+
+@media screen and (max-width: 1024px) {
+  .write-post-btn-wrapper {
+    width: 230px;
+    height: 100px;
+    left: 5px;
+  }
 }
 
 .write-post-btn {

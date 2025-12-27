@@ -665,16 +665,21 @@ export default class extends Vue {
 
 .my-schedule-main {
   flex: 1;
-  margin-left: 310px;
-  padding: 40px 60px;
+  margin-left: 270px;
+  padding: 160px 40px 40px;
 
-  @media (max-width: 1024px) {
+  @media screen and (max-width: 1024px) {
+    margin-left: 240px;
+    padding: 160px 30px 20px;
+  }
+  
+  @media screen and (max-width: 768px) {
     margin-left: 0;
-    padding: 30px 20px;
+    padding: 140px 30px 20px;
   }
 
-  @media (max-width: 768px) {
-    padding: 20px 16px;
+  @media screen and (max-width: 500px) {
+    padding: 120px 20px 20px;
   }
 }
 
@@ -1282,10 +1287,6 @@ export default class extends Vue {
 
 // 425px 이하 모바일 반응형
 @media (max-width: 425px) {
-  .my-schedule-main {
-    padding: 20px 16px;
-  }
-
   .page-header {
     margin-bottom: 24px;
 

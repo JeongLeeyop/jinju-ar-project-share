@@ -633,8 +633,8 @@ export default class extends Vue {
 }
 
 .calendar-main {
-  margin-left: 267px;
-  padding: 50px 80px;
+  margin-left: 270px;
+  padding: 150px 40px 100px 40px;
   flex: 1;
   min-height: calc(100vh - 124px);
 }
@@ -816,6 +816,12 @@ export default class extends Vue {
   gap: 40px;
   position: relative;
   min-height: 200px;
+}
+
+@media screen and (max-width: 768px) {
+  .event-content {
+    gap: 20px;
+  }
 }
 
 .timeline-connector {
@@ -1519,17 +1525,7 @@ export default class extends Vue {
 }
 
 /* Responsive Design */
-@media screen and (max-width: 1600px) {
-  .calendar-main {
-    padding: 50px 60px;
-  }
-}
-
 @media screen and (max-width: 1366px) {
-  .calendar-main {
-    padding: 48px 40px;
-  }
-
   .event-title {
     font-size: 32px;
   }
@@ -1541,14 +1537,19 @@ export default class extends Vue {
 
 @media screen and (max-width: 1024px) {
   .calendar-main {
-    margin-left: 0;
-    padding: 40px;
+    margin-left: 240px;
+    padding: 140px 30px 100px 30px;
   }
 
   .event-header {
     flex-direction: column;
     align-items: flex-start;
     gap: 20px;
+  }
+
+  .event-card {
+    padding: 30px 20px;
+    gap: 24px;
   }
 
   .join-button {
@@ -1558,6 +1559,7 @@ export default class extends Vue {
 
 @media screen and (max-width: 768px) {
   .calendar-main {
+    margin: 100px 0 0 0;
     padding: 32px 24px;
   }
 
@@ -1586,6 +1588,10 @@ export default class extends Vue {
 
   .event-stats {
     margin-top: 12px;
+  }
+
+  .join-button {
+    height: 45px;
   }
 
   .write-event-btn-fixed {
@@ -1665,12 +1671,13 @@ export default class extends Vue {
       height: 20px;
     }
   }
+}
 
-  .join-button {
-    width: 100%;
-    height: 52px;
-    font-size: 16px;
-  }
+@media screen and (max-width: 500px) {
+  .calendar-main {
+    padding: 20px 16px;
+    margin-top: 80px;
+  } 
 }
 
 /* Element UI Custom Styling */
