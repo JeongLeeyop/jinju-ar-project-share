@@ -121,14 +121,41 @@
           <div class="nav-item nav-section-title">
             <span>마이페이지</span>
           </div>
+          <div class="nav-item nav-subitem" @click="navigateToPage('MyMarketplace')">
+            <span>-내 장터 관리</span>
+          </div>
+          <div class="nav-item nav-subitem" @click="navigateToPage('MySchedule')">
+            <span>-내 일정 관리</span>
+          </div>
           <div class="nav-item nav-subitem" @click="navigateToPage('RPointHistory')">
             <span>-R포인트 내역</span>
           </div>
           <div class="nav-item nav-subitem" @click="navigateToPage('ActivityList')">
             <span>-활동리스트</span>
           </div>
-          <div class="nav-item nav-subitem" @click="navigateToPage('CommunitySettings')">
-            <span>-커뮤니티 설정</span>
+
+          <!-- 매니저 메뉴 섹션 -->
+          <div class="nav-divider"></div>
+          <div class="nav-item nav-section-title">
+            <span>매니저 메뉴</span>
+          </div>
+          <div class="nav-item nav-subitem" @click="navigateToPage('SpaceManagement')">
+            <span>-공간 관리</span>
+          </div>
+          <div class="nav-item nav-subitem" @click="navigateToPage('SmsManagement')">
+            <span>-문자 발송</span>
+          </div>
+
+          <!-- 관리자 메뉴 섹션 -->
+          <div class="nav-divider"></div>
+          <div class="nav-item nav-section-title">
+            <span>관리자 메뉴</span>
+          </div>
+          <div class="nav-item nav-subitem" @click="navigateToPage('MemberManagement')">
+            <span>-회원 관리</span>
+          </div>
+          <div class="nav-item nav-subitem" @click="navigateToPage('CommunityManagement')">
+            <span>-커뮤니티 관리</span>
           </div>
         </template>
       </div>
