@@ -46,6 +46,14 @@ public class SpaceService {
         User admin = userRepository.findById(adminUid)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 
+        // 공간 이름 길이 검증 (최대 7자)
+        if (request.getName() == null || request.getName().trim().isEmpty()) {
+            throw new IllegalArgumentException("공간 이름을 입력해주세요.");
+        }
+        if (request.getName().trim().length() > 7) {
+            throw new IllegalArgumentException("공간 이름은 최대 7자까지 가능합니다.");
+        }
+
         // 공간 생성 제한 확인: 사용자당 게시판 1개, 채팅 1개만 허용
         validateSpaceCreationLimit(request.getChannelUid(), adminUid, request.getSpaceType());
 
@@ -73,10 +81,9 @@ public class SpaceService {
         activityLogHelper.logSpaceCreated(
                 adminUid, adminName,
                 request.getChannelUid(), "",
-                savedSpace.getUid(), savedSpace.getName()
-        );
+                savedSpace.getUid(), savedSpace.getName());
 
-        log.info("공간 생성 완료: spaceUid={}, name={}, adminUid={}, spaceType={}, isPublic={}", 
+        log.info("공간 생성 완료: spaceUid={}, name={}, adminUid={}, spaceType={}, isPublic={}",
                 savedSpace.getUid(), savedSpace.getName(), adminUid, savedSpace.getSpaceType(), savedSpace.isPublic());
 
         return SpaceDto.fromEntity(savedSpace, adminUid);
@@ -131,8 +138,9 @@ public class SpaceService {
      * 공간 타입별 조회
      */
     public List<SpaceDto> getSpacesByType(String channelUid, Space.SpaceType spaceType, String currentUserUid) {
-        List<Space> spaces = spaceRepository.findByChannelUidAndSpaceTypeAndIsActiveTrueAndIsDeletedFalseOrderByCreatedAtDesc(
-                channelUid, spaceType);
+        List<Space> spaces = spaceRepository
+                .findByChannelUidAndSpaceTypeAndIsActiveTrueAndIsDeletedFalseOrderByCreatedAtDesc(
+                        channelUid, spaceType);
         return spaces.stream()
                 .filter(space -> hasAccess(space, currentUserUid))
                 .map(space -> SpaceDto.fromEntity(space, currentUserUid))
@@ -153,7 +161,8 @@ public class SpaceService {
      * 공간 수정
      */
     @Transactional
-    public SpaceDto updateSpace(String spaceUid, SpaceUpdateRequest request, String currentUserUid, String currentUserName) {
+    public SpaceDto updateSpace(String spaceUid, SpaceUpdateRequest request, String currentUserUid,
+            String currentUserName) {
         Space space = spaceRepository.findById(spaceUid)
                 .orElseThrow(() -> new IllegalArgumentException("공간을 찾을 수 없습니다."));
 
@@ -260,8 +269,7 @@ public class SpaceService {
         activityLogHelper.logSpaceJoined(
                 userUid, user.getActualName(),
                 space.getChannelUid(), "",
-                spaceUid, space.getName()
-        );
+                spaceUid, space.getName());
 
         log.info("멤버 추가 완료: spaceUid={}, userUid={}, adminUid={}", spaceUid, userUid, adminUid);
     }
@@ -343,7 +351,7 @@ public class SpaceService {
         space.setAdminUid(newAdminUid);
         spaceRepository.save(space);
 
-        log.info("공간 관리자 변경 완료: spaceUid={}, oldAdminUid={}, newAdminUid={}", 
+        log.info("공간 관리자 변경 완료: spaceUid={}, oldAdminUid={}, newAdminUid={}",
                 spaceUid, currentAdminUid, newAdminUid);
     }
 
@@ -353,17 +361,18 @@ public class SpaceService {
      */
     private void validateSpaceCreationLimit(String channelUid, String adminUid, Space.SpaceType spaceType) {
         // 해당 채널에서 사용자가 관리자로 있는 같은 타입의 활성 공간 개수 확인
-        long existingSpaceCount = spaceRepository.countByChannelUidAndAdminUidAndSpaceTypeAndIsActiveTrueAndIsDeletedFalse(
-                channelUid, adminUid, spaceType);
-        
+        long existingSpaceCount = spaceRepository
+                .countByChannelUidAndAdminUidAndSpaceTypeAndIsActiveTrueAndIsDeletedFalse(
+                        channelUid, adminUid, spaceType);
+
         if (existingSpaceCount > 0) {
             String typeDisplay = spaceType == Space.SpaceType.BOARD ? "게시판" : "채팅";
             throw new IllegalStateException(
-                    String.format("이미 %s 공간을 생성하셨습니다. 채널당 %s 공간은 1개만 생성할 수 있습니다.", 
+                    String.format("이미 %s 공간을 생성하셨습니다. 채널당 %s 공간은 1개만 생성할 수 있습니다.",
                             typeDisplay, typeDisplay));
         }
-        
-        log.debug("공간 생성 제한 확인 완료: channelUid={}, adminUid={}, spaceType={}, existingCount={}", 
+
+        log.debug("공간 생성 제한 확인 완료: channelUid={}, adminUid={}, spaceType={}, existingCount={}",
                 channelUid, adminUid, spaceType, existingSpaceCount);
     }
 
@@ -373,19 +382,19 @@ public class SpaceService {
     public List<Map<String, String>> getInvitableUsers(String spaceUid, String adminUid, String search) {
         Space space = spaceRepository.findById(spaceUid)
                 .orElseThrow(() -> new IllegalArgumentException("공간을 찾을 수 없습니다."));
-        
+
         // 관리자 권한 확인
         validateAdmin(space, adminUid);
-        
+
         // 공개 공간인 경우 초대 불가
         if (space.isPublic()) {
             throw new IllegalArgumentException("공개 공간은 초대 기능을 사용할 수 없습니다.");
         }
-        
+
         // 채널 멤버 중 공간에 속하지 않은 사용자 조회
         List<User> channelMembers = userRepository.findChannelMembersNotInSpace(
                 space.getChannelUid(), spaceUid, search);
-        
+
         return channelMembers.stream()
                 .map(user -> {
                     Map<String, String> userInfo = new HashMap<>();
@@ -404,40 +413,40 @@ public class SpaceService {
     public int inviteMultipleUsers(String spaceUid, List<String> userUids, String adminUid, String adminName) {
         Space space = spaceRepository.findById(spaceUid)
                 .orElseThrow(() -> new IllegalArgumentException("공간을 찾을 수 없습니다."));
-        
+
         // 관리자 권한 확인
         validateAdmin(space, adminUid);
-        
+
         // 공개 공간인 경우 초대 불가
         if (space.isPublic()) {
             throw new IllegalArgumentException("공개 공간은 초대 기능을 사용할 수 없습니다.");
         }
-        
+
         int successCount = 0;
         List<String> invitedUserNames = new ArrayList<>();
-        
+
         for (String userUid : userUids) {
             try {
                 // 사용자 조회
                 User user = userRepository.findById(userUid)
                         .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다: " + userUid));
-                
+
                 // 이미 멤버인지 확인
                 if (space.isMember(userUid)) {
                     log.warn("이미 공간의 멤버입니다: userUid={}, spaceUid={}", userUid, spaceUid);
                     continue;
                 }
-                
+
                 // 이미 대기중인 초대가 있는지 확인
                 boolean hasPendingInvitation = invitationRepository
                         .existsBySpaceUidAndInvitedUserUidAndStatus(
                                 spaceUid, userUid, SpaceInvitation.InvitationStatus.PENDING);
-                
+
                 if (hasPendingInvitation) {
                     log.warn("이미 대기중인 초대가 있습니다: userUid={}, spaceUid={}", userUid, spaceUid);
                     continue;
                 }
-                
+
                 // 초대 생성
                 SpaceInvitation invitation = SpaceInvitation.builder()
                         .spaceUid(spaceUid)
@@ -445,33 +454,32 @@ public class SpaceService {
                         .invitedUserUid(userUid)
                         .status(SpaceInvitation.InvitationStatus.PENDING)
                         .build();
-                
+
                 invitationRepository.save(invitation);
                 invitedUserNames.add(user.getActualName());
                 successCount++;
-                
-                log.info("공간 초대 생성 완료: spaceUid={}, inviterUid={}, invitedUserUid={}", 
+
+                log.info("공간 초대 생성 완료: spaceUid={}, inviterUid={}, invitedUserUid={}",
                         spaceUid, adminUid, userUid);
-                
+
             } catch (Exception e) {
                 log.error("사용자 초대 중 오류 발생: userUid={}, error={}", userUid, e.getMessage());
             }
         }
-        
+
         // 활동 로그 기록 (초대한 사용자가 1명 이상인 경우)
         if (successCount > 0) {
-            String description = String.format("%s님이 %d명의 사용자를 초대했습니다: %s", 
+            String description = String.format("%s님이 %d명의 사용자를 초대했습니다: %s",
                     adminName, successCount, String.join(", ", invitedUserNames));
-            
+
             activityLogHelper.logCustomActivity(
                     "SPACE_MEMBERS_INVITED",
                     adminUid, adminName,
                     space.getChannelUid(), "",
                     spaceUid, space.getName(),
-                    description
-            );
+                    description);
         }
-        
+
         return successCount;
     }
 
@@ -498,12 +506,12 @@ public class SpaceService {
         if (space.isPublic()) {
             return true;
         }
-        
+
         // 비공개 공간이면 userUid가 있어야 하고, 관리자 또는 멤버여야 함
         if (userUid == null) {
             return false;
         }
-        
+
         return space.isAdmin(userUid) || space.isMember(userUid);
     }
 

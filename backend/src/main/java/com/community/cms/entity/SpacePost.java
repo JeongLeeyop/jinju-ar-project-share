@@ -51,7 +51,7 @@ public class SpacePost {
     /**
      * 제목
      */
-    @Column(nullable = false, length = 500)
+    @Column(nullable = true, length = 500)
     private String title;
 
     /**

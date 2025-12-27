@@ -38,7 +38,10 @@
 
     <div class="card-join-btn">
       <el-button v-if="communityCheck()" @click="handleJoin()" class="join-button">
-        <slot v-if="channel?.myJoinStatus === null || !channel?.myJoinStatus">
+        <slot v-if="channel?.myChannelStatus">
+          커뮤니티 입장
+        </slot>
+        <slot v-else-if="channel?.myJoinStatus === null || !channel?.myJoinStatus">
           커뮤니티 가입하기
         </slot>
         <slot v-else-if="!channel?.myApprovalStatus">가입 요청중</slot>
@@ -183,8 +186,8 @@ export default class extends Vue {
         this.modalVisible = false;
         this.userModalVisible = true;
     } else if (UserModule.isLogin) { // 로그인시
-      if (this.channel?.myChannelStatus) { // 본인 채널 요청시
-        this.$message.warning('본인의 커뮤니티에는 가입하실 수 없습니다.');
+      if (this.channel?.myChannelStatus) { // 본인 채널 요청시 - 바로 입장
+        this.$router.push({ name: 'CommunityMain', params: { domain: this.$route.params.domain } });
       } else if (this.channel?.myJoinStatus && !this.channel?.myApprovalStatus) { // 가입 요청중일 경우
         this.$message.warning('가입 승인 대기중입니다.');
       } else if (this.channel?.myJoinStatus && this.channel?.myApprovalStatus) { // 가입된 커뮤니티인 경우

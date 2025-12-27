@@ -47,6 +47,9 @@
               :class="getSpaceDotClass(space.spaceType)"
             ></span>
             <span class="space-name">{{ space.name }}</span>
+            <span class="space-type-badge" :class="getSpaceTypeBadgeClass(space.spaceType)">
+              {{ getSpaceTypeLabel(space.spaceType) }}
+            </span>
             <span v-if="space.isAdmin" class="admin-badge">관리자</span>
           </el-menu-item>
           
@@ -394,6 +397,15 @@ export default class extends Vue {
     return spaceType === 'BOARD' ? 'red-dot' : 'orange-dot';
   }
 
+  private getSpaceTypeLabel(spaceType: string): string {
+    return spaceType === 'CHAT' ? '채팅' : '게시판';
+  }
+
+  private getSpaceTypeBadgeClass(spaceType: string): string {
+    return spaceType === 'CHAT' ? 'chat-badge' : 'board-badge';
+  }
+
+
   private handleMenuSelect(index: string) {
     const space = this.spaces.find(s => s.uid === index);
     if (!space) return;
@@ -725,6 +737,7 @@ export default class extends Vue {
 }
 
 .space-name {
+  flex: 1;
   color: #222;
   font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
   font-size: 18px;
@@ -732,6 +745,43 @@ export default class extends Vue {
   line-height: 20px;
   transition: all 0.2s;
 }
+
+.space-type-badge {
+  display: inline-flex;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 16px;
+  white-space: nowrap;
+  margin-left: 6px;
+
+  &.chat-badge {
+    background: rgba(255, 173, 58, 0.15);
+    color: #FF8C00;
+  }
+
+  &.board-badge {
+    background: rgba(255, 88, 88, 0.15);
+    color: #FF5858;
+  }
+}
+
+.admin-badge {
+  display: inline-flex;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: rgba(7, 61, 255, 0.1);
+  color: #073DFF;
+  font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 16px;
+  white-space: nowrap;
+  margin-left: 6px;
+}
+
 
 // Marketplace Section
 .marketplace-section {

@@ -58,6 +58,7 @@
                 type="text"
                 placeholder="커뮤니티 공간 이름"
                 class="space-name-input"
+                maxlength="7"
               />
             </div>
           </div>
@@ -150,6 +151,11 @@ export default class extends Vue {
   private async createSpace() {
     if (!this.spaceName.trim()) {
       this.$message.warning('커뮤니티 공간 이름을 입력해주세요.');
+      return;
+    }
+
+    if (this.spaceName.trim().length > 7) {
+      this.$message.warning('공간 이름은 최대 7자까지 가능합니다.');
       return;
     }
 

@@ -18,9 +18,9 @@ import java.util.Set;
  */
 @Entity
 @Table(name = "space", indexes = {
-    @Index(name = "idx_channel_uid", columnList = "channel_uid"),
-    @Index(name = "idx_created_at", columnList = "created_at"),
-    @Index(name = "idx_is_active", columnList = "is_active")
+        @Index(name = "idx_channel_uid", columnList = "channel_uid"),
+        @Index(name = "idx_created_at", columnList = "created_at"),
+        @Index(name = "idx_is_active", columnList = "is_active")
 })
 @Getter
 @Setter
@@ -39,8 +39,8 @@ public class Space {
     @Column(name = "channel_uid", nullable = false, length = 100)
     private String channelUid;
 
-    // 공간 이름
-    @Column(name = "name", nullable = false, length = 200)
+    // 공간 이름 (최대 7자)
+    @Column(name = "name", nullable = false, length = 7)
     private String name;
 
     // 공간 설명

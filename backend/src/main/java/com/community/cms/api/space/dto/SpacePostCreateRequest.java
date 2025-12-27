@@ -18,7 +18,6 @@ import java.util.List;
 @AllArgsConstructor
 public class SpacePostCreateRequest {
 
-    @NotBlank(message = "제목은 필수입니다")
     @Size(max = 500, message = "제목은 500자 이하여야 합니다")
     private String title;
 
