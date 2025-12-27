@@ -85,10 +85,12 @@ export interface MarketplaceProduct {
   offlineMarketplaceUid: string | null;
   offlineMarketplaceName: string | null;
   productType: 'SALE' | 'SHARE' | 'REQUEST';
+  category?: string; // 백엔드에서 category로 내려올 수도 있음
   title: string;
   description: string;
   price: number;
   stock: number;
+  stockQuantity?: number; // 백엔드 필드명 대응
   location: string;
   sellerUid: string;
   sellerName: string;
@@ -96,7 +98,9 @@ export interface MarketplaceProduct {
   viewCount: number;
   createdAt: string;
   updatedAt: string;
-  images: MarketplaceProductImage[];
+  images?: MarketplaceProductImage[];
+  imageUids?: string[];
+  thumbnailUid?: string | null;
   isOffline: boolean;
   isMine: boolean;
 }

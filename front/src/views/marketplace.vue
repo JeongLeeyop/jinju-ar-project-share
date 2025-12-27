@@ -252,7 +252,10 @@ export default class extends Vue {
   }
 
   get filteredProducts() {
-    return this.products.filter(product => product.productType === this.activeFilter);
+    // API에서 category 또는 productType으로 반환될 수 있음
+    return this.products.filter(product => 
+      (product.productType || (product as any).category) === this.activeFilter
+    );
   }
 
   private async checkPermission() {
@@ -289,6 +292,7 @@ export default class extends Vue {
   }
 
   private openProductDetail(product: MarketplaceProduct) {
+    console.log('Clicking product:', product);
     this.$router.push({
       name: 'MarketplaceDetail',
       params: {
@@ -403,6 +407,12 @@ export default class extends Vue {
   }
 
   private getProductImage(product: MarketplaceProduct): string {
+    if (product.thumbnailUid) {
+      return `/api/attached-file/${product.thumbnailUid}`;
+    }
+    if (product.imageUids && product.imageUids.length > 0) {
+      return `/api/attached-file/${product.imageUids[0]}`;
+    }
     if (product.images && product.images.length > 0) {
       return `/api/attached-file/${product.images[0].fileUid}`;
     }
@@ -410,15 +420,19 @@ export default class extends Vue {
   }
 
   private formatPrice(product: MarketplaceProduct): string {
-    if (product.productType === 'SHARE') {
+    const type = product.productType || (product as any).category;
+    if (type === 'SHARE') {
       return '나눔';
     }
-    return `R ${product.price.toLocaleString()}`;
+    const price = product.price || 0;
+    return `R ${price.toLocaleString()}`;
   }
 
   private getStatusBadge(product: MarketplaceProduct): string {
-    if (product.stock === 0) {
-      return product.productType === 'SALE' ? '판매 완료' : '나눔 완료';
+    const stock = product.stock !== undefined ? product.stock : product.stockQuantity;
+    if (stock === 0) {
+      const type = product.productType || (product as any).category;
+      return type === 'SALE' ? '판매 완료' : '나눔 완료';
     }
     return '';
   }

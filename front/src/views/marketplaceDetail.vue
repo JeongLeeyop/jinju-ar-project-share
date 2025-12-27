@@ -7,11 +7,11 @@
         <div class="detail-layout">
           <div class="detail-left">
             <div class="main-image-wrapper">
-              <img :src="product.images[currentImageIndex]" alt="Product Image" class="main-product-image" />
+              <img :src="productImages[currentImageIndex]" alt="Product Image" class="main-product-image" />
             </div>
             <div class="thumbnail-row">
               <img 
-                v-for="(image, index) in product.images" 
+                v-for="(image, index) in productImages" 
                 :key="index"
                 :src="image" 
                 :alt="`Thumbnail ${index + 1}`" 
@@ -22,7 +22,7 @@
             </div>
             <div class="image-indicators">
               <span 
-                v-for="(image, index) in product.images" 
+                v-for="(image, index) in productImages" 
                 :key="`dot-${index}`"
                 class="indicator-dot"
                 :class="{ active: currentImageIndex === index }"
@@ -44,18 +44,18 @@
                   </g>
                 </svg>
               </div>
-              <span class="seller-name">{{ product.seller }}</span>
+              <span class="seller-name">{{ sellerName }}</span>
             </div>
 
             <div class="product-header">
               <div class="header-text">
                 <h2 class="detail-title">{{ product.title }}</h2>
-                <p class="detail-location">{{ product.location }}</p>
+                <p class="detail-location">{{ locationText }}</p>
               </div>
               <button class="trade-btn" @click="handleTrade">거래하기</button>
             </div>
 
-            <div class="detail-price">{{ product.price }}</div>
+            <div class="detail-price">{{ formattedPrice }}</div>
 
             <div class="product-description">
               {{ product.description }}
@@ -117,21 +117,9 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
+import { Component, Vue, Watch } from 'vue-property-decorator';
 import CommunitySidebar from './components/communitySidebar.vue';
-
-interface Product {
-  id: number;
-  title: string;
-  location: string;
-  price: string;
-  image: string;
-  images: string[];
-  type: 'sale' | 'share' | 'request';
-  status?: string;
-  seller: string;
-  description: string;
-}
+import { getProduct, MarketplaceProduct } from '@/api/marketplace';
 
 @Component({
   name: 'MarketplaceDetail',
@@ -140,81 +128,47 @@ interface Product {
   },
 })
 export default class extends Vue {
-  private product: Product | null = null;
+  private product: MarketplaceProduct | null = null;
   private currentImageIndex = 0;
   private tradeModalVisible = false;
+  private loading = false;
 
-  private mockProducts: Product[] = [
-    {
-      id: 1,
-      title: '산청 사과 1박스',
-      location: '산청군 금서면 수철리',
-      price: 'R 15,000',
-      image: 'https://api.builder.io/api/v1/image/assets/TEMP/4b83b9d31f97483c9f8603f324ff13c84b7989bf?width=748',
-      images: [
-        'https://api.builder.io/api/v1/image/assets/TEMP/0a778705249fc98de958f817fb6ea84ab8272da7?width=1356',
-        'https://api.builder.io/api/v1/image/assets/TEMP/ce305e4980b3e7fdf5b79e95fbb95125104a41f6?width=412',
-        'https://api.builder.io/api/v1/image/assets/TEMP/6426a993b126866c2e5564179cf9220821960dab?width=412',
-        'https://api.builder.io/api/v1/image/assets/TEMP/b034aee7bc291d31d641928c561ef97d7d7dbe3b?width=412',
-      ],
-      type: 'sale',
-      seller: '오형래 님',
-      description: '직접 어머님께서 수확하신 산청 꿀 사과 15kg 1박스를 판매합니다. 직접 어머님께서 수확하신 산청 꿀 사과 15kg 1박스를 판매합니다.\n\n정말 꿀처럼 달아서 후회하지 않으실 겁니다!! 정말 꿀처럼 달아서 후회하지 않으실 겁니다!! 정말 꿀처럼 달아서 후회하지 않으실 겁니다!!',
-    },
-    {
-      id: 2,
-      title: '아기 나무 침대',
-      location: '산청군 금서면 평촌리',
-      price: '나눔',
-      image: 'https://api.builder.io/api/v1/image/assets/TEMP/a6c13dafa3522e88e32f24430f0883a3d59fdc16?width=748',
-      images: [
-        'https://api.builder.io/api/v1/image/assets/TEMP/ac0d6ac00deec0aa053fdbc676e2f50e69a61d99?width=748',
-      ],
-      type: 'share',
-      seller: '오형래 님',
-      description: '사용하지 않는 아기 나무 침대를 나눔합니다.',
-    },
-    {
-      id: 3,
-      title: '고구마 수확 도움고구마 수확 도움고구마 수확 도움',
-      location: '산청군 금서면 수철리',
-      price: 'R 15,000',
-      image: 'https://api.builder.io/api/v1/image/assets/TEMP/55b515e0762e05c335280c77113e93295c372099?width=748',
-      images: [
-        'https://api.builder.io/api/v1/image/assets/TEMP/49f3e25ed596ae5d8d6db7ab0e5f2dc67e9b29af?width=748',
-      ],
-      type: 'request',
-      seller: '오형래 님',
-      description: '고구마 수확을 도와주실 분을 찾습니다.',
-    },
-    {
-      id: 4,
-      title: '산청 사과 1박스',
-      location: '산청군 금서면 수철리',
-      price: 'R 15,000',
-      image: 'https://api.builder.io/api/v1/image/assets/TEMP/4b83b9d31f97483c9f8603f324ff13c84b7989bf?width=748',
-      images: [
-        'https://api.builder.io/api/v1/image/assets/TEMP/9f30af96a00761f86f15d1316d03f9423aa00b1b?width=748',
-      ],
-      type: 'sale',
-      status: '판매 완료',
-      seller: '오형래 님',
-      description: '직접 어머님께서 수확하신 산청 꿀 사과 15kg 1박스를 판매합니다.',
-    },
-  ];
-
-  mounted() {
-    this.loadProduct();
+  async mounted() {
+    await this.loadProduct();
   }
 
-  private loadProduct() {
-    const productId = parseInt(this.$route.params.productId);
+  @Watch('$route.params.productId')
+  async onProductIdChange() {
+    await this.loadProduct();
+  }
+
+  private async loadProduct() {
+    const productId = this.$route.params.productId;
+    console.log('MarketplaceDetail productId:', productId);
     
-    this.product = this.mockProducts.find(p => p.id === productId) || null;
-    
-    if (!this.product) {
-      this.$message.error('상품을 찾을 수 없습니다.');
-      this.$router.push({ name: 'Marketplace' });
+    if (!productId) {
+      this.$message.error('상품 ID가 없습니다.');
+      this.$router.push({ 
+        name: 'Marketplace',
+        params: { domain: this.$route.params.domain || 'default' }
+      });
+      return;
+    }
+
+    this.loading = true;
+    try {
+      const response = await getProduct(productId);
+      this.product = response.data;
+    } catch (error: any) {
+      console.error('getProduct error:', error);
+      const message = error.response?.data?.message || '상품을 찾을 수 없습니다.';
+      this.$message.error(message);
+      this.$router.push({ 
+        name: 'Marketplace',
+        params: { domain: this.$route.params.domain || 'default' }
+      });
+    } finally {
+      this.loading = false;
     }
   }
 
@@ -229,7 +183,48 @@ export default class extends Vue {
   private confirmTrade() {
     this.$message.success('거래가 완료되었습니다!');
     this.tradeModalVisible = false;
-    this.$router.push({ name: 'Marketplace' });
+    this.$router.push({ 
+      name: 'Marketplace',
+      params: { domain: this.$route.params.domain || 'default' }
+    });
+  }
+
+  // 이미지 URL 생성
+  get productImages(): string[] {
+    if (!this.product) return [];
+    
+    if (this.product.imageUids && this.product.imageUids.length > 0) {
+      return this.product.imageUids.map(uid => `/api/attached-file/${uid}`);
+    }
+    
+    if (this.product.images && this.product.images.length > 0) {
+      return this.product.images.map(img => `/api/attached-file/${img.fileUid}`);
+    }
+    
+    return ['https://via.placeholder.com/678x404?text=No+Image'];
+  }
+
+  // 가격 표시
+  get formattedPrice(): string {
+    if (!this.product) return '';
+    
+    const type = this.product.productType || (this.product as any).category;
+    if (type === 'SHARE') {
+      return '나눔';
+    }
+    
+    const price = this.product.price || 0;
+    return `R ${price.toLocaleString()}`;
+  }
+
+  // 판매자 이름
+  get sellerName(): string {
+    return this.product?.sellerName || '알 수 없음';
+  }
+
+  // 위치 정보
+  get locationText(): string {
+    return this.product?.location || '';
   }
 }
 </script>
