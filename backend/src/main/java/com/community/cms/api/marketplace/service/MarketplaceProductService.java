@@ -69,14 +69,14 @@ public class MarketplaceProductService {
 
         MarketplaceProduct product = MarketplaceProduct.builder()
                 .uid(productUid)
-                .channelUid(channelUid)  // 변환된 channelUid 사용
+                .channelUid(channelUid) // 변환된 channelUid 사용
                 .offlineMarketplaceUid(request.getOfflineMarketplaceUid())
-                .category(request.getProductType())  // productType을 category로 저장
+                .category(request.getProductType()) // productType을 category로 저장
                 .title(request.getTitle())
                 .description(request.getDescription())
                 .price(request.getPrice())
-                .stockQuantity(stock)  // 기본값 1
-                .location(request.getLocation())  // 거래 장소
+                .stockQuantity(stock) // 기본값 1
+                .location(request.getLocation()) // 거래 장소
                 .sellerUid(userUid)
                 .sellerName(userName)
                 .status("ACTIVE")
@@ -226,7 +226,7 @@ public class MarketplaceProductService {
         product.setDescription(request.getDescription());
         product.setPrice(request.getPrice());
         product.setStockQuantity(request.getStockQuantity());
-        
+
         if (request.getStatus() != null) {
             product.setStatus(request.getStatus());
         }
@@ -277,7 +277,7 @@ public class MarketplaceProductService {
                     .productUid(productUid)
                     .fileUid(imageUids.get(i))
                     .displayOrder(i)
-                    .isThumbnail(i == 0)  // 첫 번째 이미지를 썸네일로
+                    .isThumbnail(i == 0) // 첫 번째 이미지를 썸네일로
                     .build();
 
             imageRepository.save(image);
@@ -288,11 +288,18 @@ public class MarketplaceProductService {
      * 상품 등록 권한 체크
      */
     private void checkProductCreatePermission(String channelDomain, String userUid, String offlineMarketplaceUid) {
-        // domain → channelUid 변환
-        String channelUid = getChannelUidByDomain(channelDomain);
-        
-        ChannelMember member = channelMemberRepository.findByUserUidAndChannelUid(userUid, channelUid)
-                .orElseThrow(() -> new RuntimeException("채널 멤버가 아닙니다"));
+        // domain → Channel 조회
+        Channel channel = channelRepository.findByDomain(channelDomain)
+                .orElseThrow(() -> new RuntimeException("채널을 찾을 수 없습니다"));
+
+        // 커뮤니티 관리자(채널 소유자)인 경우 무조건 등록 가능
+        if (userUid.equals(channel.getUserUid())) {
+            log.info("Community admin {} registering product in channel {}", userUid, channelDomain);
+            return;
+        }
+
+        ChannelMember member = channelMemberRepository.findByUserUidAndChannelUid(userUid, channel.getUid())
+                .orElseThrow(() -> new RuntimeException("채널 멤버만 등록할 수 있습니다"));
 
         ChannelMemberPermissionType requiredPermission;
 
