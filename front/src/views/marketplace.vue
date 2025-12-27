@@ -64,13 +64,6 @@
         <p>등록된 상품이 없습니다</p>
       </div>
 
-      <!-- 플로팅 작성 버튼 -->
-      <button v-if="canWrite" class="write-post-btn-fixed" @click="openWriteModal">
-        <span class="btn-text">상품 등록하기</span>
-        <svg class="btn-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M12 5V19M5 12H19" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </button>
     </div>
 
     <!-- 상품 등록 모달 -->

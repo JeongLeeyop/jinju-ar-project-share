@@ -147,8 +147,6 @@ class ChannelServiceImpl implements ChannelService {
     @Autowired
     private SessionRegistry sessionRegistry;
 
-    private final UserRepository userRepository;
-
     @Override
     public ChannelDto.detail detail(SinghaUser authUser, String uid) {
         // if(authUser == null){throw new UserNotFoundException();}
