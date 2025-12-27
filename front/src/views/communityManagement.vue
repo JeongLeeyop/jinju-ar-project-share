@@ -1158,4 +1158,304 @@ export default class extends Vue {
     }
   }
 }
+
+// 425px 이하 모바일 반응형
+@media screen and (max-width: 425px) {
+  .community-management-main {
+    padding: 20px 16px;
+  }
+
+  .page-header {
+    margin-bottom: 24px;
+  }
+
+  .page-title {
+    font-size: 20px;
+  }
+
+  .tabs-section {
+    gap: 0;
+    margin-bottom: 24px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+  }
+
+  .tab-btn {
+    flex: 1;
+    min-width: max-content;
+    padding: 12px 10px;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+
+  // 포인트 관리 섹션
+  .point-management-section {
+    padding: 20px 16px;
+    border-radius: 10px;
+  }
+
+  .section-header {
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+  }
+
+  .section-title {
+    font-size: 18px;
+    gap: 8px;
+
+    i {
+      font-size: 22px;
+    }
+  }
+
+  .section-description {
+    font-size: 13px;
+  }
+
+  // 포인트 설정 폼
+  .point-settings-form {
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+
+  .point-setting-item {
+    padding: 14px;
+    border-radius: 8px;
+    gap: 12px;
+  }
+
+  .setting-icon {
+    width: 40px;
+    height: 40px;
+    font-size: 20px;
+  }
+
+  .setting-title {
+    font-size: 14px;
+  }
+
+  .setting-description {
+    font-size: 12px;
+  }
+
+  .setting-input {
+    ::v-deep .el-input-number {
+      width: 120px;
+
+      .el-input__inner {
+        height: 38px;
+        font-size: 14px;
+        padding-left: 12px;
+        padding-right: 40px;
+      }
+
+      .el-input-number__decrease,
+      .el-input-number__increase {
+        width: 32px;
+      }
+    }
+
+    .unit {
+      font-size: 14px;
+    }
+  }
+
+  // 저장 섹션
+  .save-section {
+    padding-top: 20px;
+    gap: 10px;
+
+    ::v-deep .el-button {
+      min-width: auto;
+      width: 100%;
+      height: 44px;
+      font-size: 14px;
+    }
+  }
+
+  // 포인트 차감/지급 섹션
+  .point-adjust-section {
+    padding: 20px 16px;
+    border-radius: 10px;
+  }
+
+  .member-search-section {
+    margin-bottom: 20px;
+
+    ::v-deep .el-input__inner {
+      height: 40px;
+      font-size: 14px;
+    }
+  }
+
+  .member-list-section {
+    border-radius: 8px;
+  }
+
+  .member-list-header {
+    display: none;
+  }
+
+  .member-list-body {
+    max-height: 450px;
+  }
+
+  .member-row {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    padding: 16px;
+  }
+
+  .member-info-cell {
+    gap: 10px;
+
+    .member-avatar {
+      width: 40px;
+      height: 40px;
+      font-size: 20px;
+    }
+
+    .member-name {
+      font-size: 14px;
+      margin-bottom: 2px;
+    }
+
+    .member-email {
+      font-size: 12px;
+    }
+  }
+
+  .member-point-cell {
+    justify-content: flex-start;
+    padding-left: 50px;
+    gap: 3px;
+
+    .point-amount {
+      font-size: 18px;
+    }
+
+    .point-unit {
+      font-size: 12px;
+    }
+  }
+
+  .member-action-cell {
+    justify-content: flex-start;
+    padding-left: 50px;
+    gap: 8px;
+
+    .el-button {
+      flex: 1;
+      padding: 8px 12px;
+      font-size: 12px;
+    }
+  }
+
+  .empty-members {
+    padding: 40px 16px;
+
+    i {
+      font-size: 36px;
+      margin-bottom: 12px;
+    }
+
+    p {
+      font-size: 14px;
+    }
+  }
+
+  // 설정 섹션
+  .settings-section {
+    padding: 20px 16px;
+    border-radius: 10px;
+  }
+
+  .empty-container {
+    padding: 60px 20px;
+
+    i {
+      font-size: 48px;
+      margin-bottom: 16px;
+    }
+
+    p {
+      font-size: 14px;
+    }
+  }
+
+  // 포인트 조정 모달
+  ::v-deep .point-adjust-modal {
+    width: 100% !important;
+    max-width: 100vw;
+    margin: 0 !important;
+    height: 100%;
+    border-radius: 0;
+
+    .el-dialog__body {
+      padding: 60px 16px 20px;
+      height: 100%;
+      overflow-y: auto;
+    }
+  }
+
+  .modal-close-btn {
+    top: 16px;
+    right: 16px;
+  }
+
+  .modal-title {
+    font-size: 20px;
+    margin-bottom: 20px;
+  }
+
+  .modal-member-info {
+    padding: 16px;
+    gap: 12px;
+    margin-bottom: 20px;
+    border-radius: 8px;
+
+    .member-avatar {
+      width: 48px;
+      height: 48px;
+      font-size: 24px;
+    }
+
+    .member-name {
+      font-size: 16px;
+      margin-bottom: 4px;
+    }
+
+    .member-point {
+      font-size: 13px;
+    }
+  }
+
+  .modal-form {
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+
+  .form-group {
+    gap: 6px;
+  }
+
+  .form-label {
+    font-size: 13px;
+  }
+
+  .modal-actions {
+    gap: 10px;
+
+    ::v-deep .el-button {
+      min-width: auto;
+      flex: 1;
+      height: 44px;
+      font-size: 14px;
+    }
+  }
+}
 </style>

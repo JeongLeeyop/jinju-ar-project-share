@@ -1826,4 +1826,443 @@ export default class extends Vue {
     }
   }
 }
+
+// 425px 이하 모바일 반응형
+@media screen and (max-width: 425px) {
+  .member-management-main {
+    padding: 20px 16px;
+  }
+
+  .page-header {
+    margin-bottom: 24px;
+  }
+
+  .page-title {
+    font-size: 20px;
+  }
+
+  .tabs-section {
+    gap: 0;
+    margin-bottom: 24px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+  }
+
+  .tab-btn {
+    flex: 1;
+    min-width: max-content;
+    padding: 12px 10px;
+    font-size: 13px;
+    gap: 4px;
+    white-space: nowrap;
+
+    .badge {
+      font-size: 10px;
+      padding: 2px 6px;
+      min-width: 16px;
+    }
+  }
+
+  .tab-content {
+    min-height: 300px;
+  }
+
+  // 필터 바
+  .filter-bar {
+    margin-bottom: 20px;
+    gap: 12px;
+  }
+
+  .search-box {
+    height: 40px;
+    padding: 0 12px;
+    gap: 10px;
+
+    i {
+      font-size: 16px;
+    }
+  }
+
+  .search-input {
+    font-size: 14px;
+  }
+
+  .invite-btn {
+    height: 40px;
+    padding: 0 16px;
+    font-size: 14px;
+
+    i {
+      font-size: 16px;
+    }
+  }
+
+  // 로딩
+  .loading-container {
+    padding: 60px 20px;
+
+    i {
+      font-size: 36px;
+      margin-bottom: 16px;
+    }
+
+    p {
+      font-size: 14px;
+    }
+  }
+
+  // 회원 테이블
+  .members-table-wrapper {
+    border-radius: 10px;
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+
+    &::-webkit-scrollbar {
+      height: 4px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 2px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: #ccc;
+      border-radius: 2px;
+    }
+  }
+
+  .members-table {
+    min-width: 550px;
+    width: max-content;
+
+    thead th {
+      padding: 12px 12px;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    tbody td {
+      padding: 12px 12px;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+  }
+
+  .member-avatar-placeholder {
+    width: 32px;
+    height: 32px;
+    font-size: 16px;
+  }
+
+  .member-name {
+    font-size: 13px;
+  }
+
+  .status-badge {
+    padding: 3px 8px;
+    font-size: 11px;
+  }
+
+  .action-btn {
+    height: 32px;
+    padding: 0 12px;
+    font-size: 12px;
+  }
+
+  // 가입 대기 목록
+  .pending-list {
+    gap: 16px;
+  }
+
+  .pending-card {
+    padding: 16px;
+    border-radius: 10px;
+  }
+
+  .pending-header {
+    margin-bottom: 12px;
+
+    .member-details {
+      .member-name {
+        font-size: 16px;
+      }
+
+      .member-email {
+        font-size: 12px;
+      }
+    }
+  }
+
+  .member-avatar-large-placeholder {
+    width: 48px;
+    height: 48px;
+    font-size: 22px;
+  }
+
+  .pending-date {
+    font-size: 12px;
+  }
+
+  .pending-message {
+    padding: 12px;
+    border-radius: 6px;
+    margin-bottom: 12px;
+
+    .message-label {
+      font-size: 12px;
+      margin-bottom: 6px;
+    }
+
+    .message-content {
+      font-size: 13px;
+    }
+  }
+
+  .pending-actions {
+    gap: 8px;
+
+    .action-btn {
+      height: 36px;
+      font-size: 13px;
+    }
+  }
+
+  // 빈 상태
+  .empty-container {
+    padding: 60px 20px;
+    font-size: 14px;
+  }
+
+  // 권한 관리
+  .permissions-list {
+    gap: 16px;
+  }
+
+  .permission-card {
+    padding: 16px;
+    border-radius: 10px;
+  }
+
+  .permission-header {
+    margin-bottom: 16px;
+
+    .member-details {
+      .member-name {
+        font-size: 16px;
+      }
+
+      .member-email {
+        font-size: 12px;
+      }
+    }
+  }
+
+  .permission-tags {
+    gap: 6px;
+  }
+
+  .permission-tag {
+    padding: 4px 10px;
+    font-size: 11px;
+    border-radius: 4px;
+  }
+
+  .no-permission {
+    font-size: 12px;
+  }
+
+  // 모달 공통 스타일
+  ::v-deep .invite-modal,
+  ::v-deep .survey-modal,
+  ::v-deep .permission-modal {
+    width: 100% !important;
+    max-width: 100vw;
+    margin: 0 !important;
+    height: 100%;
+    border-radius: 0;
+
+    .el-dialog__body {
+      padding: 60px 16px 20px;
+      height: 100%;
+      overflow-y: auto;
+    }
+  }
+
+  .modal-content {
+    gap: 20px;
+  }
+
+  .modal-close-btn {
+    right: 16px;
+    top: 16px;
+  }
+
+  .modal-title {
+    font-size: 20px;
+  }
+
+  .form-section {
+    gap: 16px;
+  }
+
+  .form-group {
+    gap: 6px;
+  }
+
+  .form-label {
+    font-size: 14px;
+  }
+
+  .form-input {
+    height: 44px;
+    padding: 0 12px;
+    font-size: 14px;
+    border-radius: 6px;
+  }
+
+  .form-textarea {
+    padding: 10px 12px;
+    font-size: 14px;
+    border-radius: 6px;
+  }
+
+  .space-checkboxes {
+    padding: 12px;
+    gap: 10px;
+    max-height: 160px;
+  }
+
+  .space-checkbox-item {
+    gap: 10px;
+
+    input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+    }
+
+    .space-checkbox-label {
+      font-size: 14px;
+    }
+  }
+
+  .submit-btn {
+    height: 48px;
+    font-size: 16px;
+    border-radius: 8px;
+  }
+
+  // 설문조사 모달
+  .survey-modal {
+    .survey-applicant {
+      padding: 16px;
+      gap: 12px;
+
+      .member-avatar-large-placeholder {
+        width: 48px;
+        height: 48px;
+        font-size: 22px;
+      }
+
+      .applicant-info {
+        h4 {
+          font-size: 16px;
+        }
+
+        p {
+          font-size: 12px;
+        }
+      }
+    }
+
+    .survey-questions {
+      gap: 20px;
+      margin-bottom: 24px;
+    }
+
+    .survey-item {
+      .survey-question {
+        font-size: 14px;
+        margin-bottom: 10px;
+      }
+
+      .survey-answer {
+        font-size: 13px;
+        padding: 12px;
+        border-radius: 6px;
+      }
+    }
+
+    .survey-actions {
+      margin-top: 24px;
+      padding-top: 20px;
+      gap: 10px;
+
+      .action-btn {
+        height: 44px;
+        font-size: 14px;
+      }
+    }
+  }
+
+  // 권한 모달
+  .permission-member-info {
+    padding: 16px;
+    gap: 12px;
+    margin-bottom: 20px;
+    border-radius: 10px;
+
+    .member-avatar-placeholder {
+      width: 40px;
+      height: 40px;
+      font-size: 18px;
+    }
+
+    .member-details {
+      h4 {
+        font-size: 16px;
+      }
+
+      p {
+        font-size: 12px;
+      }
+    }
+  }
+
+  .permission-section {
+    margin-bottom: 20px;
+  }
+
+  .permission-section-label {
+    font-size: 14px;
+    margin-bottom: 12px;
+  }
+
+  .permission-checkboxes {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    padding: 12px;
+    max-height: 280px;
+  }
+
+  .permission-checkbox-item {
+    padding: 10px;
+    gap: 10px;
+    border-radius: 6px;
+
+    input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+    }
+
+    .permission-checkbox-label {
+      font-size: 13px;
+    }
+  }
+}
 </style>

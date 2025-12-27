@@ -779,4 +779,216 @@ export default class extends Vue {
     grid-template-columns: 1fr;
   }
 }
+
+// 425px 이하 모바일 반응형
+@media screen and (max-width: 425px) {
+  .space-management-main {
+    padding: 20px 16px;
+  }
+
+  .page-header {
+    margin-bottom: 24px;
+  }
+
+  .page-title {
+    font-size: 20px;
+  }
+
+  .tabs-section {
+    gap: 0;
+    margin-bottom: 24px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+  }
+
+  .tab-btn {
+    flex: 1;
+    min-width: max-content;
+    padding: 12px 12px;
+    font-size: 13px;
+    gap: 6px;
+    white-space: nowrap;
+  }
+
+  .space-dot {
+    width: 12px;
+    height: 12px;
+  }
+
+  .member-management-section {
+    padding: 20px 16px;
+    border-radius: 10px;
+  }
+
+  .section-header {
+    margin-bottom: 20px;
+    gap: 12px;
+  }
+
+  .section-title {
+    font-size: 18px;
+    gap: 8px;
+  }
+
+  .space-info {
+    gap: 6px;
+    font-size: 12px;
+  }
+
+  .info-item {
+    gap: 4px;
+  }
+
+  .search-section {
+    margin-bottom: 16px;
+
+    ::v-deep .el-input__inner {
+      height: 40px;
+      font-size: 14px;
+    }
+  }
+
+  .member-list {
+    max-height: 300px;
+    padding: 12px;
+    margin-bottom: 20px;
+  }
+
+  .member-item {
+    padding: 12px;
+    margin-bottom: 10px;
+    border-radius: 8px;
+  }
+
+  .member-avatar {
+    width: 40px;
+    height: 40px;
+    font-size: 20px;
+  }
+
+  .member-details {
+    .member-name {
+      font-size: 14px;
+    }
+
+    .member-email {
+      font-size: 12px;
+    }
+  }
+
+  .member-actions {
+    .el-button {
+      padding: 8px 12px;
+      font-size: 12px;
+    }
+  }
+
+  .empty-members {
+    padding: 30px 16px;
+
+    i {
+      font-size: 28px;
+      margin-bottom: 10px;
+    }
+
+    p {
+      font-size: 13px;
+    }
+  }
+
+  .invite-section {
+    padding-top: 20px;
+  }
+
+  .invite-header {
+    margin-bottom: 12px;
+    gap: 12px;
+  }
+
+  .section-subtitle {
+    font-size: 16px;
+    gap: 6px;
+  }
+
+  .invite-search {
+    margin-bottom: 12px;
+
+    ::v-deep .el-input__inner {
+      height: 40px;
+      font-size: 14px;
+    }
+  }
+
+  .invite-member-list {
+    max-height: 220px;
+    padding: 10px;
+  }
+
+  .invite-member-item {
+    padding: 10px;
+    gap: 10px;
+    margin-bottom: 6px;
+
+    .member-avatar {
+      width: 36px;
+      height: 36px;
+      font-size: 18px;
+    }
+
+    .member-name {
+      font-size: 14px;
+    }
+
+    .member-email {
+      font-size: 12px;
+    }
+  }
+
+  .empty-invite-members {
+    padding: 30px 16px;
+
+    i {
+      font-size: 28px;
+      margin-bottom: 10px;
+    }
+
+    p {
+      font-size: 13px;
+    }
+  }
+
+  .empty-container {
+    padding: 60px 20px;
+
+    i {
+      font-size: 48px;
+      margin-bottom: 16px;
+    }
+
+    p {
+      font-size: 14px;
+    }
+  }
+
+  // Element UI 버튼 조정
+  ::v-deep .el-button {
+    padding: 10px 16px;
+    font-size: 13px;
+
+    &--primary {
+      width: 100%;
+    }
+  }
+
+  ::v-deep .el-checkbox {
+    .el-checkbox__inner {
+      width: 16px;
+      height: 16px;
+    }
+  }
+}
 </style>

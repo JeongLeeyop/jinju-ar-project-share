@@ -1279,4 +1279,238 @@ export default class extends Vue {
     }
   }
 }
+
+// 425px 이하 모바일 반응형
+@media (max-width: 425px) {
+  .my-schedule-main {
+    padding: 20px 16px;
+  }
+
+  .page-header {
+    margin-bottom: 24px;
+
+    .page-title {
+      font-size: 20px;
+    }
+  }
+
+  .tabs-section {
+    gap: 0;
+    margin-bottom: 24px;
+
+    .tab-btn {
+      flex: 1;
+      padding: 12px 8px;
+      font-size: 13px;
+      text-align: center;
+      white-space: nowrap;
+    }
+  }
+
+  .tab-content {
+    min-height: 300px;
+  }
+
+  .notice-message {
+    padding: 12px 14px;
+    font-size: 13px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+
+    i {
+      font-size: 16px;
+    }
+  }
+
+  .loading-container {
+    padding: 60px 20px;
+
+    i {
+      font-size: 36px;
+      margin-bottom: 16px;
+    }
+
+    p {
+      font-size: 14px;
+    }
+  }
+
+  .empty-container {
+    padding: 60px 20px;
+    font-size: 14px;
+  }
+
+  .schedules-list {
+    gap: 16px;
+  }
+
+  .schedule-card {
+    padding: 16px;
+    border-radius: 10px;
+  }
+
+  .schedule-header {
+    margin-bottom: 12px;
+    gap: 8px;
+  }
+
+  .schedule-title {
+    font-size: 16px;
+  }
+
+  .status-badge {
+    padding: 4px 10px;
+    font-size: 11px;
+  }
+
+  .schedule-info {
+    gap: 6px;
+    margin-bottom: 14px;
+
+    p {
+      font-size: 13px;
+      gap: 6px;
+
+      i {
+        font-size: 14px;
+      }
+    }
+  }
+
+  .schedule-actions {
+    gap: 8px;
+  }
+
+  .action-btn {
+    height: 36px;
+    font-size: 13px;
+    border-radius: 6px;
+  }
+
+  // 포인트 내역
+  .point-history-list {
+    gap: 16px;
+  }
+
+  .point-summary {
+    gap: 12px;
+
+    .summary-card {
+      padding: 16px;
+      border-radius: 10px;
+
+      h4 {
+        font-size: 12px;
+        margin-bottom: 8px;
+      }
+
+      .point-value {
+        font-size: 24px;
+      }
+    }
+  }
+
+  .history-table {
+    border-radius: 10px;
+
+    table {
+      min-width: 500px;
+
+      thead th {
+        padding: 12px 10px;
+        font-size: 12px;
+      }
+
+      tbody tr td {
+        padding: 12px 10px;
+        font-size: 12px;
+      }
+    }
+  }
+
+  .history-type {
+    padding: 3px 8px;
+    font-size: 11px;
+  }
+
+  // 모달 스타일
+  ::v-deep .participants-modal {
+    width: 100% !important;
+    max-width: 100vw;
+    margin: 0 !important;
+    height: 100%;
+    border-radius: 0;
+
+    .el-dialog__body {
+      padding: 60px 16px 20px;
+      height: 100%;
+      overflow-y: auto;
+    }
+  }
+
+  .modal-content {
+    gap: 20px;
+  }
+
+  .modal-close-btn {
+    right: 16px;
+    top: 16px;
+  }
+
+  .modal-title {
+    font-size: 20px;
+  }
+
+  .schedule-summary {
+    padding: 16px;
+    border-radius: 8px;
+
+    .summary-item {
+      margin-bottom: 10px;
+      font-size: 14px;
+    }
+  }
+
+  .participants-list {
+    max-height: 320px;
+  }
+
+  .participant-item {
+    padding: 12px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .participant-avatar {
+    width: 40px;
+    height: 40px;
+  }
+
+  .participant-details {
+    .participant-name {
+      font-size: 14px;
+    }
+
+    .participant-phone {
+      font-size: 12px;
+    }
+  }
+
+  .participant-date {
+    font-size: 12px;
+    align-self: flex-end;
+  }
+
+  .modal-actions {
+    margin-top: 8px;
+  }
+
+  .modal-btn {
+    height: 44px;
+    padding: 0 24px;
+    font-size: 14px;
+    border-radius: 6px;
+  }
+}
 </style>

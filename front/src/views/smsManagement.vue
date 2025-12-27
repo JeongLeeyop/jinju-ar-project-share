@@ -777,43 +777,508 @@ export default class extends Vue {
     padding: 20px 16px;
   }
 
+  .page-header {
+    margin-bottom: 24px;
+  }
+
   .page-title {
-    font-size: 24px;
+    font-size: 20px;
+    margin-bottom: 6px;
+  }
+
+  .page-description {
+    font-size: 13px;
+  }
+
+  .section-title {
+    font-size: 16px;
+    margin-bottom: 16px;
+    gap: 6px;
+  }
+
+  // 검색 섹션
+  .search-section {
+    padding: 16px;
+    margin-bottom: 16px;
+    border-radius: 10px;
   }
 
   .search-form {
-    flex-direction: column;
+    gap: 10px;
 
-    .el-button {
-      width: 100%;
+    ::v-deep .el-input__inner {
+      height: 40px;
+      font-size: 14px;
+    }
+
+    ::v-deep .el-button {
+      padding: 10px 16px;
+      font-size: 13px;
     }
   }
 
-  .send-info {
-    grid-template-columns: 1fr;
-  }
-
-  .send-actions {
-    flex-direction: column;
-
-    .el-button {
-      width: 100%;
-    }
+  // 검색 결과
+  .search-results {
+    padding: 16px;
+    margin-bottom: 16px;
+    border-radius: 10px;
   }
 
   .results-header {
     flex-direction: column;
     align-items: flex-start;
-    gap: 12px;
+    gap: 10px;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+  }
+
+  .results-title {
+    font-size: 14px;
+  }
+
+  .results-actions {
+    width: 100%;
+    display: flex;
+
+    ::v-deep .el-button {
+      flex: 1;
+      padding: 8px 12px;
+      font-size: 12px;
+    }
+  }
+
+  .member-list {
+    max-height: 280px;
+  }
+
+  .member-item {
+    padding: 12px;
+    gap: 10px;
+
+    &.selected {
+      border-width: 1px;
+    }
+  }
+
+  .member-avatar {
+    width: 36px;
+    height: 36px;
+    font-size: 16px;
+  }
+
+  .member-name {
+    font-size: 14px;
+    margin-bottom: 2px;
   }
 
   .member-contact {
+    font-size: 12px;
     flex-direction: column;
     align-items: flex-start;
-    gap: 4px;
+    gap: 2px;
 
     .divider {
       display: none;
+    }
+  }
+
+  // 메시지 작성 섹션
+  .message-section {
+    padding: 16px;
+    margin-bottom: 16px;
+    border-radius: 10px;
+  }
+
+  .template-selector {
+    margin-bottom: 20px;
+
+    ::v-deep .el-select {
+      .el-input__inner {
+        height: 40px;
+        font-size: 14px;
+      }
+    }
+  }
+
+  .field-label {
+    font-size: 13px;
+    margin-bottom: 6px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .char-count {
+    font-size: 12px;
+  }
+
+  .message-input {
+    margin-bottom: 20px;
+
+    ::v-deep .el-textarea__inner {
+      font-size: 14px;
+      padding: 12px;
+    }
+  }
+
+  .message-info {
+    font-size: 12px;
+    margin-top: 6px;
+  }
+
+  .send-info {
+    padding: 16px;
+    margin-bottom: 20px;
+    gap: 12px;
+    grid-template-columns: 1fr;
+  }
+
+  .info-item {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .info-label {
+    font-size: 12px;
+  }
+
+  .info-value {
+    font-size: 14px;
+  }
+
+  .send-actions {
+    gap: 10px;
+
+    ::v-deep .el-button {
+      padding: 12px 20px;
+      font-size: 14px;
+
+      &--large {
+        height: 44px;
+      }
+    }
+  }
+
+  // 발송 내역
+  .history-section {
+    padding: 16px;
+    border-radius: 10px;
+  }
+
+  .history-list {
+    max-height: 350px;
+  }
+
+  .history-item {
+    padding: 14px;
+    margin-bottom: 10px;
+    border-radius: 8px;
+  }
+
+  .history-header {
+    margin-bottom: 10px;
+  }
+
+  .history-date {
+    font-size: 12px;
+  }
+
+  .history-status {
+    padding: 3px 10px;
+    font-size: 11px;
+  }
+
+  .history-content {
+    .history-message {
+      font-size: 13px;
+      margin-bottom: 10px;
+    }
+
+    .history-info {
+      font-size: 12px;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+  }
+
+  // 빈 상태
+  .empty-state {
+    padding: 40px 16px;
+
+    i {
+      font-size: 36px;
+      margin-bottom: 12px;
+    }
+
+    p {
+      font-size: 13px;
+    }
+  }
+
+  // Element UI 체크박스 조정
+  ::v-deep .el-checkbox {
+    .el-checkbox__inner {
+      width: 16px;
+      height: 16px;
+    }
+  }
+}
+
+// 425px 이하 모바일 반응형
+@media (max-width: 425px) {
+  .sms-management-main {
+    padding: 20px 16px;
+  }
+
+  .page-header {
+    margin-bottom: 24px;
+  }
+
+  .page-title {
+    font-size: 20px;
+    margin-bottom: 6px;
+  }
+
+  .page-description {
+    font-size: 13px;
+  }
+
+  .section-title {
+    font-size: 16px;
+    margin-bottom: 16px;
+    gap: 6px;
+  }
+
+  // 검색 섹션
+  .search-section {
+    padding: 16px;
+    margin-bottom: 16px;
+    border-radius: 10px;
+  }
+
+  .search-form {
+    gap: 10px;
+
+    ::v-deep .el-input__inner {
+      height: 40px;
+      font-size: 14px;
+    }
+
+    ::v-deep .el-button {
+      padding: 10px 16px;
+      font-size: 13px;
+    }
+  }
+
+  // 검색 결과
+  .search-results {
+    padding: 16px;
+    margin-bottom: 16px;
+    border-radius: 10px;
+  }
+
+  .results-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+  }
+
+  .results-title {
+    font-size: 14px;
+  }
+
+  .results-actions {
+    width: 100%;
+    display: flex;
+
+    ::v-deep .el-button {
+      flex: 1;
+      padding: 8px 12px;
+      font-size: 12px;
+    }
+  }
+
+  .member-list {
+    max-height: 280px;
+  }
+
+  .member-item {
+    padding: 12px;
+    gap: 10px;
+
+    &.selected {
+      border-width: 1px;
+    }
+  }
+
+  .member-avatar {
+    width: 36px;
+    height: 36px;
+    font-size: 16px;
+  }
+
+  .member-name {
+    font-size: 14px;
+    margin-bottom: 2px;
+  }
+
+  .member-contact {
+    font-size: 12px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+
+    .divider {
+      display: none;
+    }
+  }
+
+  // 메시지 작성 섹션
+  .message-section {
+    padding: 16px;
+    margin-bottom: 16px;
+    border-radius: 10px;
+  }
+
+  .template-selector {
+    margin-bottom: 20px;
+
+    ::v-deep .el-select {
+      .el-input__inner {
+        height: 40px;
+        font-size: 14px;
+      }
+    }
+  }
+
+  .field-label {
+    font-size: 13px;
+    margin-bottom: 6px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .char-count {
+    font-size: 12px;
+  }
+
+  .message-input {
+    margin-bottom: 20px;
+
+    ::v-deep .el-textarea__inner {
+      font-size: 14px;
+      padding: 12px;
+    }
+  }
+
+  .message-info {
+    font-size: 12px;
+    margin-top: 6px;
+  }
+
+  .send-info {
+    padding: 16px;
+    margin-bottom: 20px;
+    gap: 12px;
+    grid-template-columns: 1fr;
+  }
+
+  .info-item {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .info-label {
+    font-size: 12px;
+  }
+
+  .info-value {
+    font-size: 14px;
+  }
+
+  .send-actions {
+    gap: 10px;
+
+    ::v-deep .el-button {
+      padding: 12px 20px;
+      font-size: 14px;
+
+      &--large {
+        height: 44px;
+      }
+    }
+  }
+
+  // 발송 내역
+  .history-section {
+    padding: 16px;
+    border-radius: 10px;
+  }
+
+  .history-list {
+    max-height: 350px;
+  }
+
+  .history-item {
+    padding: 14px;
+    margin-bottom: 10px;
+    border-radius: 8px;
+  }
+
+  .history-header {
+    margin-bottom: 10px;
+  }
+
+  .history-date {
+    font-size: 12px;
+  }
+
+  .history-status {
+    padding: 3px 10px;
+    font-size: 11px;
+  }
+
+  .history-content {
+    .history-message {
+      font-size: 13px;
+      margin-bottom: 10px;
+    }
+
+    .history-info {
+      font-size: 12px;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+  }
+
+  // 빈 상태
+  .empty-state {
+    padding: 40px 16px;
+
+    i {
+      font-size: 36px;
+      margin-bottom: 12px;
+    }
+
+    p {
+      font-size: 13px;
+    }
+  }
+
+  // Element UI 체크박스 조정
+  ::v-deep .el-checkbox {
+    .el-checkbox__inner {
+      width: 16px;
+      height: 16px;
     }
   }
 }
