@@ -226,13 +226,34 @@ setting-wrap은 사용자도 사용함
 	font-weight: 600;
 }
 
-.home-header{background:#FFF;padding:0 70px;border-bottom:2px solid #EBEBEB}
+.header-wrapper {
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	z-index: 1000;
+	padding: 0 20px;
+	background: #fff;
+}
 
-.community-header {}
-.community-header .header-container {padding: 0;}
+.header-container {
+	display: block;
+}
+
+.home-header {
+	background: #FFF;
+	padding: 0 70px;
+	border-bottom: 2px solid #EBEBEB;
+	max-height: 120px;
+}
 
 @media screen and (max-width: 1440px) {
-	.home-header{padding:0;}
+	.home-header {
+		padding: 0;
+	}
+}
+@media screen and (max-width: 768px) {
+	.header-wrapper {padding: 0;}
 }
 
 .channel-header {
@@ -242,14 +263,33 @@ setting-wrap은 사용자도 사용함
 	float: unset;
 
 	.header-logo {
-		.header-logo-btn {border:unset;width:50px;height:50px;border-radius:50px;padding:0;font-size:28px;bottom:20px;position:relative}
+		.header-logo-btn {
+			border: unset;
+			width: 50px;
+			height: 50px;
+			border-radius: 50px;
+			padding: 0;
+			font-size: 28px;
+			bottom: 20px;
+			position: relative
+		}
 
 		.header-logo-btn:hover,
 		.header-logo-btn:active,
-		.header-logo-btn:focus {background-color:#e4e4e4;color:#000}
+		.header-logo-btn:focus {
+			background-color: #e4e4e4;
+			color: #000
+		}
 
-		.header-profile {visibility:hidden;position:absolute;top:50px;left:120px;
-			.el-input__suffix{visibility:visible}
+		.header-profile {
+			visibility: hidden;
+			position: absolute;
+			top: 50px;
+			left: 120px;
+
+			.el-input__suffix {
+				visibility: visible
+			}
 		}
 	}
 
@@ -772,7 +812,11 @@ setting-wrap은 사용자도 사용함
 
 /* 메인페이지 헤더에 적용 + 반응형*/
 .home-header {
-	.header-content{.aside-btn{gap:30px}}
+	.header-content {
+		.aside-btn {
+			gap: 30px
+		}
+	}
 
 	@media (max-width: 1024px) {
 		.header-content {
@@ -2691,6 +2735,7 @@ setting-wrap은 사용자도 사용함
 
 .content-container {
 	display: flex;
+
 	.setting-wrap {
 		box-sizing: content-box;
 		flex: 0 1 100%;
@@ -4848,22 +4893,6 @@ setting-wrap은 사용자도 사용함
 
 .comment-submit-btn:active {
 	background: #042099;
-}
-
-.write-post-btn {
-	position: fixed;
-	left: 30px;
-	bottom: 40px;
-	width: 210px;
-	height: 50px;
-	background: var(--primary-color, #073DFF);
-	border: none;
-	border-radius: 10px;
-	color: #FFF;
-	font-weight: 700;
-	cursor: pointer;
-	z-index: 100;
-	transition: background 0.2s;
 }
 
 .write-post-btn:hover {

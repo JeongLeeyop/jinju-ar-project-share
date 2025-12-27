@@ -227,20 +227,21 @@
             stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
         </svg>
       </div>
-      <div class="header-content" :class="{ 'mobile-open': mobileMenuOpen }">
+      <!-- <div class="header-content" :class="{ 'mobile-open': mobileMenuOpen }"> -->
+      <div class="header-content">
         <div class="aside-btn">
           <slot v-if="!isLogin">
             <button class="login-button" @click="handleLoginModal">로그인</button>
           </slot>
           <slot v-else>
             <div class="user-section">
-              <button class="notification-btn">
+              <!-- <button class="notification-btn">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path
                     d="M12 22C13.1 22 14 21.1 14 20H10C10 21.1 10.89 22 12 22ZM18 16V11C18 7.93 16.36 5.36 13.5 4.68V4C13.5 3.17 12.83 2.5 12 2.5C11.17 2.5 10.5 3.17 10.5 4V4.68C7.63 5.36 6 7.92 6 11V16L4 18V19H20V18L18 16Z"
                     fill="#444" />
                 </svg>
-              </button>
+              </button> -->
               <div class="points-display">
                 <span class="points-label">알 포인트:</span>
                 <span class="points-value">{{ userPoints.toLocaleString() }}</span>
@@ -601,6 +602,10 @@ export default class extends Vue {
 .header-container { display: flex; flex-wrap: wrap; align-items: center; padding: 20px 0; z-index: 1000;}
 .header-left {flex: 0 1 300px;}
 
+.community-header .header-container {padding: 0;min-height: 120px;}
+.community-header .header-left {}
+.community-header .header-logo {}
+
 @media screen and (max-width: 1440px) {
   .header-container {padding: 20px;}
   .header-left {flex: 0 1 250px;}
@@ -617,6 +622,11 @@ export default class extends Vue {
 @media screen and (max-width: 768px) {
   .header-container {padding: 15px 0;}
   .header-left {flex: 0 1 calc(100% - 70px);}
+  .community-header .header-container {padding: 0;min-height: 100px;}
+}
+
+@media screen and (max-width: 500px) {
+  .community-header .header-container {padding: 0;min-height: 80px;}
 }
 
 .mobile-menu-btn {display: none; align-items: center; justify-content: center; width: 40px; height: 40px; background: transparent; border: none; cursor: pointer; padding: 0; flex-shrink: 0;
@@ -702,15 +712,15 @@ export default class extends Vue {
 }
 
 @media screen and (max-width: 1440px) {
-  .header-nav {flex: 0 1 calc(100% - 250px - 310px)}
+  .header-nav {flex: 0 1 calc(100% - 250px - 260px)}
 }
 
 @media screen and (max-width: 1200px) {
-  .header-nav {flex: 0 1 calc(100% - 200px - 310px)}
+  .header-nav {flex: 0 1 calc(100% - 200px - 260px)}
 }
 
 @media screen and (max-width: 1024px) {
-  .header-nav {flex: 0 1 calc(100% - 150px - 255px)}
+  .header-nav {flex: 0 1 calc(100% - 150px - 220px)}
 }
 
 .nav-item {
@@ -747,10 +757,10 @@ export default class extends Vue {
   }
 }
 
-.header-content{ flex: 0 1 310px;}
+.header-content{ flex: 0 1 260px;}
 
 @media screen and (max-width: 1024px) {
-  .header-content{ flex: 0 1 255px;}
+  .header-content{ flex: 0 1 220px;}
 }
 
 .aside-btn {
@@ -1272,7 +1282,7 @@ export default class extends Vue {
   bottom: 0;
   background: rgba(0, 0, 0, 0.5);
   z-index: 10001;
-  animation: fadeIn 0.3s ease-in-out forwards;
+  // animation: fadeIn 0.3s ease-in-out forwards;
 }
 
 .mobile-user-menu-content {

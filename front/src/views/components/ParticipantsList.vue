@@ -219,7 +219,6 @@ export default class extends Vue {
 @media screen and (max-width: 1400px) {
   .participants-panel {
     position: static;
-    width: 100%;
     max-height: none;
     margin-top: 20px;
   }

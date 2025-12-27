@@ -4,16 +4,18 @@
       <h2 class="sidebar-title" @click="goToCommunity">커뮤니티 공간</h2>
       
       <!-- Write Post Button - Show on marketplace, community space, lesson, and video list pages -->
-      <button 
-        v-if="showWriteButton" 
-        class="write-post-btn"
-        @click="openWriteModal"
-      >
-        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M14.166 2.5009C14.3849 2.28203 14.6447 2.10842 14.9307 1.98996C15.2167 1.87151 15.5232 1.81055 15.8327 1.81055C16.1422 1.81055 16.4487 1.87151 16.7347 1.98996C17.0206 2.10842 17.2805 2.28203 17.4993 2.5009C17.7182 2.71977 17.8918 2.97961 18.0103 3.26558C18.1287 3.55154 18.1897 3.85803 18.1897 4.16757C18.1897 4.4771 18.1287 4.78359 18.0103 5.06956C17.8918 5.35553 17.7182 5.61536 17.4993 5.83424L6.24935 17.0842L1.66602 18.3342L2.91602 13.7509L14.166 2.5009Z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-        {{ writeButtonText }}
-      </button>
+      <div class="write-post-btn-wrapper">
+        <button 
+            v-if="showWriteButton" 
+            class="write-post-btn"
+            @click="openWriteModal"
+          >
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M14.166 2.5009C14.3849 2.28203 14.6447 2.10842 14.9307 1.98996C15.2167 1.87151 15.5232 1.81055 15.8327 1.81055C16.1422 1.81055 16.4487 1.87151 16.7347 1.98996C17.0206 2.10842 17.2805 2.28203 17.4993 2.5009C17.7182 2.71977 17.8918 2.97961 18.0103 3.26558C18.1287 3.55154 18.1897 3.85803 18.1897 4.16757C18.1897 4.4771 18.1287 4.78359 18.0103 5.06956C17.8918 5.35553 17.7182 5.61536 17.4993 5.83424L6.24935 17.0842L1.66602 18.3342L2.91602 13.7509L14.166 2.5009Z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            {{ writeButtonText }}
+        </button>
+      </div>
       
       <el-menu
         class="space-menu"
@@ -164,35 +166,35 @@
             :class="{ active: $route.name === 'MyMarketplace' }"
             @click="navigateToPage('MyMarketplace')"
           >
-            <span class="item-text">-내 장터 관리</span>
+            <span class="item-text">내 장터 관리</span>
           </div>
           <div
             class="mypage-item"
             :class="{ active: $route.name === 'MySchedule' }"
             @click="navigateToPage('MySchedule')"
           >
-            <span class="item-text">-내 일정 관리</span>
+            <span class="item-text">내 일정 관리</span>
           </div>
           <div
             class="mypage-item"
             :class="{ active: selectedSpaceId === 'rpoint-history' }"
             @click="navigateToPage('RPointHistory')"
           >
-            <span class="item-text">-R포인트 내역</span>
+            <span class="item-text">R포인트 내역</span>
           </div>
           <div
             class="mypage-item"
             :class="{ active: selectedSpaceId === 'activity-list' }"
             @click="navigateToPage('ActivityList')"
           >
-            <span class="item-text">-활동리스트</span>
+            <span class="item-text">활동리스트</span>
           </div>
           <!-- <div
             class="mypage-item"
             :class="{ active: selectedSpaceId === 'community-settings' }"
             @click="navigateToPage('CommunitySettings')"
           >
-            <span class="item-text">-커뮤니티 설정</span>
+            <span class="item-text">커뮤니티 설정</span>
           </div> -->
         </div>
       </div>
@@ -206,14 +208,14 @@
             :class="{ active: $route.name === 'SpaceManagement' }"
             @click="navigateToPage('SpaceManagement')"
           >
-            <span class="item-text">-공간 관리</span>
+            <span class="item-text">공간 관리</span>
           </div>
           <div
             class="space-admin-item"
             :class="{ active: $route.name === 'SmsManagement' }"
             @click="navigateToPage('SmsManagement')"
           >
-            <span class="item-text">-문자 발송</span>
+            <span class="item-text">문자 발송</span>
           </div>
         </div>
       </div>
@@ -227,14 +229,14 @@
             :class="{ active: $route.name === 'MemberManagement' }"
             @click="navigateToPage('MemberManagement')"
           >
-            <span class="item-text">-회원 관리</span>
+            <span class="item-text">회원 관리</span>
           </div>
           <div
             class="admin-item"
             :class="{ active: $route.name === 'CommunityManagement' }"
             @click="navigateToPage('CommunityManagement')"
           >
-            <span class="item-text">-커뮤니티 관리</span>
+            <span class="item-text">커뮤니티 관리</span>
           </div>
         </div>
       </div>
@@ -531,13 +533,19 @@ export default class extends Vue {
   width: 270px;
   background: #FFF;
   border-right: 2px solid #EBEBEB;
-  padding: 40px;
+  padding: 40px 30px 120px;
   position: fixed;
   left: 0;
   top: 120px;
   height: calc(100vh - 120px);
   overflow-y: auto;
   z-index: 100;
+}
+@media screen and (max-width:1024px) {
+  .community-sidebar {
+    width:240px;
+    padding: 30px 20px;
+  }
 }
 
 .sidebar-content {
@@ -548,11 +556,11 @@ export default class extends Vue {
 }
 
 .sidebar-title {
-  color: #000;
-  font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
-  font-size: 24px;
+  font-size: clamp(20px, 2vw, 24px);
   font-weight: 700;
   line-height: 100%;
+  color: #000;
+  font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
   margin: 0;
   cursor: pointer;
   transition: color 0.2s;
@@ -562,25 +570,35 @@ export default class extends Vue {
   }
 }
 
-.write-post-btn {
-  width: 210px;
-  height: 50px;
-  background: #073DFF;
-  border: none;
-  border-radius: 10px;
-  color: #FFF;
-  font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
-  font-size: 16px;
-  font-weight: 600;
+.write-post-btn-wrapper {
   display: flex;
-  align-items: center;
+  flex-wrap: wrap;
   justify-content: center;
-  gap: 8px;
+  align-items: center;
+  position: fixed;
+  left: 0;
+  bottom: 0;
+  width: 270px;
+  height: 100px;
+  background: #FFF;
+  z-index: 999;
+}
+
+.write-post-btn {
+  flex:0 1 100%;
+  width: 100%;
+  max-width: 210px;
+	height: 50px;
+	border-radius: 10px;
+  font-size: 16px;
+  color: #FFF;
+  font-weight: 600;
+  font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
   cursor: pointer;
   transition: all 0.2s;
+  background: #0531CC;
 
   &:hover {
-    background: #0531CC;
     transform: translateY(-2px);
   }
 
@@ -660,7 +678,7 @@ export default class extends Vue {
 .menu-title {
   color: #073DFF;
   font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
-  font-size: 24px;
+  font-size: clamp(20px, 2vw, 24px);
   font-weight: 700;
   line-height: 100%;
   cursor: pointer;
@@ -668,8 +686,8 @@ export default class extends Vue {
 }
 
 .plus-icon {
-  width: 43px;
-  height: 43px;
+  width: 40px;
+  height: 40px;
   flex-shrink: 0;
   cursor: pointer;
   transition: all 0.2s;
@@ -730,7 +748,7 @@ export default class extends Vue {
   .section-title {
     color: #073DFF;
     font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
-    font-size: 24px;
+    font-size: clamp(20px, 2vw, 24px);
     font-weight: 700;
     line-height: 100%;
     cursor: pointer;
@@ -743,11 +761,6 @@ export default class extends Vue {
   }
 
   .plus-icon {
-    position: absolute;
-    right: 5px;
-    width: 43px;
-    height: 43px;
-    flex-shrink: 0;
     cursor: pointer;
     transition: all 0.2s;
 
@@ -772,17 +785,36 @@ export default class extends Vue {
   transition: all 0.2s ease;
 
   .item-text {
+    font-size: 18px;
     color: #6B7280;
     font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
-    font-size: 18px;
     font-weight: 400;
     line-height: 20px;
     transition: color 0.2s ease;
+    position: relative;
+    padding-left: 15px;
+
+    &::after {
+      display: block;
+      content: '';
+      width: 8px;
+      height: 2px;
+      background: #6B7280;
+      position: absolute;
+      top: 50%;
+      left: 0;
+      transform: translateY(-50%);
+    }
   }
+
+
 
   &:hover {
     .item-text {
       color: #073DFF;
+      &::after {
+        background: #073DFF;
+      }
     }
   }
 
@@ -826,12 +858,32 @@ export default class extends Vue {
     font-weight: 400;
     line-height: 20px;
     transition: color 0.2s ease;
+    position: relative;
+    padding-left: 15px;
+    
+    &::after {
+      display: block;
+      content: '';
+      width: 8px;
+      height: 2px;
+      background: #6B7280;
+      position: absolute;
+      top: 50%;
+      left: 0;
+      transform: translateY(-50%);
+    }
   }
+  
 
   &:hover {
     .item-text {
       color: #073DFF;
+
+      &::after {
+        background: #073DFF;
+      }
     }
+    
   }
 
   &.active {
@@ -865,11 +917,29 @@ export default class extends Vue {
     font-weight: 400;
     line-height: 20px;
     transition: color 0.2s ease;
+    position: relative;
+    padding-left: 15px;
+    
+    &::after {
+      display: block;
+      content: '';
+      width: 8px;
+      height: 2px;
+      background: #6B7280;
+      position: absolute;
+      top: 50%;
+      left: 0;
+      transform: translateY(-50%);
+    }
   }
 
   &:hover {
     .item-text {
       color: #073DFF;
+
+      &::after {
+        background: #073DFF;
+      }
     }
   }
 
