@@ -51,7 +51,6 @@
               <p class="product-type-badge">{{ getProductTypeLabel(product.productType) }}</p>
               <p class="product-location">{{ product.location }}</p>
               <p class="product-price">{{ formatPrice(product) }}</p>
-              <p class="product-stock">재고: {{ product.stock }}개</p>
               
               <!-- 오프라인 상품인 경우 회원번호 입력 버튼 -->
               <div v-if="product.isOffline" class="action-buttons">
@@ -898,6 +897,180 @@ export default class extends Vue {
 
   .action-buttons {
     flex-direction: column;
+  }
+}
+
+@media screen and (max-width: 425px) {
+  .my-marketplace-main {
+    padding: 20px 16px;
+  }
+
+  .page-header {
+    margin-bottom: 24px;
+  }
+
+  .page-title {
+    font-size: 20px;
+  }
+
+  .tabs-section {
+    gap: 0;
+    margin-bottom: 24px;
+  }
+
+  .tab-btn {
+    flex: 1;
+    padding: 12px 8px;
+    font-size: 14px;
+    text-align: center;
+  }
+
+  .products-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .product-card {
+    border-radius: 10px;
+  }
+
+  .product-image-wrapper {
+    padding-top: 75%;
+  }
+
+  .status-badge {
+    top: 12px;
+    left: auto;
+    right: 12px;
+    padding: 8px 16px;
+    font-size: 14px;
+    border-radius: 6px;
+  }
+
+  .product-info {
+    padding: 16px;
+  }
+
+  .product-title {
+    font-size: 16px;
+    margin-bottom: 6px;
+  }
+
+  .product-type-badge {
+    padding: 3px 10px;
+    font-size: 11px;
+    margin-bottom: 6px;
+  }
+
+  .product-location {
+    font-size: 12px;
+    margin-bottom: 6px;
+  }
+
+  .product-price {
+    font-size: 18px;
+    margin-bottom: 6px;
+  }
+
+  .product-stock {
+    font-size: 12px;
+  }
+
+  .purchase-date {
+    font-size: 12px;
+    margin: 6px 0 12px 0;
+  }
+
+  .action-buttons {
+    margin-top: 12px;
+    gap: 8px;
+  }
+
+  .action-btn {
+    height: 36px;
+    font-size: 13px;
+    border-radius: 6px;
+  }
+
+  .loading-container {
+    padding: 60px 20px;
+
+    i {
+      font-size: 36px;
+      margin-bottom: 16px;
+    }
+
+    p {
+      font-size: 14px;
+    }
+  }
+
+  .empty-container {
+    padding: 60px 20px;
+    font-size: 14px;
+  }
+
+  // 포인트 차감 모달 모바일
+  ::v-deep .point-deduct-modal {
+    width: 100% !important;
+    max-width: 100vw;
+    margin: 0 !important;
+    height: 100%;
+    border-radius: 0;
+
+    .el-dialog__body {
+      padding: 60px 20px 20px;
+      height: 100%;
+      overflow-y: auto;
+    }
+  }
+
+  .modal-content {
+    gap: 20px;
+  }
+
+  .modal-close-btn {
+    right: 16px;
+    top: 16px;
+  }
+
+  .modal-title {
+    font-size: 20px;
+  }
+
+  .product-summary {
+    padding: 16px;
+    border-radius: 8px;
+  }
+
+  .summary-item {
+    margin-bottom: 10px;
+    font-size: 14px;
+  }
+
+  .form-section {
+    gap: 16px;
+  }
+
+  .form-group {
+    gap: 6px;
+  }
+
+  .form-label {
+    font-size: 14px;
+  }
+
+  .form-input {
+    height: 44px;
+    padding: 0 12px;
+    font-size: 14px;
+    border-radius: 6px;
+  }
+
+  .submit-btn {
+    height: 48px;
+    font-size: 16px;
+    border-radius: 8px;
   }
 }
 </style>
