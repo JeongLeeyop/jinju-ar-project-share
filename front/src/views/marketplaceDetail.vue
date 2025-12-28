@@ -274,8 +274,12 @@ export default class extends Vue {
   }
 
   async mounted() {
+    console.log('MarketplaceDetail mounted - 상품 로드 시작');
     await this.loadProduct();
+    console.log('MarketplaceDetail mounted - 상품 로드 완료, 포인트 조회 시작');
+    console.log('현재 상품 정보:', this.product);
     await this.loadCurrentPoints();
+    console.log('MarketplaceDetail mounted - 포인트 조회 완료, currentPoints:', this.currentPoints);
   }
 
   @Watch('$route.params.productId')
@@ -290,14 +294,20 @@ export default class extends Vue {
   }
 
   private async loadCurrentPoints() {
-    // ChannelModule에서 실제 channelUid 가져오기
-    const channelUid = ChannelModule.selectedChannel?.uid;
-    if (!channelUid) return;
+    // 상품이 로드되었으면 상품의 channelUid 사용, 아니면 ChannelModule에서 가져오기
+    const channelUid = this.product?.channelUid || ChannelModule.selectedChannel?.uid;
+    
+    if (!channelUid) {
+      console.warn('채널 정보를 찾을 수 없습니다. 포인트를 조회할 수 없습니다.');
+      this.currentPoints = 0;
+      return;
+    }
 
     try {
       this.loadingPoints = true;
       const response = await getCurrentPoint(channelUid);
-      this.currentPoints = response.data?.currentBalance || 0;
+      console.log('포인트 조회 응답:', response.data);
+      this.currentPoints = response.data?.currentPoint || 0;
     } catch (error) {
       console.error('포인트 조회 실패:', error);
       this.currentPoints = 0;
