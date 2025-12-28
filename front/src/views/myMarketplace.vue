@@ -602,6 +602,7 @@ export default class extends Vue {
   flex: 1;
   margin-left: 270px;
   padding: 160px 40px 40px;
+  background: #F8F9FB;
 }
 
 .page-header {
@@ -1215,7 +1216,6 @@ export default class extends Vue {
   .tab-btn {
     flex: 1;
     padding: 12px 8px;
-    font-size: 14px;
     text-align: center;
   }
 

@@ -827,6 +827,7 @@ export default class extends Vue {
   padding: 150px 40px 100px 40px;
   flex: 1;
   min-height: calc(100vh - 124px);
+  background: #F8F9FB;
 }
 
 .empty-state {

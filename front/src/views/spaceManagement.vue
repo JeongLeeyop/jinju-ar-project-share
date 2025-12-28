@@ -59,7 +59,6 @@
             placeholder="멤버 검색 (이름, 이메일)"
             prefix-icon="el-icon-search"
             clearable
-            style="max-width: 400px;"
           />
         </div>
 
@@ -592,6 +591,8 @@ export default class extends Vue {
     font-weight: 400;
     line-height: 100%;
     background: transparent;
+    margin-left: 10px;
+    padding: 0 10px;
   }
 }
 
@@ -641,14 +642,15 @@ export default class extends Vue {
 }
 
 .member-name {
-  font-size: 16px;
+  font-size: 18px;
+  line-height: 1.4em;
   font-weight: 600;
   color: #222;
   margin: 0 0 4px 0;
 }
 
 .member-email {
-  font-size: 14px;
+  font-size: 18px;
   color: #666;
   margin: 0;
 }
@@ -684,7 +686,7 @@ export default class extends Vue {
 }
 
 .section-subtitle {
-  font-size: 18px;
+  font-size: 22px;
   font-weight: 700;
   color: #222;
   margin: 0;
@@ -694,15 +696,43 @@ export default class extends Vue {
 
   i {
     color: #073DFF;
+    position: relative;
+    padding: 0 0 0 20px;
+
+    &:before {
+      position: absolute;
+      left: 0;
+      top: 50%;
+      transform: translateY(-40%);
+    }
   }
 }
 
 .invite-search {
   margin-bottom: 16px;
 
+  .el-input {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 16px 20px;
+    border-radius: 10px;
+    border: 2px solid #EBEBEB;
+  }
+
   ::v-deep .el-input__inner {
-    height: 44px;
-    border-radius: 8px;
+    height: auto;
+    flex: 1;
+    border: none;
+    outline: none;
+    color: #222;
+    font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 100%;
+    background: transparent;
+    margin-left: 10px;
+    padding: 0 10px;
   }
 }
 
@@ -884,10 +914,17 @@ export default class extends Vue {
 }
 
 // 모바일 반응형
+@media screen and (max-width: 1024px) {
+  .space-management-main {
+    padding: 160px 30px 80px 30px;
+    margin-left: 240px;
+  }
+}
+
 @media screen and (max-width: 768px) {
   .space-management-main {
     margin-left: 0;
-    padding: 20px 16px;
+    padding: 140px 30px 80px 30px;
   }
 
   .tabs-section {
@@ -938,6 +975,9 @@ export default class extends Vue {
 
     .el-button {
       width: 100%;
+      span {
+        font-size: 18px;
+      }
     }
   }
 
@@ -960,9 +1000,9 @@ export default class extends Vue {
 }
 
 // 425px 이하 모바일 반응형
-@media screen and (max-width: 425px) {
+@media screen and (max-width: 500px) {
   .space-management-main {
-    padding: 20px 16px;
+    padding: 120px 20px 80px 20px;
   }
 
   .page-header {
@@ -988,7 +1028,6 @@ export default class extends Vue {
     flex: 1;
     min-width: max-content;
     padding: 12px 12px;
-    font-size: 13px;
     gap: 6px;
     white-space: nowrap;
   }

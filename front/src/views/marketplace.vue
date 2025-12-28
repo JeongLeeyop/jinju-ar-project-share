@@ -451,6 +451,7 @@ export default class extends Vue {
   margin: 120px 0 0 270px;
   padding: 40px;
   position: relative;
+  background: #F8F9FB;
 }
 
 .tab-section {

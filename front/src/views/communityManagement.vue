@@ -1221,7 +1221,6 @@ export default class extends Vue {
     flex: 1;
     min-width: max-content;
     padding: 12px 10px;
-    font-size: 13px;
     white-space: nowrap;
   }
 

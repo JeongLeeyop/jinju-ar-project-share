@@ -1108,13 +1108,13 @@ export default class extends Vue {
     background: #FFF;
     border-radius: 12px;
     padding: 20px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    box-shadow: 0 2px 8px rgb(0 0 0 / 15%);
 
     h4 {
       margin: 0 0 12px;
-      color: #666;
+      color: #000;
       font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
-      font-size: 14px;
+      font-size: 24px;
       font-weight: 500;
     }
 
@@ -1144,7 +1144,7 @@ export default class extends Vue {
   background: #FFF;
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 15%);
 
   table {
     width: 100%;
@@ -1155,10 +1155,10 @@ export default class extends Vue {
 
       th {
         padding: 12px;
-        text-align: left;
-        color: #666;
+        text-align: center;
+        color: #000;
         font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
-        font-size: 13px;
+        font-size: 18px;
         font-weight: 600;
         border-bottom: 2px solid #EBEBEB;
       }
@@ -1181,7 +1181,7 @@ export default class extends Vue {
           padding: 12px;
           color: #333;
           font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
-          font-size: 14px;
+          font-size: 18px;
         }
       }
     }
@@ -1200,7 +1200,7 @@ export default class extends Vue {
   display: inline-block;
   padding: 4px 10px;
   border-radius: 12px;
-  font-size: 12px;
+  font-size: 18px;
   font-weight: 600;
 
   &.participation {
@@ -1507,7 +1507,7 @@ export default class extends Vue {
       border-radius: 10px;
 
       h4 {
-        font-size: 12px;
+        font-size: 18px;
         margin-bottom: 8px;
       }
 
@@ -1525,19 +1525,19 @@ export default class extends Vue {
 
       thead th {
         padding: 12px 10px;
-        font-size: 12px;
+        font-size: 16px;
       }
 
       tbody tr td {
         padding: 12px 10px;
-        font-size: 12px;
+        font-size: 16px;
       }
     }
   }
 
   .history-type {
     padding: 3px 8px;
-    font-size: 11px;
+    font-size: 16px;
   }
 
   // 모달 스타일
