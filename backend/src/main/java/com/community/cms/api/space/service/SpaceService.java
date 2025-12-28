@@ -449,8 +449,8 @@ public class SpaceService {
      */
     private List<SpaceMemberDto> getPublicSpaceMembers(Space space) {
         try {
-            // 1. Channel 조회 (domain으로)
-            Channel channel = channelRepository.findByDomain(space.getChannelUid())
+            // 1. Channel 조회 (uid로)
+            Channel channel = channelRepository.findByUid(space.getChannelUid())
                     .orElseThrow(() -> new RuntimeException("채널을 찾을 수 없습니다"));
             
             // 2. 채널의 승인된 멤버 목록 조회
@@ -773,7 +773,7 @@ public class SpaceService {
 
         // 2. 커뮤니티 관리자인지 확인
         try {
-            Channel channel = channelRepository.findByDomain(space.getChannelUid()).orElse(null);
+            Channel channel = channelRepository.findByUid(space.getChannelUid()).orElse(null);
             if (channel != null && channel.getUserUid() != null && channel.getUserUid().equals(userUid)) {
                 log.debug("커뮤니티 관리자로 비공개 공간 접근 허용: userUid={}, spaceUid={}", userUid, space.getUid());
                 return true;

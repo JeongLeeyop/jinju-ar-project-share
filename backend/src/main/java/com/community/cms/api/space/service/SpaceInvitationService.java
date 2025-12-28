@@ -53,10 +53,9 @@ public class SpaceInvitationService {
         
         if (!isSpaceAdmin) {
             // 커뮤니티 관리자 권한 확인 - Channel의 userUid 확인
-            // channelUid에는 domain이 저장되어 있으므로 findByDomain 사용
             log.info("커뮤니티 관리자 권한 확인 시작: userUid={}, channelUid(domain)={}", inviterUid, space.getChannelUid());
             
-            Channel channel = channelRepository.findByDomain(space.getChannelUid()).orElse(null);
+            Channel channel = channelRepository.findByUid(space.getChannelUid()).orElse(null);
             
             if (channel != null && channel.getUserUid() != null && channel.getUserUid().equals(inviterUid)) {
                 isCommunityAdmin = true;

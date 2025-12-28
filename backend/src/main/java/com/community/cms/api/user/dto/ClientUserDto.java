@@ -81,6 +81,7 @@ public class ClientUserDto {
         private String uid;
         private String userId;
         private String actualName;
+        private String concatNumber;
         private String email;
         private String iconFileUid;
         private Integer point;

@@ -50,10 +50,9 @@ public interface SpaceRepository extends JpaRepository<Space, String> {
      * - 비공개 공간은 관리자이거나 멤버인 경우만 접근 가능
      * - 커뮤니티 관리자(Channel.userUid)는 모든 공간 접근 가능
      * - userUid가 null이면 공개 공간만 반환
-     * - channelUid에는 domain 값이 저장되므로 c.domain으로 조인
      */
     @Query("SELECT DISTINCT s FROM Space s LEFT JOIN s.spaceMembers sm " +
-           "LEFT JOIN Channel c ON s.channelUid = c.domain " +
+           "LEFT JOIN Channel c ON s.channelUid = c.uid " +
            "WHERE s.channelUid = :channelUid " +
            "AND s.isActive = true AND s.isDeleted = false " +
            "AND (s.isPublic = true " +
@@ -81,10 +80,9 @@ public interface SpaceRepository extends JpaRepository<Space, String> {
      * - 비공개 공간은 관리자이거나 멤버인 경우만 접근 가능
      * - 커뮤니티 관리자(Channel.userUid)는 모든 공간 접근 가능
      * - userUid가 null이면 공개 공간만 반환
-     * - channelUid에는 domain 값이 저장되므로 c.domain으로 조인
      */
     @Query("SELECT DISTINCT s FROM Space s LEFT JOIN s.spaceMembers sm " +
-           "LEFT JOIN Channel c ON s.channelUid = c.domain " +
+           "LEFT JOIN Channel c ON s.channelUid = c.uid " +
            "WHERE s.channelUid = :channelUid " +
            "AND s.isActive = true AND s.isDeleted = false " +
            "AND (s.isPublic = true " +

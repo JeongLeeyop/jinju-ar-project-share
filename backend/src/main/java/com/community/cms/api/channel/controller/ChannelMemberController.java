@@ -48,7 +48,7 @@ public class ChannelMemberController {
             @AuthenticationPrincipal SinghaUser authUser, ChannelMemberSearch search) {
         // domain → uid 변환
         if (search.getChannelUid() != null) {
-            String actualChannelUid = channelRepository.findByDomain(search.getChannelUid())
+            String actualChannelUid = channelRepository.findByUid(search.getChannelUid())
                     .map(Channel::getUid)
                     .orElse(search.getChannelUid());
             search.setChannelUid(actualChannelUid);

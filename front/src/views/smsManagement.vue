@@ -237,6 +237,7 @@ import { Component, Vue } from 'vue-property-decorator';
 import CommunitySidebar from './components/communitySidebar.vue';
 import { sendSms, getSmsHistory, getRemainCount, getSmsTemplates, SmsHistory, SmsRemain, SmsTemplate } from '@/api/sms';
 import { getChannelMemberList } from '@/api/channelMember';
+import { getChannelDomainDetail } from '@/api/channel';
 
 interface Member {
   uid: string;
@@ -279,7 +280,13 @@ export default class extends Vue {
   private messageTemplates: SmsTemplate[] = [];
 
   async mounted() {
-    this.channelUid = this.$route.params.domain || '';
+    await getChannelDomainDetail(this.$route.params.domain).then((response) => {
+      this.channelUid = response.data.uid;
+    }).catch((error) => {
+      console.error('채널 정보 로딩 실패:', error);
+      this.$message.error('채널 정보를 불러오는데 실패했습니다');
+    });
+
     if (this.channelUid) {
       await this.loadMembers();
       await this.loadSmsHistory();

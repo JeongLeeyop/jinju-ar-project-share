@@ -19,7 +19,7 @@ import java.util.stream.Collectors;
 
 /**
  * SpacePost Service
- * 공간 게시글 비즈?�스 로직
+ * 공간 게시글 비즈니스 로직
  */
 @Slf4j
 @Service
@@ -41,18 +41,18 @@ public class SpacePostService {
     @Transactional
     public SpacePostDto createPost(String spaceUid, SpacePostCreateRequest request, 
                                    String userUid, String userName) {
-        // 공간 존재 ?�인
+        // 공간 존재 확인
         Space space = spaceRepository.findByUidAndIsActiveTrueAndIsDeletedFalse(spaceUid)
-                .orElseThrow(() -> new IllegalArgumentException("공간??찾을 ???�습?�다"));
+                .orElseThrow(() -> new IllegalArgumentException("공간을 찾을 수 없습니다"));
 
-        // 멤버 권한 ?�인 (공개 공간???�니�?멤버?�야 ??
+        // 멤버 권한 확인 (공개 공간이 아니면 멤버여야 함)
         if (!space.isPublic() && !isSpaceMember(spaceUid, userUid)) {
-            throw new IllegalStateException("공간 멤버�?게시글???�성?????�습?�다");
+            throw new IllegalStateException("공간이 비공개인 경우 멤버만 게시글을 작성할 수 있습니다");
         }
 
-        // 공�??�항?� 관리자�??�성 가??
+        // 공지글은 관리자만 작성 가능
         if (request.isNotice() && !space.getAdminUid().equals(userUid)) {
-            throw new IllegalStateException("공�??�항?� 관리자�??�성?????�습?�다");
+            throw new IllegalStateException("공지글은 관리자만 작성할 수 있습니다");
         }
 
         // 게시글 생성
@@ -109,28 +109,28 @@ public class SpacePostService {
 
         SpacePost savedPost = spacePostRepository.save(post);
 
-        // ?�동 로그 ?�??
+        // 활동 로그 기록
         logActivity(
                 "POST_CREATED",
                 userUid,
                 userName,
                 space.getChannelUid(),
                 spaceUid,
-                String.format("%s?�이 게시글???�성?�습?�다: %s", userName, request.getTitle())
+                String.format("%s님이 게시글을 작성했습니다: %s", userName, request.getTitle())
         );
 
         return SpacePostDto.from(savedPost, userUid, false);
     }
 
     /**
-     * 게시글 조회 (?�건)
+     * 게시글 조회 (단건)
      */
     @Transactional
     public SpacePostDto getPost(String postUid, String currentUserUid) {
         SpacePost post = spacePostRepository.findByUidAndIsDeletedFalse(postUid)
-                .orElseThrow(() -> new IllegalArgumentException("게시글??찾을 ???�습?�다"));
+                .orElseThrow(() -> new IllegalArgumentException("게시글을 찾을 수 없습니다"));
 
-        // ?��? 처리??게시글?� ?�성?��? 관리자�?�????�음
+        // 숨김 처리된 게시글은 작성자 또는 관리자만 조회 가능
         if (post.isHidden()) {
             Space space = spaceRepository.findByUidAndIsActiveTrueAndIsDeletedFalse(
                     post.getSpace() != null ? post.getSpace().getUid() : null)
@@ -142,10 +142,10 @@ public class SpacePostService {
             }
         }
 
-        // 조회??증�?
+        // 조회수 증�?
         spacePostRepository.incrementViewCount(postUid);
 
-        // 좋아???��? ?�인
+        // 좋아요 여부 ?�인
         boolean isLiked = currentUserUid != null && 
                          spacePostLikeRepository.existsByPost_UidAndUserUid(postUid, currentUserUid);
 
@@ -239,9 +239,9 @@ public class SpacePostService {
      */
     @Transactional(readOnly = true)
     public Page<SpacePostDto> getPostsPaged(String spaceUid, String currentUserUid, Pageable pageable) {
-        // 공간 존재 ?�인
+        // 공간 존재 확인
         Space space = spaceRepository.findByUidAndIsActiveTrueAndIsDeletedFalse(spaceUid)
-                .orElseThrow(() -> new IllegalArgumentException("공간??찾을 ???�습?�다"));
+                .orElseThrow(() -> new IllegalArgumentException("공간을 찾을 수 없습니다"));
 
         // 비공�?공간?� 멤버�?조회 가??
         if (!space.isPublic() && (currentUserUid == null || !isSpaceMember(spaceUid, currentUserUid))) {
@@ -262,9 +262,9 @@ public class SpacePostService {
      */
     @Transactional(readOnly = true)
     public List<SpacePostDto> searchPosts(String spaceUid, String keyword, String currentUserUid) {
-        // 공간 존재 ?�인
+        // 공간 존재 확인
         Space space = spaceRepository.findByUidAndIsActiveTrueAndIsDeletedFalse(spaceUid)
-                .orElseThrow(() -> new IllegalArgumentException("공간??찾을 ???�습?�다"));
+                .orElseThrow(() -> new IllegalArgumentException("공간을 찾을 수 없습니다"));
 
         // 비공�?공간?� 멤버�?검??가??
         if (!space.isPublic() && (currentUserUid == null || !isSpaceMember(spaceUid, currentUserUid))) {
@@ -292,18 +292,18 @@ public class SpacePostService {
     public SpacePostDto updatePost(String postUid, SpacePostUpdateRequest request, 
                                    String userUid, String userName) {
         SpacePost post = spacePostRepository.findByUidAndIsDeletedFalse(postUid)
-                .orElseThrow(() -> new IllegalArgumentException("게시글??찾을 ???�습?�다"));
+                .orElseThrow(() -> new IllegalArgumentException("게시글을 찾을 수 없습니다"));
 
         Space space = spaceRepository.findByUidAndIsActiveTrueAndIsDeletedFalse(
                 post.getSpace() != null ? post.getSpace().getUid() : null)
-                .orElseThrow(() -> new IllegalArgumentException("공간??찾을 ???�습?�다"));
+                .orElseThrow(() -> new IllegalArgumentException("공간을 찾을 수 없습니다"));
 
-        // ?�성???�는 관리자�??�정 가??
+        // 작성자는 수정 가능, 관리자는 전체 수정 가능
         boolean isAdmin = space.getAdminUid().equals(userUid);
         boolean isAuthor = post.getUserUid().equals(userUid);
 
         if (!isAuthor && !isAdmin) {
-            throw new IllegalStateException("게시글 ?�정 권한???�습?�다");
+            throw new IllegalStateException("게시글 수정 권한이 없습니다");
         }
 
         // 필드 업데이트
@@ -314,9 +314,9 @@ public class SpacePostService {
             post.setContent(request.getContent());
         }
         if (request.getIsNotice() != null) {
-            // 공�??�항 ?�정?� 관리자�?가??
+            // 공지글 설정은 관리자만 가능
             if (request.getIsNotice() && !isAdmin) {
-                throw new IllegalStateException("공�??�항 ?�정?� 관리자�??????�습?�다");
+                throw new IllegalStateException("공지글 설정은 관리자만 가능합니다");
             }
             post.setNotice(request.getIsNotice());
         }
@@ -368,14 +368,14 @@ public class SpacePostService {
 
         SpacePost updatedPost = spacePostRepository.save(post);
 
-        // ?�동 로그 ?�??
+        // 활동 로그 기록
         logActivity(
                 "POST_UPDATED",
                 userUid,
                 userName,
                 space.getChannelUid(),
                 space.getUid(),
-                String.format("%s?�이 게시글???�정?�습?�다: %s", userName, post.getTitle())
+                String.format("%s님이 게시글을 수정했습니다: %s", userName, post.getTitle())
         );
 
         boolean isLiked = spacePostLikeRepository.existsByPost_UidAndUserUid(postUid, userUid);
@@ -388,28 +388,28 @@ public class SpacePostService {
     @Transactional
     public void deletePost(String postUid, String userUid, String userName) {
         SpacePost post = spacePostRepository.findByUidAndIsDeletedFalse(postUid)
-                .orElseThrow(() -> new IllegalArgumentException("게시글??찾을 ???�습?�다"));
+                .orElseThrow(() -> new IllegalArgumentException("게시글을 찾을 수 없습니다"));
 
         Space space = spaceRepository.findByUidAndIsActiveTrueAndIsDeletedFalse(
                 post.getSpace() != null ? post.getSpace().getUid() : null)
-                .orElseThrow(() -> new IllegalArgumentException("공간??찾을 ???�습?�다"));
+                .orElseThrow(() -> new IllegalArgumentException("공간을 찾을 수 없습니다"));
 
-        // ?�성???�는 관리자�???�� 가??
+        // 작성자 또는 관리자만 삭제 가능
         if (!post.getUserUid().equals(userUid) && !space.getAdminUid().equals(userUid)) {
-            throw new IllegalStateException("게시글 ??�� 권한???�습?�다");
+            throw new IllegalStateException("게시글 삭제 권한이 없습니다");
         }
 
         post.setDeleted(true);
         spacePostRepository.save(post);
 
-        // ?�동 로그 ?�??
+        // 활동 로그 기록
         logActivity(
                 "POST_DELETED",
                 userUid,
                 userName,
                 space.getChannelUid(),
                 space.getUid(),
-                String.format("%s?�이 게시글????��?�습?�다: %s", userName, post.getTitle())
+                String.format("%s님이 게시글을 삭제했습니다: %s", userName, post.getTitle())
         );
     }
 
@@ -418,9 +418,9 @@ public class SpacePostService {
      */
     @Transactional
     public boolean toggleLike(String postUid, String userUid) {
-        // 게시글 존재 ?�인
+        // 게시글 존재 확인
         SpacePost post = spacePostRepository.findByUidAndIsDeletedFalse(postUid)
-                .orElseThrow(() -> new IllegalArgumentException("게시글??찾을 ???�습?�다"));
+                .orElseThrow(() -> new IllegalArgumentException("게시글을 찾을 수 없습니다"));
 
         // 좋아??존재 ?�인
         var existingLike = spacePostLikeRepository.findByPost_UidAndUserUid(postUid, userUid);
@@ -446,17 +446,17 @@ public class SpacePostService {
     @Transactional
     public SpacePostCommentDto createComment(String postUid, SpacePostCommentCreateRequest request,
                                             String userUid, String userName) {
-        // 게시글 존재 ?�인
+        // 게시글 존재 확인
         SpacePost post = spacePostRepository.findByUidAndIsDeletedFalse(postUid)
-                .orElseThrow(() -> new IllegalArgumentException("게시글??찾을 ???�습?�다"));
+                .orElseThrow(() -> new IllegalArgumentException("게시글을 찾을 수 없습니다"));
 
         Space space = spaceRepository.findByUidAndIsActiveTrueAndIsDeletedFalse(
                 post.getSpace() != null ? post.getSpace().getUid() : null)
-                .orElseThrow(() -> new IllegalArgumentException("공간??찾을 ???�습?�다"));
+                .orElseThrow(() -> new IllegalArgumentException("공간을 찾을 수 없습니다"));
 
-        // 비공�?공간?� 멤버�??��? ?�성 가??
+        // 비공개 공간은 멤버만 작성 가능
         if (!space.isPublic() && !isSpaceMember(space.getUid(), userUid)) {
-            throw new IllegalStateException("공간 멤버�??��????�성?????�습?�다");
+            throw new IllegalStateException("공간이 비공개인 경우 멤버만 댓글을 작성할 수 있습니다");
         }
 
         SpacePostComment comment = SpacePostComment.builder()
@@ -469,14 +469,14 @@ public class SpacePostService {
 
         SpacePostComment savedComment = spacePostCommentRepository.save(comment);
 
-        // ?�동 로그 ?�??
+        // 활동 로그 기록
         logActivity(
                 "COMMENT_CREATED",
                 userUid,
                 userName,
                 space.getChannelUid(),
                 space.getUid(),
-                String.format("%s?�이 ?��????�성?�습?�다", userName)
+                String.format("%s님이 댓글을 작성했습니다", userName)
         );
 
         return SpacePostCommentDto.from(savedComment, userUid);
@@ -488,7 +488,7 @@ public class SpacePostService {
     @Transactional(readOnly = true)
     public List<SpacePostCommentDto> getCommentsByPost(String postUid, String currentUserUid) {
         SpacePost post = spacePostRepository.findByUidAndIsDeletedFalse(postUid)
-                .orElseThrow(() -> new IllegalArgumentException("게시글??찾을 ???�습?�다"));
+                .orElseThrow(() -> new IllegalArgumentException("게시글을 찾을 수 없습니다"));
 
         List<SpacePostComment> comments = spacePostCommentRepository
                 .findByPost_UidAndIsDeletedFalseOrderByCreatedAtAsc(postUid);
@@ -508,11 +508,11 @@ public class SpacePostService {
     public SpacePostCommentDto updateComment(String commentUid, String content, 
                                             String userUid, String userName) {
         SpacePostComment comment = spacePostCommentRepository.findByUidAndIsDeletedFalse(commentUid)
-                .orElseThrow(() -> new IllegalArgumentException("?��???찾을 ???�습?�다"));
+                .orElseThrow(() -> new IllegalArgumentException("댓글을 찾을 수 없습니다"));
 
-        // ?�성?�만 ?�정 가??
+        // 작성자만 수정 가능
         if (!comment.getUserUid().equals(userUid)) {
-            throw new IllegalStateException("?��? ?�정 권한???�습?�다");
+            throw new IllegalStateException("댓글 수정 권한이 없습니다");
         }
 
         comment.setContent(content);
@@ -535,24 +535,24 @@ public class SpacePostService {
 
         Space space = spaceRepository.findByUidAndIsActiveTrueAndIsDeletedFalse(
                 post.getSpace() != null ? post.getSpace().getUid() : null)
-                .orElseThrow(() -> new IllegalArgumentException("공간??찾을 ???�습?�다"));
+                .orElseThrow(() -> new IllegalArgumentException("공간을 찾을 수 없습니다"));
 
-        // ?�성???�는 관리자�???�� 가??
+        // 작성자 또는 관리자만 삭제 가능
         if (!comment.getUserUid().equals(userUid) && !space.getAdminUid().equals(userUid)) {
-            throw new IllegalStateException("?��? ??�� 권한???�습?�다");
+            throw new IllegalStateException("댓글 삭제 권한이 없습니다");
         }
 
         comment.setDeleted(true);
         spacePostCommentRepository.save(comment);
 
-        // ?�동 로그 ?�??
+        // 활동 로그 기록
         logActivity(
                 "COMMENT_DELETED",
                 userUid,
                 userName,
                 space.getChannelUid(),
                 space.getUid(),
-                String.format("%s?�이 ?��?????��?�습?�다", userName)
+                String.format("%s님이 댓글을 삭제했습니다", userName)
         );
     }
 

@@ -7,13 +7,13 @@ import com.community.cms.api.user.repository.UserRepository;
 import com.community.cms.entity.User;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -65,7 +65,7 @@ public class ActivityController {
                     .size(size)
                     .build();
 
-            List<ActivityDto> activities = activityService.getActivitiesByChannel(request);
+            Page<ActivityDto> activities = activityService.getActivitiesByChannel(request);
             return ResponseEntity.ok(activities);
         } catch (RuntimeException e) {
             log.error("Failed to get activities: {}", e.getMessage());
@@ -99,7 +99,7 @@ public class ActivityController {
                     .size(size)
                     .build();
 
-            List<ActivityDto> activities = activityService.getActivitiesBySpace(request);
+            Page<ActivityDto> activities = activityService.getActivitiesBySpace(request);
             return ResponseEntity.ok(activities);
         } catch (RuntimeException e) {
             log.error("Failed to get activities: {}", e.getMessage());
@@ -133,7 +133,7 @@ public class ActivityController {
                     .size(size)
                     .build();
 
-            List<ActivityDto> activities = activityService.getActivitiesByUser(user.getUid(), request);
+            Page<ActivityDto> activities = activityService.getActivitiesByUser(user.getUid(), request);
             return ResponseEntity.ok(activities);
         } catch (RuntimeException e) {
             log.error("Failed to get activities: {}", e.getMessage());

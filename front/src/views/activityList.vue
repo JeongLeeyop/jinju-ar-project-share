@@ -17,7 +17,7 @@
               :key="period.value"
               class="period-btn"
               :class="{ active: selectedPeriod === period.value }"
-              @click="selectedPeriod = period.value"
+              @click="onSelectPeriod(period.value)"
             >
               {{ period.label }}
             </button>
@@ -71,7 +71,7 @@
         <div v-else class="activities-list">
           <div
             v-for="(activity, index) in filteredActivities"
-            :key="index"
+            :key="activity.type + index"
             class="activity-item"
             :class="{ first: index === 0 }"
           >
@@ -83,6 +83,15 @@
             <p>활동 내역이 없습니다.</p>
           </div>
         </div>
+
+        <!-- Pagination -->
+        <pagination
+          v-if="total > 0"
+          :total="total"
+          :page="page"
+          :limit="limit"
+          @pagination="onPagination"
+        />
       </div>
     </div>
 
@@ -101,6 +110,7 @@ import { Component, Vue, Watch } from 'vue-property-decorator';
 import CommunitySidebar from './components/communitySidebar.vue';
 import { ChannelModule } from '@/store/modules/channel';
 import { getMyActivities, Activity } from '@/api/activity';
+import Pagination from '@/components/Pagination/index.vue';
 
 interface ActivityItem {
   date: string;
@@ -112,6 +122,7 @@ interface ActivityItem {
   name: 'ActivityList',
   components: {
     CommunitySidebar,
+    Pagination,
   },
 })
 export default class extends Vue {
@@ -120,6 +131,11 @@ export default class extends Vue {
   private endDate = '';
   private loading = false;
   private currentChannel: any = null;
+
+  // pagination
+  private page = 1; // UI 페이지(1-based)
+  private limit = 10; // 페이지 사이즈
+  private total = 0; // 전체 항목 수
 
   private periods = [
     { label: '1개월', value: '1month' },
@@ -174,12 +190,23 @@ export default class extends Vue {
   @Watch('$route.params.domain')
   private async onDomainChange() {
     await this.initChannel();
+    this.page = 1;
     await this.loadActivities();
+  }
+
+  // period 선택시 호출되는 핸들러 (page 리셋 포함)
+  private onSelectPeriod(value: string) {
+    this.selectedPeriod = value;
+    this.updateDateRange();
+    this.page = 1;
+    this.loadActivities();
   }
 
   @Watch('selectedPeriod')
   private onPeriodChange() {
+    // backward compatibility: keep behavior but ensure page reset
     this.updateDateRange();
+    this.page = 1;
     this.loadActivities();
   }
 
@@ -212,6 +239,8 @@ export default class extends Vue {
       case '6months':
         startDate.setMonth(today.getMonth() - 6);
         break;
+      default:
+        startDate.setMonth(today.getMonth() - 1);
     }
 
     this.startDate = this.formatDateForInput(startDate);
@@ -250,8 +279,8 @@ export default class extends Vue {
     try {
       const params: any = {
         channelUid: this.channelUid,
-        page: 0,
-        size: 100,
+        page: Math.max(0, this.page - 1), // backend expects 0-based
+        size: this.limit,
       };
 
       // 날짜 필터 추가
@@ -263,9 +292,27 @@ export default class extends Vue {
       }
 
       const res = await getMyActivities(params);
-      
+
+      // API 응답 처리: 페이징된 응답이면 content와 totalElements 사용
+      const data = res.data;
+      let activities: any[] = [];
+
+      if (data && data.content && Array.isArray(data.content)) {
+        activities = data.content;
+        this.total = data.totalElements ?? data.total ?? activities.length;
+      } else if (Array.isArray(data)) {
+        activities = data;
+        this.total = activities.length;
+      } else if (data && Array.isArray(data.data)) {
+        activities = data.data;
+        this.total = data.total ?? activities.length;
+      } else {
+        activities = [];
+        this.total = 0;
+      }
+
       // API 응답 데이터를 ActivityItem 형식으로 변환
-      this.activitiesData = (res.data?.content || res.data || []).map((activity: Activity) => ({
+      this.activitiesData = activities.map((activity: Activity) => ({
         date: this.formatDateForDisplay(activity.createdAt),
         description: activity.description || '',
         type: activity.type || '',
@@ -275,6 +322,7 @@ export default class extends Vue {
       const message = error.response?.data?.message || '활동 리스트를 불러오는데 실패했습니다';
       this.$message.error(message);
       this.activitiesData = [];
+      this.total = 0;
     } finally {
       this.loading = false;
     }
@@ -301,7 +349,15 @@ export default class extends Vue {
       return;
     }
 
-    // 날짜 범위가 변경되면 활동 리스트 다시 조회
+    // 페이지 리셋 후 조회
+    this.page = 1;
+    this.loadActivities();
+  }
+
+  private onPagination(payload: { page: number; limit: number }) {
+    // payload.page is 1-based
+    this.page = payload.page;
+    this.limit = payload.limit;
     this.loadActivities();
   }
 
