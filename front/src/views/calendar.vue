@@ -1203,7 +1203,7 @@ export default class extends Vue {
 
 /* Comments Section */
 .comments-section {
-  width: calc(100% + -50px);
+  width: calc(100% - 50px);
   margin: -50px 0px 20px 50px;
   padding: 24px;
   background: #F9FAFB;
@@ -1302,12 +1302,14 @@ export default class extends Vue {
 
 .comment-input-area {
   display: flex;
-  gap: 12px;
+  flex-wrap: wrap;
+  gap: 10px;
   align-items: center;
 }
 
 .comment-input {
-  flex: 1;
+  flex: 0 1 calc(100% - 146px);
+  width: 100%;
   height: 48px;
   padding: 0 16px;
   border-radius: 8px;
@@ -1335,6 +1337,8 @@ export default class extends Vue {
 }
 
 .comment-submit-btn {
+  flex: 0 1 136px;
+  width: 100%;
   height: 48px;
   padding: 0 24px;
   border-radius: 8px;
@@ -1850,13 +1854,8 @@ export default class extends Vue {
 
 @media screen and (max-width: 768px) {
   .comments-section {
-    width: calc(100% + -50px);
-    margin: -50px 0px 20px 50px;
-    padding: 24px;
-    background: #F9FAFB;
-    border-radius: 10px;
-    border: 1px solid #E5E7EB;
-    animation: slideDown-15226a58 0.3s ease-out;
+    width: calc(100% - 30px);
+    margin: -50px 0px 20px 30px;
   }
   .calendar-main {
     margin: 100px 0 0 0;
@@ -1903,6 +1902,10 @@ export default class extends Vue {
   .calendar-main {
     padding: 20px 16px;
     margin-top: 100px;
+  }
+
+  .comment-submit-btn {
+    width:100%;
   }
 
   .empty-box {
@@ -1974,12 +1977,23 @@ export default class extends Vue {
 }
 
 @media screen and (max-width: 500px) {
-  .calendar-main {
-    padding: 20px 16px;
-    margin-top: 80px;
-  } 
-}
+  .timeline-connector {width: 0px;border-right: 0;}
+  .timeline-connector::before {right: -3px;}
+  .calendar-main { padding: 20px 16px; margin-top: 80px;} 
 
+  .event-content {gap: 15px;}
+  .user-info .user-avatar {width: 30px; height: 30px;}
+  .user-info .user-name {font-size: 18px;}
+  .event-title {font-size: 22px;}
+  .event-details {gap: 15px;}
+  .event-description {font-size: 16px;}
+
+  .comment-header {gap: 10px;}
+  .comments-section {width: calc(100% - 20px); margin: -50px 0px 20px 16px; padding: 20px 15px;}
+  .comment-input-area {gap:10px;}
+  .comment-input {flex: 0 1 calc(100% - 110px);}
+  .comment-submit-btn {flex: 0 1 100px; padding: 0;}
+}
 /* Element UI Custom Styling */
 ::v-deep .el-date-picker,
 ::v-deep .el-time-select {

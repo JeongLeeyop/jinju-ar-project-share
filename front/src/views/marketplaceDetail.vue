@@ -480,10 +480,14 @@ export default class extends Vue {
 .detail-main {
   flex: 1;
   margin-left: 270px;
-  padding: 40px;
+  padding: 160px 40px 100px 40px;
   position: relative;
   max-width: calc(100vw - 270px);
   box-sizing: border-box;
+
+  .back-button-wrapper {
+    text-align: left;
+  }
 }
 
 // 뒤로가기 버튼
