@@ -56,4 +56,19 @@ public class MarketplacePurchaseDto {
         @NotNull(message = "차감할 포인트를 입력해주세요")
         private Integer pointAmount;
     }
+
+    /**
+     * 구매자의 즉시 구매 요청 DTO (오프라인 장터)
+     */
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class InstantPurchaseRequest {
+        
+        @NotNull(message = "구매 수량을 입력해주세요")
+        private Integer quantity;
+        
+        private String buyerContact;
+    }
 }

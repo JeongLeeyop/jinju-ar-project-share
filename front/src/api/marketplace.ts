@@ -240,10 +240,24 @@ export interface OfflineProcessRequest {
   pointAmount: number;
 }
 
+// 오프라인 장터 즉시 구매 요청 (구매자가 직접 구매)
+export interface InstantPurchaseRequest {
+  quantity: number;
+  buyerContact?: string;
+}
+
 // 상품 구매 (메인 장터 - 포인트 결제)
 export const purchaseProduct = (productUid: string, data: PurchaseRequest) =>
   request({
     url: `${PURCHASES_PATH}/${productUid}`,
+    method: 'post',
+    data,
+  });
+
+// 오프라인 장터 즉시 구매 (구매자가 직접 구매)
+export const instantOfflinePurchase = (productUid: string, data: InstantPurchaseRequest) =>
+  request({
+    url: `${PURCHASES_PATH}/${productUid}/offline/instant`,
     method: 'post',
     data,
   });

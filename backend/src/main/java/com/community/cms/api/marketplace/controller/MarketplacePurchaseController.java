@@ -87,6 +87,27 @@ public class MarketplacePurchaseController {
     }
 
     /**
+     * 오프라인 장터 즉시 구매 (구매자가 직접 구매 - 새로운 API)
+     */
+    @PostMapping("/{productUid}/offline/instant")
+    public ResponseEntity<?> instantOfflinePurchase(
+            @PathVariable String productUid,
+            @Valid @RequestBody MarketplacePurchaseDto.InstantPurchaseRequest request,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        try {
+            User user = validateAndGetCurrentUser(userDetails);
+            MarketplacePurchaseDto result = purchaseService.instantOfflinePurchase(
+                    productUid, request, user.getUid(), user.getActualName());
+            return ResponseEntity.ok(result);
+        } catch (RuntimeException e) {
+            log.error("Failed to instant purchase: {}", e.getMessage());
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+    }
+
+    /**
      * 내 구매 내역 조회
      */
     @GetMapping("/my")
