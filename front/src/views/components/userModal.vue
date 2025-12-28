@@ -531,7 +531,7 @@ private loginForm = {
     width: 100% !important;
     max-width: 100% !important;
     margin: 0 !important;
-    height: 100vh;
+    // height: 100vh;
     max-height: 100vh;
     border-radius: 0;
     display: flex;

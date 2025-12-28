@@ -225,6 +225,11 @@
         @space-created="handleSpaceCreated"
       />
 
+      <!-- User Modals - 항상 렌더링 (모바일 대응) -->
+      <UserInfo :userModalVisible="userModalVisible" @close="userModalVisible = false;" />
+      <UserModal :userModalVisible="loginModalVisible" :activeStep="loginActiveStep"
+        @close="loginModalVisible = false;" />
+
       <div class="mobile-user-icon" @click="handleMobileUser">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path
@@ -282,11 +287,7 @@
           </slot>
         </div>
         <div class="component-container">
-          <div class="component">
-            <UserInfo :userModalVisible="userModalVisible" @close="userModalVisible = false;" />
-            <UserModal :userModalVisible="loginModalVisible" :activeStep="loginActiveStep"
-              @close="loginModalVisible = false;" />
-          </div>
+          <!-- 모달 컴포넌트는 상단으로 이동됨 -->
         </div>
       </div>
     </div>
