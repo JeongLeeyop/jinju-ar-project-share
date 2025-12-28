@@ -377,7 +377,7 @@ export default class extends Vue {
 
 .activity-main {
   margin-left: 267px;
-  padding: 160px 30px 20px;
+  padding: 160px 40px 20px;
   flex: 1;
   min-height: calc(100vh - 124px);
   display: flex;
@@ -424,7 +424,8 @@ export default class extends Vue {
 }
 
 .period-btn {
-  width: 100px;
+  width: 100%;
+  max-width: 100px;
   height: 52px;
   background: #CECECE;
   border: none;

@@ -758,7 +758,7 @@ export default class CommunityChat extends Vue {
   flex-wrap: wrap;
   gap: 40px;
   min-height: calc(100vh - 120px);
-  background: #FFF;
+  background: #F8F9FB;
 }
 
 .chat-main {
@@ -893,6 +893,7 @@ export default class CommunityChat extends Vue {
   height: calc(100vh - 120px);
   border: 2px solid #EBEBEB;
   box-sizing: border-box;
+  background: #FFF;
 }
 
 .notice-section {

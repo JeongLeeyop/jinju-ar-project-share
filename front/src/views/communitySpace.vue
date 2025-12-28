@@ -741,7 +741,7 @@ export default class CommunitySpace extends Vue {
   display: flex;
   gap: 0;
   min-height: calc(100vh - 120px);
-  background: #FFF;
+  background: #F8F9FB;
   align-items: flex-start;
 }
 

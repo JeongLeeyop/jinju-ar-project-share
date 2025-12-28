@@ -543,7 +543,7 @@ export default class extends Vue {
 .sms-management-main {
   flex: 1;
   margin-left: 310px;
-  padding: 40px 60px;
+  padding: 160px 30px 80px 30px;
 }
 
 .page-header {
@@ -556,21 +556,21 @@ export default class extends Vue {
   font-size: 32px;
   font-weight: 700;
   line-height: 100%;
-  margin: 0 0 8px 0;
+  margin: 0 0 20px;
 }
 
 .page-description {
   color: #666;
   font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
-  font-size: 16px;
+  font-size: 20px;
   margin: 0;
 }
 
 .section-title {
-  font-size: 18px;
+  font-size: 26px;
   font-weight: 600;
   color: #1a1a1a;
-  margin-bottom: 20px;
+  margin-bottom: 40px;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -594,7 +594,28 @@ export default class extends Vue {
   gap: 12px;
 
   .el-input {
-    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 16px 20px 16px 25px;
+    border-radius: 10px;
+    border: 2px solid #EBEBEB;
+
+    ::v-deep .el-input__inner {
+      height: auto;
+      flex: 1;
+      border: none;
+      outline: none;
+      color: #222;
+      font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
+      font-size: 16px;
+      font-weight: 400;
+      line-height: 100%;
+      background: transparent;
+      margin-left: 10px;
+      padding: 0 10px;
+      border: none;
+    }
   }
 }
 
@@ -617,7 +638,7 @@ export default class extends Vue {
 }
 
 .results-title {
-  font-size: 16px;
+  font-size: 24px;
   font-weight: 600;
   color: #1a1a1a;
 }
@@ -675,14 +696,16 @@ export default class extends Vue {
 }
 
 .member-name {
-  font-size: 14px;
+  font-size: 18px;
+  line-height: 1.4em;
   font-weight: 600;
-  color: #1a1a1a;
-  margin-bottom: 4px;
+  color: #222;
+  text-align: left;
+  margin: 0 0 4px 0;
 }
 
 .member-contact {
-  font-size: 13px;
+  font-size: 18px;
   color: #666;
   display: flex;
   align-items: center;
@@ -707,6 +730,10 @@ export default class extends Vue {
 
   .el-select {
     width: 100%;
+
+    ::v-deep .el-input__inner {
+      font-size: 16px;
+    }
   }
 }
 
@@ -714,10 +741,10 @@ export default class extends Vue {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 14px;
+  font-size: 22px;
   font-weight: 600;
   color: #1a1a1a;
-  margin-bottom: 8px;
+  margin-bottom: 15px;
 }
 
 .char-count {

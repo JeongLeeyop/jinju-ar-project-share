@@ -9,13 +9,14 @@
       <div class="profile-card">
         <div class="profile-avatar">
           <svg width="100" height="100" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="50" cy="50" r="50" fill="#D9D9D9"/>
-            <mask id="mask0_profile" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="0" y="0" width="100" height="100">
-              <circle cx="50" cy="50" r="50" fill="#D9D9D9"/>
+            <circle cx="50" cy="50" r="50" fill="#D9D9D9" />
+            <mask id="mask0_profile" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="0" y="0" width="100"
+              height="100">
+              <circle cx="50" cy="50" r="50" fill="#D9D9D9" />
             </mask>
             <g mask="url(#mask0_profile)">
-              <rect x="11.1111" y="58.3333" width="77.7778" height="88.8889" rx="14" fill="#F5F5F5"/>
-              <circle cx="50" cy="30.5556" r="19.4444" fill="#F5F5F5"/>
+              <rect x="11.1111" y="58.3333" width="77.7778" height="88.8889" rx="14" fill="#F5F5F5" />
+              <circle cx="50" cy="30.5556" r="19.4444" fill="#F5F5F5" />
             </g>
           </svg>
         </div>
@@ -25,7 +26,7 @@
             <h2 class="profile-name">{{ userName }} 님</h2>
             <button class="edit-profile-btn" @click="handleEditProfile">프로필 수정</button>
           </div>
-          
+
           <div class="points-section">
             <span class="points-label">보유 R포인트</span>
             <span class="points-value">{{ totalPoints.toLocaleString() }}</span>
@@ -40,13 +41,8 @@
         <!-- Filters -->
         <div class="filters-container">
           <div class="period-buttons">
-            <button
-              v-for="period in periods"
-              :key="period.value"
-              class="period-btn"
-              :class="{ active: selectedPeriod === period.value }"
-              @click="handlePeriodChange(period.value)"
-            >
+            <button v-for="period in periods" :key="period.value" class="period-btn"
+              :class="{ active: selectedPeriod === period.value }" @click="handlePeriodChange(period.value)">
               {{ period.label }}
             </button>
           </div>
@@ -54,32 +50,23 @@
           <div class="date-filters">
             <div class="date-range-picker">
               <div class="date-input-wrapper">
-                <input
-                  v-model="startDate"
-                  type="text"
-                  placeholder="2025.01.01"
-                  class="date-input"
-                  readonly
-                />
+                <input v-model="startDate" type="text" placeholder="2025.01.01" class="date-input" readonly />
                 <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M16.25 6.875L10 13.125L3.75 6.875" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M16.25 6.875L10 13.125L3.75 6.875" stroke="black" stroke-width="1.5" stroke-linecap="round"
+                    stroke-linejoin="round" />
                 </svg>
               </div>
 
               <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M4 10C4 10 6.58778 6.62471 10 10C13.4122 13.3753 16 10 16 10" stroke="#CECECE" stroke-width="1.5" stroke-linecap="round"/>
+                <path d="M4 10C4 10 6.58778 6.62471 10 10C13.4122 13.3753 16 10 16 10" stroke="#CECECE"
+                  stroke-width="1.5" stroke-linecap="round" />
               </svg>
 
               <div class="date-input-wrapper">
-                <input
-                  v-model="endDate"
-                  type="text"
-                  placeholder="2025.02.01"
-                  class="date-input"
-                  readonly
-                />
+                <input v-model="endDate" type="text" placeholder="2025.02.01" class="date-input" readonly />
                 <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M16.25 6.875L10 13.125L3.75 6.875" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M16.25 6.875L10 13.125L3.75 6.875" stroke="black" stroke-width="1.5" stroke-linecap="round"
+                    stroke-linejoin="round" />
                 </svg>
               </div>
             </div>
@@ -90,12 +77,8 @@
 
         <!-- History List -->
         <div class="history-list">
-          <div
-            v-for="(item, index) in filteredHistory"
-            :key="index"
-            class="history-item"
-            :class="{ first: index === 0 }"
-          >
+          <div v-for="(item, index) in filteredHistory" :key="index" class="history-item"
+            :class="{ first: index === 0 }">
             <div class="history-date">{{ item.date }}</div>
             <div class="history-description">{{ item.description }}</div>
             <div class="history-points">
@@ -201,7 +184,7 @@ export default class extends Vue {
       });
 
       this.backendHistory = historyResponse.data.content || [];
-      
+
       // 백엔드 데이터를 UI 형식으로 변환
       this.historyData = this.backendHistory.map((item) => ({
         date: this.$options.filters?.parseDate(item.createdAt, 'YYYY.MM.DD') || item.createdAt,
@@ -242,10 +225,10 @@ export default class extends Vue {
   // 기간 버튼 클릭 시 날짜 자동 설정
   private handlePeriodChange(periodValue: string) {
     this.selectedPeriod = periodValue;
-    
+
     const today = new Date();
     const startDate = new Date(today);
-    
+
     switch (periodValue) {
       case '1month':
         startDate.setMonth(today.getMonth() - 1);
@@ -257,7 +240,7 @@ export default class extends Vue {
         startDate.setMonth(today.getMonth() - 6);
         break;
     }
-    
+
     this.startDate = this.formatDateForInput(startDate);
     this.endDate = this.formatDateForInput(today);
   }
@@ -407,7 +390,8 @@ export default class extends Vue {
 }
 
 .period-btn {
-  width: 100px;
+  width: 100%;
+  max-width: 100px;
   height: 52px;
   background: #CECECE;
   border: none;
@@ -431,8 +415,22 @@ export default class extends Vue {
 }
 
 @media screen and (max-width:1200px) {
-  .filters-container {flex-direction: column-reverse;align-items: start;}
-  .period-buttons {flex: 0 1 100%; display: flex; gap: 20px;}
+  .filters-container {
+    flex-direction: column-reverse;
+    align-items: start;
+  }
+
+  .period-buttons {
+    width: 100%;
+    flex: 0 1 100%;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+  }
+
+  .period-btn {
+    flex: 0 1 calc(100% / 3 - 9px);
+  }
 }
 
 .date-filters {
@@ -657,11 +655,10 @@ export default class extends Vue {
   }
 
   .date-input-wrapper svg {
-   flex-shrink: unset;
+    flex-shrink: unset;
   }
 
   .period-buttons {
-    width: 100%;
     gap: 12px;
   }
 
@@ -673,6 +670,7 @@ export default class extends Vue {
     flex-direction: column;
     align-items: flex-start;
     gap: 12px;
+    padding: 20px;
   }
 
   .history-date {
@@ -685,31 +683,74 @@ export default class extends Vue {
 }
 
 @media screen and (max-width: 1024px) {
-  .profile-card {flex-direction: column;}
-  .profile-avatar { width: 80px; height: 80px;}
-  .profile-name-section {flex: 0 1 100%; width: 100%;}
-  .points-section {width: 100%; text-align: right;}
+  .profile-card {
+    flex-direction: column;
+  }
+
+  .profile-avatar {
+    width: 80px;
+    height: 80px;
+  }
+
+  .profile-name-section {
+    flex: 0 1 100%;
+    width: 100%;
+  }
+
+  .points-section {
+    width: 100%;
+    text-align: right;
+  }
 }
 
 @media screen and (max-width: 768px) {
- .profile-avatar { width: 50px; height: 50px;}
+  .profile-avatar {
+    width: 50px;
+    height: 50px;
+  }
 
-  .rpoint-main { padding: 140px 30px 20px; margin: 0;}
+  .rpoint-main {
+    padding: 140px 30px 20px;
+    margin: 0;
+  }
 
-  .profile-name { font-size: 24px;}
-  .section-title { font-size: 24px;}
+  .profile-name {
+    font-size: 24px;
+  }
+
+  .section-title {
+    font-size: 24px;
+  }
 
   .history-description,
   .history-date,
   .points-amount,
-  .points-type { font-size: 18px;}
+  .points-type {
+    font-size: 18px;
+  }
+  .history-description {padding-left: 0;}
 }
 
 @media screen and (max-width: 500px) {
-  .profile-name {font-size: 20px;}
-  .section-title {font-size: 20px;}
-  .points-label {font-size: 20px;}
-  .edit-profile-btn {width: 120px}
-  .rpoint-main {gap: 20px; padding: 120px 20px 20px;}
+  .profile-name {
+    font-size: 20px;
+  }
+
+  .section-title {
+    font-size: 20px;
+  }
+
+  .points-label {
+    font-size: 20px;
+  }
+
+  .edit-profile-btn {
+    width: 120px
+  }
+
+  .rpoint-main {
+    gap: 20px;
+    padding: 120px 20px 20px;
+  }
 }
 </style>

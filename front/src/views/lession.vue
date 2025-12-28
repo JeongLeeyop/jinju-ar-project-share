@@ -256,6 +256,8 @@ export default class extends Vue {
   margin-left: 270px;
   display: flex;
   flex-direction: column;
+  height: 100%;
+  background: #F8F9FB;
 
   @media screen and (max-width: 1024px) {
     margin-left: 240px;
