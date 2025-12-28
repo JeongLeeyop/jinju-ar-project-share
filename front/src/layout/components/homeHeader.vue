@@ -53,7 +53,7 @@
                 :class="getSpaceDotClass(space.spaceType)"
               ></span>
               <span>{{ space.name }}</span>
-              <span v-if="space.isAdmin" class="admin-badge-inline">관리자</span>
+              <!-- <span v-if="space.isAdmin" class="admin-badge-inline">관리자</span> -->
             </div>
             
             <!-- Empty State -->
@@ -872,7 +872,7 @@ export default class extends Vue {
   gap: 20px;
 }
 
-.user-section{flex: 0 1 100% ;display: flex; align-items: center; gap: 20px;}
+.user-section{flex: 0 1 100% ;display: flex; align-items: center; gap: 15px;}
 
 @media screen and (max-width: 1440px) {
   .user-section{flex-direction: column-reverse;gap: 0px;}

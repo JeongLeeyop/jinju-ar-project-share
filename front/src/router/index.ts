@@ -128,7 +128,7 @@ export const constantRoutes: Array<RouteConfig> = [
         },
       },
       {
-        path: 'videoDetail/:videoIdx',
+        path: 'lession/:lessionUid/video/:videoIdx',
         name: 'VideoDetail',
         component: () => import('@/views/videoDetail.vue'),
         meta: {

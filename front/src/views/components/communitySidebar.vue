@@ -50,7 +50,7 @@
             <span class="space-type-badge" :class="getSpaceTypeBadgeClass(space.spaceType)">
               {{ getSpaceTypeLabel(space.spaceType) }}
             </span>
-            <span v-if="space.isSpaceAdmin && !isChannelAdmin" class="admin-badge">관리자</span>
+            <!-- <span v-if="space.isSpaceAdmin && !isChannelAdmin" class="admin-badge">관리자</span> -->
           </el-menu-item>
           
           <!-- Empty State -->

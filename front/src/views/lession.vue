@@ -84,20 +84,38 @@
               :disabled="loading"
             ></el-input>
           </el-form-item>
-          <el-form-item label="채널 UID (선택)">
-            <el-input 
-              v-model="lessonForm.channelUid" 
-              placeholder="채널 UID를 입력하세요 (선택사항)"
-              :disabled="loading"
-            ></el-input>
-          </el-form-item>
-          <el-form-item>
-            <el-checkbox v-model="lessonForm.privateState" :disabled="loading">비공개</el-checkbox>
-            <el-checkbox v-model="lessonForm.secretState" :disabled="loading">시크릿</el-checkbox>
+          <el-form-item label="썸네일 이미지">
+            <div class="thumbnail-upload-container">
+              <!-- 썸네일 미리보기 -->
+              <div v-if="thumbnailPreview" class="thumbnail-preview">
+                <img :src="thumbnailPreview" alt="썸네일 미리보기" />
+                <div class="thumbnail-overlay" @click="removeThumbnail">
+                  <i class="el-icon-delete"></i>
+                  <span>삭제</span>
+                </div>
+              </div>
+              
+              <!-- 업로드 버튼 영역 -->
+              <div v-else class="thumbnail-upload-area" @click="triggerFileInput">
+                <i class="el-icon-plus"></i>
+                <p>썸네일 이미지 추가</p>
+                <span class="upload-hint">권장 크기: 985x620px</span>
+              </div>
+              
+              <!-- 숨겨진 파일 입력 -->
+              <input
+                ref="fileInput"
+                type="file"
+                accept="image/*"
+                style="display: none"
+                @change="handleFileChange"
+                :disabled="loading"
+              />
+            </div>
           </el-form-item>
         </el-form>
         <div class="modal-actions">
-          <el-button @click="writeModalVisible = false" :disabled="loading">취소</el-button>
+          <el-button @click="closeModal" :disabled="loading">취소</el-button>
           <el-button 
             type="primary" 
             @click="submitLesson" 
@@ -113,6 +131,7 @@
 import { Component, Vue } from 'vue-property-decorator';
 import CommunitySidebar from './components/communitySidebar.vue';
 import { getLessionList, addLession } from '@/api/lession';
+import request from '@/utils/request';
 import { ILession } from '@/types/lession';
 import { ChannelModule } from '@/store/modules/channel';
 
@@ -134,12 +153,16 @@ export default class extends Vue {
     channelUid: '',
   };
 
+  private thumbnailFile: File | null = null;
+  private thumbnailPreview: string = '';
+  private uploadedFileUid: string = '';
+
   private listQuery: any = {
     searchType: 'name',
     searchValue: '',
     channelUid: ChannelModule.selectedChannel.uid,
     size: 10,
-    page: 0,
+    page: 1, // Changed from 0 to 1 for proper pagination
   }
 
   private lessionList: ILession[] = [];
@@ -148,12 +171,35 @@ export default class extends Vue {
     this.fetchLessionList();
   }
 
+  activated() {
+    // 다른 페이지에서 돌아왔을 때 목록 새로고침
+    this.fetchLessionList();
+  }
+
   private async fetchLessionList() {
     try {
       this.loading = true;
-      const response = await getLessionList(this.listQuery);
+      
+      // Use getCommunityLession to fetch lessons for current community/channel
+      const channelUid = ChannelModule.selectedChannel.uid;
+      if (!channelUid) {
+        this.$message.warning('커뮤니티를 선택해주세요.');
+        this.loading = false;
+        return;
+      }
+
+      const response = await getLessionList({
+        ...this.listQuery,
+        channelUid,
+      });
+      
       // API 응답에서 content 배열 추출
       this.lessionList = response.data?.content || [];
+      
+      console.log('레슨 목록 로드 완료:', {
+        count: this.lessionList.length,
+        channelUid,
+      });
     } catch (error) {
       console.error('레슨 목록을 불러오는데 실패했습니다:', error);
       this.$message.error('레슨 목록을 불러올 수 없습니다.');
@@ -166,6 +212,110 @@ export default class extends Vue {
     this.writeModalVisible = true;
   }
 
+  private triggerFileInput() {
+    if (this.loading) return;
+    (this.$refs.fileInput as HTMLInputElement).click();
+  }
+
+  private handleFileChange(event: Event) {
+    const target = event.target as HTMLInputElement;
+    const file = target.files?.[0];
+    
+    if (!file) return;
+
+    // 이미지 파일인지 확인
+    if (!file.type.startsWith('image/')) {
+      this.$message.error('이미지 파일만 업로드 가능합니다.');
+      return;
+    }
+
+    // 파일 크기 확인 (5MB 제한)
+    if (file.size > 5 * 1024 * 1024) {
+      this.$message.error('파일 크기는 5MB 이하여야 합니다.');
+      return;
+    }
+
+    this.thumbnailFile = file;
+
+    // 미리보기 생성
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      this.thumbnailPreview = e.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+
+    // 파일 입력 초기화 (같은 파일 재선택 가능하도록)
+    target.value = '';
+  }
+
+  private removeThumbnail() {
+    if (this.loading) return;
+    
+    this.thumbnailFile = null;
+    this.thumbnailPreview = '';
+    this.uploadedFileUid = '';
+    
+    // 파일 입력 초기화
+    const fileInput = this.$refs.fileInput as HTMLInputElement;
+    if (fileInput) {
+      fileInput.value = '';
+    }
+  }
+
+  private async uploadThumbnail(): Promise<string | null> {
+    if (!this.thumbnailFile) return null;
+
+    try {
+      const formData = new FormData();
+      formData.append('file', this.thumbnailFile);
+
+      // /client/lession/upload 엔드포인트로 업로드
+      const response = await request({
+        url: '/client/lession/upload',
+        method: 'post',
+        data: formData,
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      
+      console.log('업로드 응답:', response);
+      
+      // 응답 구조에 따라 fileUid 추출
+      let fileUid = null;
+      if (response.data) {
+        // AttachedFileDto.detail 구조: { uid, ... }
+        if (response.data.uid) {
+          fileUid = response.data.uid;
+        }
+        // 배열로 반환되는 경우
+        else if (Array.isArray(response.data) && response.data.length > 0) {
+          fileUid = response.data[0].uid || response.data[0].fileUid || response.data[0];
+        }
+        // fileUid로 반환되는 경우
+        else if (response.data.fileUid) {
+          fileUid = response.data.fileUid;
+        }
+        // 문자열로 반환되는 경우
+        else if (typeof response.data === 'string') {
+          fileUid = response.data;
+        }
+      }
+      
+      if (fileUid) {
+        this.uploadedFileUid = fileUid;
+        console.log('썸네일 업로드 성공:', fileUid);
+        return fileUid;
+      }
+
+      console.error('fileUid를 찾을 수 없습니다:', response);
+      return null;
+    } catch (error) {
+      console.error('썸네일 업로드 실패:', error);
+      throw error;
+    }
+  }
+
   private async submitLesson() {
     try {
       // 유효성 검사
@@ -176,36 +326,57 @@ export default class extends Vue {
 
       this.loading = true;
 
+      // 현재 선택된 채널 UID 사용
+      const channelUid = this.lessonForm.channelUid || ChannelModule.selectedChannel.uid;
+      
+      if (!channelUid) {
+        this.$message.warning('채널을 선택해주세요.');
+        this.loading = false;
+        return;
+      }
+
+      // 썸네일이 있으면 먼저 업로드
+      let fileUid = null;
+      if (this.thumbnailFile) {
+        try {
+          fileUid = await this.uploadThumbnail();
+          if (!fileUid) {
+            this.$message.warning('썸네일 업로드 결과를 받지 못했습니다. 썸네일 없이 계속합니다.');
+          }
+        } catch (error) {
+          console.error('썸네일 업로드 에러:', error);
+          this.$message.warning('썸네일 업로드에 실패했습니다. 썸네일 없이 계속합니다.');
+        }
+      }
+
       // API 호출
       const newLessionData: ILession = {
         uid: '',
         name: this.lessonForm.name,
         description: this.lessonForm.description,
-        privateState: this.lessonForm.privateState,
-        secretState: this.lessonForm.secretState,
+        privateState: this.lessonForm.privateState || false,
+        secretState: this.lessonForm.secretState || false,
         createDate: '',
-        channelUid: this.lessonForm.channelUid,
+        channelUid,
         myWatchPercent: 0,
         video: [],
-        fileList: [],
+        fileList: fileUid ? [{
+          fileUid,
+          viewOrder: 0,
+        }] : [],
       };
 
+      console.log('레슨 생성 데이터:', newLessionData);
+
       const response = await addLession(newLessionData);
+      
+      console.log('레슨 생성 응답:', response);
       
       // 성공 시 목록 새로고침
       await this.fetchLessionList();
       
       this.$message.success('레슨이 작성되었습니다.');
-      this.writeModalVisible = false;
-      
-      // 폼 초기화
-      this.lessonForm = {
-        name: '',
-        description: '',
-        privateState: false,
-        secretState: false,
-        channelUid: '',
-      };
+      this.closeModal();
     } catch (error) {
       console.error('레슨 작성 실패:', error);
       this.$message.error('레슨 작성에 실패했습니다.');
@@ -214,30 +385,67 @@ export default class extends Vue {
     }
   }
 
+  private closeModal() {
+    this.writeModalVisible = false;
+    
+    // 폼 초기화
+    this.lessonForm = {
+      name: '',
+      description: '',
+      privateState: false,
+      secretState: false,
+      channelUid: '',
+    };
+    
+    // 썸네일 초기화
+    this.removeThumbnail();
+  }
+
   private handleLessionClick(lession: ILession) {
-    this.$router.push({
-      name: 'Video',
-      params: { lessionUid: lession.uid },
-    });
+    if (lession.uid) {
+      this.$router.push({
+        name: 'Video',
+        params: { lessionUid: lession.uid },
+      });
+    }
   }
 
   // 레슨 썸네일 이미지 가져오기
   private getLessionImage(lession: ILession): string {
+    console.log('레슨 이미지 조회:', {
+      name: lession.name,
+      fileList: lession.fileList,
+      fileListLength: lession.fileList?.length,
+    });
+
     // fileList에서 첫 번째 이미지 사용
     if (lession.fileList && lession.fileList.length > 0) {
       const firstFile = lession.fileList[0];
+      
+      console.log('첫 번째 파일:', firstFile);
+      
       // fileUid가 있으면 파일 API 엔드포인트 사용
       if (firstFile.fileUid) {
-        // @ts-ignore
-        const baseURL = process.env.VUE_APP_BASE_API || '';
-        return `${baseURL}/attached-file/${firstFile.fileUid}`;
+        const imageUrl = `/api/attached-file/${firstFile.fileUid}`;
+        console.log('생성된 이미지 URL:', imageUrl);
+        return imageUrl;
       }
-      // file.path가 있으면 그대로 사용
+      
+      // file 객체가 있고 path가 있으면 그대로 사용
       if (firstFile.file && firstFile.file.path) {
+        console.log('파일 경로 사용:', firstFile.file.path);
         return firstFile.file.path;
       }
+      
+      // name이 URL인 경우
+      if (firstFile.name && (firstFile.name.startsWith('http://') || firstFile.name.startsWith('https://'))) {
+        console.log('name에서 URL 사용:', firstFile.name);
+        return firstFile.name;
+      }
     }
+    
     // 기본 이미지
+    console.log('기본 이미지 사용');
     return 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=985&h=620&fit=crop';
   }
 }
@@ -625,6 +833,102 @@ export default class extends Vue {
             background: #0530CC;
           }
         }
+      }
+    }
+  }
+
+  .thumbnail-upload-container {
+    width: 100%;
+  }
+
+  .thumbnail-preview {
+    position: relative;
+    width: 100%;
+    height: 200px;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 2px solid #E0E0E0;
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .thumbnail-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      opacity: 0;
+      transition: opacity 0.2s;
+      cursor: pointer;
+
+      i {
+        font-size: 32px;
+        color: #FFF;
+      }
+
+      span {
+        color: #FFF;
+        font-size: 14px;
+        font-weight: 500;
+      }
+
+      &:hover {
+        opacity: 1;
+      }
+    }
+  }
+
+  .thumbnail-upload-area {
+    width: 100%;
+    height: 200px;
+    border: 2px dashed #D0D0D0;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: #FAFAFA;
+
+    i {
+      font-size: 48px;
+      color: #888;
+    }
+
+    p {
+      color: #333;
+      font-size: 16px;
+      font-weight: 500;
+      margin: 0;
+    }
+
+    .upload-hint {
+      color: #888;
+      font-size: 12px;
+    }
+
+    &:hover {
+      border-color: #073DFF;
+      background: #F5F8FF;
+
+      i {
+        color: #073DFF;
+      }
+
+      p {
+        color: #073DFF;
       }
     }
   }
