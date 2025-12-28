@@ -1346,6 +1346,9 @@ display: flex;
 }
 
 @media screen and (max-width: 1024px) {
+  .posts-container {
+    padding: 20px 0;
+  }
   .space-main {
     margin-left: 240px; /* Remove sidebar margin on mobile */
     padding-left: 20px;
@@ -1353,7 +1356,7 @@ display: flex;
   }
 
   .space-header {
-    padding-top: 20px;
+    padding-top: 30px;
   }
 
   .post-image {

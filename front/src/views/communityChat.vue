@@ -8,7 +8,7 @@
       <div class="space-header">
         <div class="space-name-tag">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="8" cy="8" r="8" :fill="spaceColor"/>
+            <circle cx="8" cy="8" r="8" :fill="spaceColor" />
           </svg>
           <span>{{ spaceName }}</span>
           <span class="space-visibility-badge" :class="{ 'public-badge': isPublic, 'private-badge': !isPublic }">
@@ -17,7 +17,8 @@
         </div>
         <button class="toggle-participants-btn" @click="toggleParticipants">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M12 5V19M5 12C10.4673 12 13.5327 12 19 12" stroke="black" stroke-width="1.5" stroke-linecap="round"/>
+            <path d="M12 5V19M5 12C10.4673 12 13.5327 12 19 12" stroke="black" stroke-width="1.5"
+              stroke-linecap="round" />
           </svg>
         </button>
       </div>
@@ -27,24 +28,17 @@
         <div class="notice-section" :class="{ collapsed: noticeCollapsed }" v-if="currentNotice">
           <div class="notice-content">
             <p class="notice-text" ref="noticeText">{{ currentNotice.text }}</p>
-            <button 
-              v-if="isNoticeOverflow" 
-              class="toggle-btn" 
-              @click="noticeCollapsed = !noticeCollapsed"
-            >
+            <button v-if="isNoticeOverflow" class="toggle-btn" @click="noticeCollapsed = !noticeCollapsed">
               <svg width="24" height="28" viewBox="0 0 24 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M20 10L12.5 17.5L5 10" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M20 10L12.5 17.5L5 10" stroke="black" stroke-width="1.5" stroke-linecap="round"
+                  stroke-linejoin="round" />
               </svg>
             </button>
           </div>
           <div class="notice-meta">
             <span class="notice-author">{{ currentNotice.userName }}</span>
             <span class="notice-date">{{ formatNoticeDate(currentNotice.createdAt) }}</span>
-            <button 
-              v-if="isAdmin" 
-              class="notice-delete-btn" 
-              @click="handleDeleteNotice"
-            >삭제</button>
+            <button v-if="isAdmin" class="notice-delete-btn" @click="handleDeleteNotice">삭제</button>
           </div>
         </div>
 
@@ -56,25 +50,22 @@
           <div v-else-if="messages.length === 0" class="no-messages">
             아직 메시지가 없습니다. 첫 번째 메시지를 보내보세요!
           </div>
-          <div 
-            v-else
-            v-for="message in messages" 
-            :key="message.id"
-            class="message-wrapper"
-            :class="{ 'message-sent': message.isSent, 'message-received': !message.isSent }"
-          >
+          <div v-else v-for="message in messages" :key="message.id" class="message-wrapper"
+            :class="{ 'message-sent': message.isSent, 'message-received': !message.isSent }">
             <div v-if="!message.isSent" class="message-left">
               <div class="message-header">
                 <div class="user-avatar">
-                  <img v-if="message.userAvatar" :src="`${apiUrl}/attached-file/${message.userAvatar}`" alt="avatar" class="user-avatar-img" />
+                  <img v-if="message.userAvatar" :src="`${apiUrl}/attached-file/${message.userAvatar}`" alt="avatar"
+                    class="user-avatar-img" />
                   <svg v-else width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <circle cx="18" cy="18" r="18" fill="#D9D9D9"/>
-                    <mask :id="`mask-${message.id}`" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="0" y="0" width="36" height="36">
-                      <circle cx="18" cy="18" r="18" fill="#D9D9D9"/>
+                    <circle cx="18" cy="18" r="18" fill="#D9D9D9" />
+                    <mask :id="`mask-${message.id}`" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="0" y="0"
+                      width="36" height="36">
+                      <circle cx="18" cy="18" r="18" fill="#D9D9D9" />
                     </mask>
                     <g :mask="`url(#mask-${message.id})`">
-                      <rect x="4" y="21" width="28" height="32" rx="14" fill="#F5F5F5"/>
-                      <circle cx="18" cy="11" r="7" fill="#F5F5F5"/>
+                      <rect x="4" y="21" width="28" height="32" rx="14" fill="#F5F5F5" />
+                      <circle cx="18" cy="11" r="7" fill="#F5F5F5" />
                     </g>
                   </svg>
                 </div>
@@ -99,15 +90,8 @@
 
         <!-- Message Input -->
         <div class="message-input-section">
-          <input
-            ref="messageInput"
-            type="text"
-            class="message-input"
-            placeholder="채팅메세지를 작성하세요!"
-            v-model="newMessage"
-            @keyup.enter="sendMessage"
-            :disabled="isSending"
-          />
+          <input ref="messageInput" type="text" class="message-input" placeholder="채팅메세지를 작성하세요!" v-model="newMessage"
+            @keyup.enter="sendMessage" :disabled="isSending" />
           <button class="send-btn" @click="sendMessage" :disabled="isSending || !newMessage.trim()">
             {{ isSending ? '전송 중...' : '채팅입력' }}
           </button>
@@ -121,46 +105,32 @@
     <div class="participants-wrapper" :class="{ 'show': showParticipants }">
       <button class="close-participants-btn" @click="toggleParticipants">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round" />
         </svg>
       </button>
-      <ParticipantsList
-        :participants="participants"
-        :participantCount="participantCount"
-        :isAdmin="isAdmin"
-        :isPublic="isPublic"
-        @invite="openInviteModal"
-      />
+      <ParticipantsList :participants="participants" :participantCount="participantCount" :isAdmin="isAdmin"
+        :isPublic="isPublic" @invite="openInviteModal" />
     </div>
 
     <!-- Context Menu -->
-    <div 
-      v-if="contextMenu.visible" 
-      class="context-menu"
-      :style="{ top: contextMenu.y + 'px', left: contextMenu.x + 'px' }"
-      @click.stop
-    >
+    <div v-if="contextMenu.visible" class="context-menu"
+      :style="{ top: contextMenu.y + 'px', left: contextMenu.x + 'px' }" @click.stop>
       <div class="context-menu-item" @click="setAsNotice" v-if="isAdmin">
         <i class="el-icon-bell"></i> 공지로 등록
       </div>
       <div class="context-menu-item" @click="copyMessage">
         <i class="el-icon-document-copy"></i> 복사
       </div>
-      <div 
-        class="context-menu-item delete" 
-        @click="deleteMessage" 
-        v-if="contextMenu.message && (contextMenu.message.isSent || isAdmin)"
-      >
+      <div class="context-menu-item delete" @click="deleteMessage"
+        v-if="contextMenu.message && (contextMenu.message.isSent || isAdmin)">
         <i class="el-icon-delete"></i> 삭제
       </div>
     </div>
     <div v-if="contextMenu.visible" class="context-menu-overlay" @click="hideContextMenu"></div>
 
-    <!-- Invite Modal -->    <SpaceInviteModal
-      :visible.sync="inviteModalVisible"
-      :space-uid="spaceId"
-      @invited="handleInvited"
-    />
+    <!-- Invite Modal -->
+    <SpaceInviteModal :visible.sync="inviteModalVisible" :space-uid="spaceId" @invited="handleInvited" />
   </div>
 </template>
 
@@ -216,7 +186,7 @@ export default class CommunityChat extends Vue {
   private currentNotice: ChatNotice | null = null;
   private participants: Participant[] = [];
   private currentUserIconFileUid: string | null = null;  // 현재 사용자 아이콘 UID
-  
+
   private isLoadingMore = false;
   private hasMoreMessages = true;
   private messageLimit = 10;
@@ -249,16 +219,16 @@ export default class CommunityChat extends Vue {
   async mounted() {
     this.spaceId = this.$route.params.spaceId || '';
     this.spaceName = this.$route.query.spaceName as string || '';
-    
+
     // 현재 사용자 정보 로드 (iconFileUid 포함)
     await this.loadCurrentUserInfo();
-    
+
     if (this.spaceId) {
       await this.initializeChat();
     }
 
     document.addEventListener('click', this.hideContextMenu);
-    
+
     this.$nextTick(() => {
       const chatMessages = this.$refs.chatMessages as HTMLElement;
       if (chatMessages) {
@@ -275,7 +245,7 @@ export default class CommunityChat extends Vue {
       this.unsubscribeNotice();
     }
     document.removeEventListener('click', this.hideContextMenu);
-    
+
     const chatMessages = this.$refs.chatMessages as HTMLElement;
     if (chatMessages) {
       chatMessages.removeEventListener('scroll', this.handleScroll);
@@ -291,7 +261,7 @@ export default class CommunityChat extends Vue {
       if (this.unsubscribeNotice) {
         this.unsubscribeNotice();
       }
-      
+
       this.spaceId = newSpaceId;
       this.spaceName = this.$route.query.spaceName as string || '';
       await this.initializeChat();
@@ -330,7 +300,7 @@ export default class CommunityChat extends Vue {
         this.spaceId,
         (firebaseMessages: ChatMessage[]) => {
           console.log('Received messages from Firebase:', firebaseMessages.length, firebaseMessages);
-          
+
           // 초기 로딩인 경우에만 메시지 전체 교체
           if (this.isInitialLoad) {
             this.messages = firebaseMessages.map((msg) => this.convertToDisplayMessage(msg));
@@ -347,7 +317,7 @@ export default class CommunityChat extends Vue {
             // 기존 메시지와 비교하여 새로운 메시지만 추가
             const existingIds = new Set(this.messages.map(m => m.id));
             const newMessages = firebaseMessages.filter(msg => !existingIds.has(msg.id));
-            
+
             if (newMessages.length > 0) {
               const convertedNew = newMessages.map((msg) => this.convertToDisplayMessage(msg));
               this.messages = [...this.messages, ...convertedNew];
@@ -372,7 +342,7 @@ export default class CommunityChat extends Vue {
       );
 
       await this.loadChatSpaceInfo();
-      
+
     } catch (error) {
       this.$message.error('채팅을 불러오는데 실패했습니다.');
     } finally {
@@ -396,7 +366,7 @@ export default class CommunityChat extends Vue {
         }
         this.spaceColor = spaceInfo.color || '#FF5858';
         this.participantCount = spaceInfo.participants?.length || 0;
-        
+
         if (spaceInfo.notice) {
           this.currentNotice = spaceInfo.notice;
           // 공지사항 로드 후 오버플로우 체크
@@ -413,7 +383,7 @@ export default class CommunityChat extends Vue {
           this.isPublic = response.data.isPublic || false;
           // 백엔드에서 받은 isAdmin 값 사용 (커뮤니티 관리자 포함)
           this.isAdmin = response.data.isAdmin || false;
-          
+
           console.log('Space info loaded:', {
             spaceId: this.spaceId,
             isAdmin: this.isAdmin,
@@ -502,12 +472,12 @@ export default class CommunityChat extends Vue {
         messageText,
         this.currentUser.avatar,
       );
-      
+
     } catch (error) {
       this.$message.error('메시지 전송에 실패했습니다.');
     } finally {
       this.isSending = false;
-      
+
       // 메시지 전송 완료 후 입력창에 포커스
       this.$nextTick(() => {
         setTimeout(() => {
@@ -535,7 +505,7 @@ export default class CommunityChat extends Vue {
         }
       }
     };
-    
+
     // DOM 업데이트 완료 후 스크롤
     this.$nextTick(() => {
       scrollAction();
@@ -548,13 +518,13 @@ export default class CommunityChat extends Vue {
   private formatTime(date: Date): string {
     const now = new Date();
     const messageDate = new Date(date);
-    
+
     const hours = messageDate.getHours();
     const minutes = messageDate.getMinutes();
     const ampm = hours >= 12 ? 'PM' : 'AM';
     const displayHours = hours % 12 || 12;
     const displayMinutes = minutes < 10 ? `0${minutes}` : minutes;
-    
+
     if (
       now.getFullYear() === messageDate.getFullYear() &&
       now.getMonth() === messageDate.getMonth() &&
@@ -569,9 +539,9 @@ export default class CommunityChat extends Vue {
 
   private formatNoticeDate(date: Date | any): string {
     if (!date) return '';
-    
+
     let d: Date;
-    
+
     // Firestore Timestamp 객체 처리
     if (date && typeof date.toDate === 'function') {
       d = date.toDate();
@@ -581,14 +551,14 @@ export default class CommunityChat extends Vue {
     } else {
       d = new Date(date);
     }
-    
+
     // 유효한 날짜인지 확인
     if (isNaN(d.getTime())) return '';
-    
+
     const year = d.getFullYear();
     const month = d.getMonth() + 1;
     const day = d.getDate();
-    
+
     return `${year}.${month}.${day}`;
   }
 
@@ -598,13 +568,13 @@ export default class CommunityChat extends Vue {
       this.$message.info('공개 공간은 초대 기능을 사용할 수 없습니다. 커뮤니티의 모든 멤버가 자동으로 참여합니다.');
       return;
     }
-    
+
     // 관리자가 아닌 경우 초대 불가
     if (!this.isAdmin) {
       this.$message.warning('공간 관리자만 멤버를 초대할 수 있습니다.');
       return;
     }
-    
+
     console.log('openInviteModal called', {
       spaceId: this.spaceId,
       isAdmin: this.isAdmin,
@@ -675,8 +645,8 @@ export default class CommunityChat extends Vue {
       cancelButtonText: '취소',
       type: 'warning',
     })
-    .then(() => this.deleteMessageAction())
-    .catch(() => {});
+      .then(() => this.deleteMessageAction())
+      .catch(() => { });
   }
 
   private async setAsNotice() {
@@ -687,21 +657,21 @@ export default class CommunityChat extends Vue {
       cancelButtonText: '취소',
       type: 'info',
     })
-    .then(async () => {
-      try {
-        const msg = this.contextMenu.message!;
-        await chatService.setNotice(
-          this.spaceId,
-          msg.userId,
-          msg.userName,
-          msg.text,
-        );
-        this.$message.success('공지로 등록되었습니다.');
-      } catch (error) {
-        this.$message.error('공지 등록에 실패했습니다.');
-      }
-    })
-    .catch(() => {});
+      .then(async () => {
+        try {
+          const msg = this.contextMenu.message!;
+          await chatService.setNotice(
+            this.spaceId,
+            msg.userId,
+            msg.userName,
+            msg.text,
+          );
+          this.$message.success('공지로 등록되었습니다.');
+        } catch (error) {
+          this.$message.error('공지 등록에 실패했습니다.');
+        }
+      })
+      .catch(() => { });
 
     this.hideContextMenu();
   }
@@ -712,22 +682,22 @@ export default class CommunityChat extends Vue {
       cancelButtonText: '취소',
       type: 'warning',
     })
-    .then(async () => {
-      try {
-        await chatService.deleteNotice(this.spaceId);
-        this.currentNotice = null;
-        this.$message.success('공지가 삭제되었습니다.');
-      } catch (error) {
-        this.$message.error('공지 삭제에 실패했습니다.');
-      }
-    })
-    .catch(() => {});
+      .then(async () => {
+        try {
+          await chatService.deleteNotice(this.spaceId);
+          this.currentNotice = null;
+          this.$message.success('공지가 삭제되었습니다.');
+        } catch (error) {
+          this.$message.error('공지 삭제에 실패했습니다.');
+        }
+      })
+      .catch(() => { });
   }
 
   private handleScroll() {
     const chatMessages = this.$refs.chatMessages as HTMLElement;
     if (!chatMessages) return;
-    
+
     if (chatMessages.scrollTop < 100 && !this.isLoadingMore && this.hasMoreMessages) {
       this.loadMoreMessages();
     }
@@ -735,36 +705,36 @@ export default class CommunityChat extends Vue {
 
   private async loadMoreMessages() {
     if (this.isLoadingMore || !this.hasMoreMessages || this.messages.length === 0) return;
-    
+
     try {
       this.isLoadingMore = true;
       const chatMessages = this.$refs.chatMessages as HTMLElement;
       const previousScrollHeight = chatMessages?.scrollHeight || 0;
-      
+
       // 가장 오래된 메시지의 createdAt timestamp를 기준으로 이전 메시지 로드
       const oldestMessage = this.messages[0];
       const oldestTimestamp = oldestMessage?.createdAt;
-      
+
       const olderMessages = await chatService.getOlderMessages(
         this.spaceId,
         oldestMessage?.id || null,
         this.messageLimit,
         oldestTimestamp,
       );
-      
+
       if (olderMessages.length < this.messageLimit) {
         this.hasMoreMessages = false;
       }
-      
+
       if (olderMessages.length > 0) {
         // 중복 제거
         const existingIds = new Set(this.messages.map(m => m.id));
         const uniqueOlderMessages = olderMessages.filter(msg => !existingIds.has(msg.id));
-        
+
         if (uniqueOlderMessages.length > 0) {
           const convertedMessages = uniqueOlderMessages.map((msg: ChatMessage) => this.convertToDisplayMessage(msg));
           this.messages = [...convertedMessages, ...this.messages];
-          
+
           this.$nextTick(() => {
             if (chatMessages) {
               const newScrollHeight = chatMessages.scrollHeight;
@@ -785,23 +755,25 @@ export default class CommunityChat extends Vue {
 <style scoped lang="scss">
 .community-chat-page {
   display: flex;
+  flex-wrap: wrap;
+  gap: 40px;
   min-height: calc(100vh - 120px);
   background: #FFF;
 }
 
 .chat-main {
-    flex: 1;
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    margin: 120px 0 0 270px;
-    min-width: 0;
-    padding: 0px 20px 80px 80px;
+  flex: 1;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  margin: 120px 0 0 270px;
+  min-width: 0;
+  padding: 0px 0px 80px 40px;
 }
 
 .space-header {
   position: relative;
-  padding: 45px 0;
+  padding: 40px 0;
   text-align: left;
   display: flex;
   justify-content: space-between;
@@ -837,12 +809,12 @@ export default class CommunityChat extends Vue {
     font-size: 12px;
     font-weight: 500;
     margin-left: 8px;
-    
+
     &.public-badge {
       background-color: #E8F5E9;
       color: #2E7D32;
     }
-    
+
     &.private-badge {
       background-color: #FFF3E0;
       color: #E65100;
@@ -1054,7 +1026,7 @@ export default class CommunityChat extends Vue {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 20px 0;
+  padding: 0 20px 20px 0;
   display: flex;
   flex-direction: column;
   gap: 40px;
@@ -1128,7 +1100,7 @@ export default class CommunityChat extends Vue {
   flex-shrink: 0;
   border-radius: 50%;
   overflow: hidden;
-  
+
   .user-avatar-img {
     width: 100%;
     height: 100%;
@@ -1213,6 +1185,7 @@ export default class CommunityChat extends Vue {
 
 .message-input-section {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 20px;
   padding-top: 30px;
@@ -1220,14 +1193,15 @@ export default class CommunityChat extends Vue {
 }
 
 .message-input {
-  flex: 1;
+  width: 100%;
+  flex: 0 1 calc(100% - 156px);
   height: 52px;
   padding: 0 16px;
   border: 1px solid #CECECE;
   border-radius: 10px;
   color: #222;
   font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
-  font-size: 18px;
+  font-size: clamp(16px, 2vw, 18px);
   font-weight: 400;
   line-height: 20px;
   outline: none;
@@ -1243,7 +1217,7 @@ export default class CommunityChat extends Vue {
 }
 
 .send-btn {
-  width: 136px;
+  flex: 0 1 136px;
   height: 52px;
   padding: 0;
   background: #073DFF;
@@ -1318,26 +1292,51 @@ export default class CommunityChat extends Vue {
 }
 
 @media screen and (max-width: 1200px) {
+  .community-chat-page {
+    gap: 20px;
+  }
+
+  .chat-main {
+    padding: 0px 0px 80px 20px
+  }
+
   .chat-container {
     max-width: 800px;
-    padding: 80px 30px 40px;
+    padding: 20px;
+  }
+
+  .message-input-section {
+    gap: 10px;
+    padding-top: 20px;
+  }
+
+  .message-input {
+    font-size: 16px;
+    height: 45px;
+    flex: 0 1 calc(100% - 110px);
+    padding: 0 10px;
+  }
+
+  .send-btn {
+    height: 45px;
+    flex: 0 1 100px;
+    font-size: 16px;
   }
 }
 
 @media screen and (max-width: 1024px) {
   .chat-main {
-    margin-left: 0;
-    margin-right: 0;
+    margin: 120px 0 0 240px;
   }
 
   .space-header {
-    padding: 30px 40px 20px;
-    border-left: 2px solid #EBEBEB;
-    border-right: 2px solid #EBEBEB;
+    padding: 30px 0px 20px;
+    // border-left: 2px solid #EBEBEB;
+    // border-right: 2px solid #EBEBEB;
   }
 
   .chat-container {
-    padding: 0 40px 40px;
+    padding: 20px;
     border-left: 2px solid #EBEBEB;
     border-right: 2px solid #EBEBEB;
   }
@@ -1346,24 +1345,27 @@ export default class CommunityChat extends Vue {
   .message-right {
     max-width: 85%;
   }
+
+  .message-input-section { 
+    gap: 10px;
+  }
 }
 
 @media screen and (max-width: 768px) {
   .community-chat-page {
     display: block;
-    padding-top: 54px;
+    padding: 100px 0 20px;
     position: relative;
   }
 
   .chat-main {
+    padding: 0 20px;
+    margin: 0;
     border: none;
   }
 
   .space-header {
     padding: 16px 20px;
-    border-left: none;
-    border-right: none;
-    border-bottom: 1px solid #EBEBEB;
   }
 
   .space-name-tag {
@@ -1414,11 +1416,9 @@ export default class CommunityChat extends Vue {
   }
 
   .chat-container {
+    flex: unset;
+    max-height: calc(100vh - 196px);
     padding: 20px;
-    border-left: none;
-    border-right: none;
-    border-bottom: none;
-    height: calc(100vh - 54px);
   }
 
   .notice-section {
@@ -1535,7 +1535,6 @@ export default class CommunityChat extends Vue {
 
   .chat-container {
     padding: 16px 20px 30px;
-    border: none;
   }
 
   .notice-section {
@@ -1578,6 +1577,14 @@ export default class CommunityChat extends Vue {
   .message-input-section {
     gap: 4px;
     padding-top: 16px;
+  }
+}
+
+@media screen and (max-width: 500px) {
+  .community-chat-page {
+    display: block;
+    padding: 80px 0 20px;
+    position: relative;
   }
 }
 

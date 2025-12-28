@@ -604,27 +604,30 @@ export default class extends Vue {
 .header-container { display: flex; flex-wrap: wrap; align-items: center; padding: 20px 0; z-index: 1000;}
 .header-left {flex: 0 1 300px;}
 
+.home-header.community-header {padding: 0 40px;}
+.home-header.community-header .aside-btn {margin: 0;}
 .community-header .header-container {padding: 0;min-height: 120px;}
 .community-header .header-left {}
 .community-header .header-logo {}
 
 @media screen and (max-width: 1440px) {
+  .home-header.community-header {padding: 0 20px;}
   .header-container {padding: 20px;}
-  .header-left {flex: 0 1 250px;}
+  .header-left {flex: 0 1 230px;}
 }
 
 @media screen and (max-width: 1200px) {
   .header-left {flex: 0 1 200px;}
+  .home-header.community-header {padding: 0 20px;}
 }
-
-@media screen and (max-width: 1024px) {
-  .header-left {flex: 0 1 150px;}
+@media screen and (max-width: 1200px) {
+  .home-header.community-header {padding: 0}
 }
 
 @media screen and (max-width: 768px) {
   .header-container {padding: 15px 0;}
   .header-left {flex: 0 1 calc(100% - 70px);}
-  .community-header .header-container {padding: 0;min-height: 100px;}
+  .community-header .header-container {padding: 0 20px;min-height: 100px;}
 }
 
 @media screen and (max-width: 500px) {
@@ -714,15 +717,11 @@ export default class extends Vue {
 }
 
 @media screen and (max-width: 1440px) {
-  .header-nav {flex: 0 1 calc(100% - 250px - 260px)}
+  .header-nav {flex: 0 1 calc(100% - 230px - 180px)}
 }
 
 @media screen and (max-width: 1200px) {
-  .header-nav {flex: 0 1 calc(100% - 200px - 260px)}
-}
-
-@media screen and (max-width: 1024px) {
-  .header-nav {flex: 0 1 calc(100% - 150px - 220px)}
+  .header-nav {flex: 0 1 calc(100% - 200px - 160px)}
 }
 
 .nav-item {
@@ -759,10 +758,14 @@ export default class extends Vue {
   }
 }
 
-.header-content{ flex: 0 1 260px;}
+@media screen and (max-width: 1440px) {
+  .nav-item {padding: 0 10px}
+}
 
-@media screen and (max-width: 1024px) {
-  .header-content{ flex: 0 1 220px;}
+.header-content{ flex: 0 1 310px;}
+
+@media screen and (max-width: 1440px) {
+  .header-content{ flex: 0 1 160px;}
 }
 
 .aside-btn {
@@ -771,10 +774,13 @@ export default class extends Vue {
   gap: 20px;
 }
 
-.user-section{ display: flex; align-items: center; gap: 20px;}
+.user-section{flex: 0 1 100% ;display: flex; align-items: center; gap: 20px;}
 
+@media screen and (max-width: 1440px) {
+  .user-section{flex-direction: column-reverse;gap: 0px;}
+}
 @media screen and (max-width: 1024px) {
-  .user-section{display: flex; align-items: center; gap: 15px;}
+  .user-section{display: flex; align-items: center;}
 }
 
 .notification-btn {
@@ -801,11 +807,15 @@ export default class extends Vue {
 
 .points-display {
   display: flex;
+  justify-content: center;
   align-items: center;
   gap: 4px;
   padding: 6px 10px;
   border-radius: 20px;
   background: #F0F4FF;
+  width: 100%;
+  max-width: 90px;
+  text-align: center;
 
   .points-label,
   .points-value {
@@ -855,6 +865,10 @@ export default class extends Vue {
   font-weight: 600;
   line-height: 100%;
   white-space: nowrap;
+}
+
+@media screen and (max-width:1440px) {
+  .user-name-text {font-size: 18px;}
 }
 
 .login-button {
@@ -914,11 +928,6 @@ export default class extends Vue {
   .aside-btn {
     gap: 16px;
   }
-
-  .user-section {
-    gap: 10px;
-  }
-
   .user-name-text {
     font-size: 18px;
   }
@@ -944,19 +953,10 @@ export default class extends Vue {
 }
 
 @media (max-width: 768px) {
-  .mobile-menu-btn {
-    display: flex;
-  }
-  .header-content{
-    display: none;
-  }
-  .mobile-user-icon {
-    display: flex;
-  }
-
-  .mobile-menu-overlay {
-    display: block;
-  }
+  .mobile-menu-btn { display: flex;}
+  .header-content{ display: none;}
+  .mobile-user-icon { display: flex;}
+  .mobile-menu-overlay{ display: block;}
 
   .header-nav {
     display: none;
@@ -982,32 +982,18 @@ export default class extends Vue {
   }
 
   @keyframes slideInFromLeft {
-    from {
-      transform: translateX(-100%);
-      opacity: 0;
-    }
+    from { transform: translateX(-100%); opacity: 0;}
 
-    to {
-      transform: translateX(0);
-      opacity: 1;
-    }
+    to { transform: translateX(0); opacity: 1;}
   }
 
   @keyframes slideOutToLeft {
-    from {
-      transform: translateX(0);
-      opacity: 1;
-    }
+    from { transform: translateX(0); opacity: 1;}
 
-    to {
-      transform: translateX(-100%);
-      opacity: 0;
-    }
+    to { transform: translateX(-100%); opacity: 0;}
   }
 
-  .mobile-close-btn {
-    display: flex;
-  }
+  .mobile-close-btn { display: flex;}
 
   .nav-item {
     width: 100%;
@@ -1146,7 +1132,7 @@ export default class extends Vue {
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    gap: 10px;
+    gap: 0px;
 
     .logo-text {
       font-size: 20px;

@@ -639,9 +639,7 @@ export default class extends Vue {
 }
 
 @media screen and (max-width: 1400px) {
-  .posts-container {
-    padding: 20px;
-  }
+  .posts-container {padding: 20px 0;}
 }
 
 @media screen and (max-width: 768px) {
