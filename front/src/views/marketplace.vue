@@ -543,10 +543,10 @@ export default class extends Vue {
 }
 
 .filter-btn {
-  width: 100px;
+  flex: 0 1 100%;
+  width: 100%;
+  max-width: 100px;
   height: 42px;
-  display: flex;
-  justify-content: center;
   align-items: center;
   border-radius: 10px;
   background: #F5F5F5;
@@ -591,7 +591,7 @@ export default class extends Vue {
 .product-image-wrapper {
   position: relative;
   width: 100%;
-  aspect-ratio: 34/27;
+  // aspect-ratio: 34/27;
   border-radius: 10px;
   overflow: hidden;
 
@@ -1120,6 +1120,7 @@ export default class extends Vue {
   }
 
   .filter-section {
+    justify-content: center;
     gap: 8px;
     margin-bottom: 32px;
   }

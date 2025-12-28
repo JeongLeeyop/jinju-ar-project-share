@@ -85,7 +85,7 @@ export default class extends Vue {
 .participants-panel {
     width: 380px;
     min-width: 320px;
-    min-height: 70vh;
+    min-height: calc(100vh - 100px);
     margin: 220px 30px 0 0;
     border: 2px solid #EBEBEB;
     border-radius: 10px;
@@ -211,12 +211,19 @@ export default class extends Vue {
   }
 }
 
+@media screen and (max-width: 1200px) {
+  .participants-panel {
+    min-height: calc(100vh - 130px);
+  }
+}
+
 @media screen and (max-width: 1024px) {
   .participants-panel {
     width: 200px;
     margin-right: 10px;
     min-width: 230px;
-    margin-top: 200px;
+    min-height: calc(100vh - 115px);
+    margin-top: 190px;
     padding: 30px 25px;
   }
 }
