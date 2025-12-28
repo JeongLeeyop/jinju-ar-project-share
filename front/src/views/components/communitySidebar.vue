@@ -50,7 +50,7 @@
             <span class="space-type-badge" :class="getSpaceTypeBadgeClass(space.spaceType)">
               {{ getSpaceTypeLabel(space.spaceType) }}
             </span>
-            <span v-if="space.isSpaceAdmin" class="admin-badge">관리자</span>
+            <span v-if="space.isSpaceAdmin && !isChannelAdmin" class="admin-badge">관리자</span>
           </el-menu-item>
           
           <!-- Empty State -->
@@ -302,16 +302,14 @@ export default class extends Vue {
 
   private async checkChannelAdminPermission() {
     // 퍼블리싱 테스트용으로 관리자 체크 비활성화 - 모두에게 표시
-    this.isChannelAdmin = false;
-    return;
+    // this.isChannelAdmin = false;
+    // return;
     
-    /* 실제 관리자 체크 로직 (배포시 활성화 필요)
     const domain = this.$route.params.domain;
     if (!domain) {
       this.isChannelAdmin = false;
       return;
     }
-
     try {
       // 채널 정보 조회
       const response = await getChannelDomainDetail(domain as string);
@@ -335,7 +333,6 @@ export default class extends Vue {
       this.isChannelAdmin = false;
     }
     this.isChannelAdmin = true;
-    */
   }
 
   private async loadOfflineMarketplaces() {
