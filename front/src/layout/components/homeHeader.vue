@@ -300,6 +300,7 @@ import CreateSpaceModal from '@/views/components/CreateSpaceModal.vue';
 import { getUserInfo, updateOnline } from '@/api/user';
 import { getChannelMemberCount } from '@/api/channel';
 import { getSpacesByChannel, Space } from '@/api/space';
+import { EventBus, EVENTS } from '@/utils/eventBus';
 import path from 'path';
 import { Component, Vue, Watch } from 'vue-property-decorator';
 
@@ -318,6 +319,8 @@ export default class extends Vue {
     if (UserModule.isLogin) {
       await getUserInfo().then((res) => {
         this.userInfo = res.data;
+        // 전역 포인트 설정 (user 테이블의 point)
+        this.userPoints = res.data.point || 0;
         if (!this.userInfo.isOnline) {
           this.userInfo = { ...this.userInfo, isOnline: true };
           updateOnline().then(() => {
@@ -329,6 +332,29 @@ export default class extends Vue {
     // Fetch member count and spaces on initial load
     this.fetchMemberCount();
     await this.loadSpaces();
+
+    // EventBus: 포인트 갱신 이벤트 리스닝
+    EventBus.$on(EVENTS.POINTS_UPDATED, this.refreshUserPoints);
+  }
+
+  beforeDestroy() {
+    // EventBus 리스너 제거
+    EventBus.$off(EVENTS.POINTS_UPDATED, this.refreshUserPoints);
+  }
+
+  /**
+   * 사용자 포인트 갱신 (EventBus에서 호출)
+   */
+  private async refreshUserPoints() {
+    if (UserModule.isLogin) {
+      try {
+        const res = await getUserInfo();
+        this.userInfo = res.data;
+        this.userPoints = res.data.point || 0;
+      } catch (error) {
+        console.error('Failed to refresh user points:', error);
+      }
+    }
   }
 
   get routes() {

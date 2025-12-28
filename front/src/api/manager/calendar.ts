@@ -141,3 +141,62 @@ export const deleteCalendarComment = (commentIdx: number) => request({
   method: 'delete',
 });
 
+// ============ 내 일정 관리 APIs ============
+
+/**
+ * 내가 등록한 일정 목록 조회
+ */
+export const getMyRegisteredSchedules = (channelUid: string) => request({
+  url: `${PATH}/my/registered`,
+  method: 'get',
+  params: { channelUid },
+});
+
+/**
+ * 내가 참여한 일정 목록 조회
+ */
+export const getMyParticipatedSchedules = (channelUid: string) => request({
+  url: `${PATH}/my/participated`,
+  method: 'get',
+  params: { channelUid },
+});
+
+/**
+ * 내가 등록한 일정 취소
+ */
+export const cancelMyRegisteredSchedule = (idx: number) => request({
+  url: `${PATH}/my/${idx}`,
+  method: 'delete',
+});
+
+// ============ 포인트 내역 조회 ============
+
+/**
+ * 일정 관련 포인트 내역 조회
+ */
+export const getSchedulePointHistory = (channelUid: string) => request({
+  url: `/point/history`,
+  method: 'get',
+  params: { channelUid, pointType: 'SCHEDULE' },
+});
+
+// ============ Interfaces ============
+
+export interface MyScheduleItem {
+  idx: number;
+  title: string;
+  startDate: string;
+  endDate: string;
+  location: string;
+  participantCount: number;
+  maxParticipants: number;
+  status: 'upcoming' | 'ongoing' | 'completed' | 'cancelled';
+  eventType: 'free' | 'paid' | 'earn';
+  points: number;
+  hostUid: string;
+  hostName: string;
+  participatedAt?: string;
+  cancelDeadline?: string;
+  canCancel: boolean;
+}
+
