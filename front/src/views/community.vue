@@ -6,7 +6,7 @@
     <!-- Main Content Area -->
     <div class="community-main">
       <!-- Hero Banner -->
-      <div class="hero-banner" :style="bannerStyle">
+      <div class="hero-banner">
         <template v-if="selectedChannel && selectedChannel.coverImageList && selectedChannel.coverImageList.length > 0">
           <!-- 데스크탑: 캐러셀 -->
           <el-carousel v-if="selectedChannel.coverImageList.length > 1" indicator-position="outside" height="350px" class="desktop-carousel">
@@ -477,10 +477,6 @@ export default class extends Vue {
     }
     return '';
   }
-
-  private bannerStyle = {
-    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-  };
 
   private handleBannerError() {
     // 이미지 로드 실패 시 기본 배경색만 표시

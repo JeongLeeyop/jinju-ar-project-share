@@ -151,7 +151,7 @@
         <div v-else-if="pendingMembers.length > 0" class="pending-list">
           <div 
             v-for="pending in pendingMembers" 
-            :key="pending.uid"
+            :key="pending.idx"
             class="pending-card"
           >
             <div class="pending-header">
@@ -184,10 +184,11 @@
 
             <div class="pending-actions">
               <button 
-                v-if="pending.answerList && pending.answerList.length > 0"
+                v-if="pending.questionList && pending.questionList.length > 0"
                 class="action-btn secondary" 
                 @click="openSurveyModal(pending)"
               >
+                <i class="el-icon-document"></i>
                 설문조사 확인
               </button>
               <button 
@@ -709,14 +710,14 @@
 
           <div class="survey-questions">
             <div 
-              v-for="(answer, index) in selectedPending.answerList" 
-              :key="index"
+              v-for="(question, index) in selectedPending.questionList" 
+              :key="question.idx"
               class="survey-item"
             >
-              <h4 class="survey-question">{{ index + 1 }}. {{ answer.title || '질문' }}</h4>
-              <p class="survey-answer">{{ answer.answer || '응답 없음' }}</p>
+              <h4 class="survey-question">{{ index + 1 }}. {{ question.channelQuestion?.title || '질문' }}</h4>
+              <p class="survey-answer">{{ question.answer || '응답 없음' }}</p>
             </div>
-            <div v-if="!selectedPending.answerList || selectedPending.answerList.length === 0" class="survey-item">
+            <div v-if="!selectedPending.questionList || selectedPending.questionList.length === 0" class="survey-item">
               <p class="survey-answer">설문 응답이 없습니다.</p>
             </div>
           </div>
@@ -845,7 +846,6 @@ interface Member {
 
 interface PendingMember {
   idx: number;
-  uid: string;
   userUid: string;
   channelUid: string;
   approvalStatus: boolean;
@@ -858,7 +858,14 @@ interface PendingMember {
     iconFileUid?: string;
   };
   introduce?: string;
-  answerList?: any[];
+  questionList?: {
+    idx: number;
+    answer: string;
+    channelQuestion: {
+      idx: number;
+      title: string;
+    };
+  }[];
 }
 
 interface Space {
@@ -1332,11 +1339,11 @@ export default class extends Vue {
   private async approveMember(pending: PendingMember) {
     const memberName = pending.user?.actualName || '회원';
     try {
-      // 실제 API 호출
-      await approval(pending.uid);
+      // 실제 API 호출 - idx를 사용 (ChannelMember의 PK)
+      await approval(pending.idx);
 
       // 목록에서 제거
-      const index = this.pendingMembers.findIndex(m => m.uid === pending.uid);
+      const index = this.pendingMembers.findIndex(m => m.idx === pending.idx);
       if (index > -1) {
         this.pendingMembers.splice(index, 1);
       }
@@ -1365,11 +1372,11 @@ export default class extends Vue {
         },
       );
 
-      // 실제 API 호출
-      await rejectMember(pending.uid);
+      // 실제 API 호출 - idx를 사용 (ChannelMember의 PK)
+      await rejectMember(pending.idx);
 
       // 목록에서 제거
-      const index = this.pendingMembers.findIndex(m => m.uid === pending.uid);
+      const index = this.pendingMembers.findIndex(m => m.idx === pending.idx);
       if (index > -1) {
         this.pendingMembers.splice(index, 1);
       }
