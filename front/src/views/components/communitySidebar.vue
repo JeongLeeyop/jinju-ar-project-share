@@ -202,8 +202,8 @@
         </div>
       </div>
 
-      <!-- 공간 관리자 메뉴 섹션 (현재 퍼블리싱 테스트용으로 모두에게 표시) -->
-      <div class="space-admin-section">
+      <!-- 공간 관리자 메뉴 섹션 (공간생성 또는 오프라인장터등록 권한이 있는 경우에만 표시) -->
+      <div v-if="hasManagerPermission || isChannelCreator" class="space-admin-section">
         <h3 class="section-title">매니저 메뉴</h3>
         <div class="space-admin-menu">
           <div
@@ -223,8 +223,8 @@
         </div>
       </div>
 
-      <!-- 관리자 전용 섹션 (현재 퍼블리싱 테스트용으로 모두에게 표시) -->
-      <div class="admin-section">
+      <!-- 관리자 전용 섹션 (커뮤니티 생성자인 경우에만 표시) -->
+      <div v-if="isChannelCreator" class="admin-section">
         <h3 class="section-title">관리자 메뉴</h3>
         <div class="admin-menu">
           <div
@@ -259,6 +259,8 @@ import CreateSpaceModal from './CreateSpaceModal.vue';
 import { getSpacesByChannel, Space } from '@/api/space';
 import { getOfflineMarketplaces, createOfflineMarketplace, OfflineMarketplace } from '@/api/marketplace';
 import { getChannelDomainDetail } from '@/api/channel';
+import { checkPermissionByUser } from '@/api/channelMemberPermission';
+import { getUserInfo } from '@/api/user';
 import { UserModule } from '@/store/modules/user';
 
 @Component({
@@ -287,10 +289,18 @@ export default class extends Vue {
   // 채널 관리자 여부 (TODO: 실제 권한 체크 API 연동 필요)
   private isChannelAdmin = false;
 
+  // Permission and role flags
+  private hasManagerPermission = false;
+
+  private isChannelCreator = false;
+
+  private currentChannelUid = '';
+
   async mounted() {
     await this.loadSpaces();
     await this.loadOfflineMarketplaces();
     await this.checkChannelAdminPermission();
+    await this.checkPermissions();
   }
 
   @Watch('$route.params.domain')
@@ -298,6 +308,7 @@ export default class extends Vue {
     await this.loadSpaces();
     await this.loadOfflineMarketplaces();
     await this.checkChannelAdminPermission();
+    await this.checkPermissions();
   }
 
   private async checkChannelAdminPermission() {
@@ -333,6 +344,59 @@ export default class extends Vue {
       this.isChannelAdmin = false;
     }
     this.isChannelAdmin = true;
+  }
+
+  /**
+   * Check manager and admin permissions for menu visibility
+   */
+  private async checkPermissions() {
+    // Reset permissions
+    this.hasManagerPermission = false;
+    this.isChannelCreator = false;
+    this.currentChannelUid = '';
+
+    // Only check if user is logged in
+    if (!UserModule.isLogin) {
+      return;
+    }
+
+    const domain = this.$route.params.domain;
+    if (!domain) return;
+
+    try {
+      // Get channel information
+      const channelResponse = await getChannelDomainDetail(domain as string);
+      this.currentChannelUid = channelResponse.data.uid;
+
+      // Get current user information
+      const userResponse: any = await getUserInfo();
+      const currentUserInfo: any = userResponse.data;
+
+      // Check if user is the channel creator (for Admin Menu)
+      this.isChannelCreator = channelResponse?.data.userUid === currentUserInfo.uid;
+
+      // Check manager permissions (for Manager Menu)
+      // User needs either SPACE_CREATE or MARKETPLACE_OFFLINE_REGISTER permission
+      try {
+        const spaceCreateResponse = await checkPermissionByUser(
+          this.currentChannelUid,
+          'SPACE_CREATE'
+        );
+        const marketplaceOfflineResponse = await checkPermissionByUser(
+          this.currentChannelUid,
+          'MARKETPLACE_OFFLINE_REGISTER'
+        );
+
+        this.hasManagerPermission = 
+          spaceCreateResponse.data.hasPermission || 
+          marketplaceOfflineResponse.data.hasPermission;
+      } catch (error) {
+        console.error('권한 체크 실패:', error);
+        this.hasManagerPermission = false;
+      }
+    } catch (error) {
+      console.error('채널 정보 조회 실패:', error);
+    }
   }
 
   private async loadOfflineMarketplaces() {
