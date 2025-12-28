@@ -5,6 +5,8 @@ import com.community.cms.api.sms.dto.SmsSendRequest;
 import com.community.cms.api.sms.dto.SmsSendResponse;
 import com.community.cms.api.sms.service.SmsService;
 import com.community.cms.entity.User;
+import com.community.cms.oauth.SinghaUser;
+import com.community.cms.util.AuthenticationUtil;
 import com.community.cms.api.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,18 +28,7 @@ public class SmsController {
     
     private final SmsService smsService;
     private final UserRepository userRepository;
-    
-    /**
-     * Get current authenticated user from UserDetails
-     */
-    private User validateAndGetCurrentUser(SinghaUser userDetails) {
-        if (userDetails == null || userDetails.getUsername() == null) {
-            log.error("Unauthenticated access attempt detected");
-            throw new RuntimeException("인증되지 않은 접근입니다");
-        }
-        return userRepository.findByUserId(userDetails.getUsername())
-                .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다"));
-    }
+    private final AuthenticationUtil authenticationUtil;    
     
     /**
      * 문자 발송
@@ -47,7 +38,7 @@ public class SmsController {
             @Valid @RequestBody SmsSendRequest request,
             @AuthenticationPrincipal SinghaUser userDetails) {
         try {
-            User user = validateAndGetCurrentUser(userDetails);
+            User user = authenticationUtil.validateAndGetCurrentUser(userDetails);
             
             log.info("SMS 발송 요청 - 사용자: {}, 수신자 수: {}", 
                     user.getActualName(), request.getReceivers().size());
@@ -82,7 +73,7 @@ public class SmsController {
             @RequestParam(required = false) Integer limitDay,
             @AuthenticationPrincipal SinghaUser userDetails) {
         try {
-            User user = validateAndGetCurrentUser(userDetails);
+            User user = authenticationUtil.validateAndGetCurrentUser(userDetails);
             
             List<SmsHistoryDto> histories = smsService.getSmsHistory(page, pageSize, startDate, limitDay);
             
@@ -102,7 +93,7 @@ public class SmsController {
     @GetMapping("/remain")
     public ResponseEntity<?> getRemainCount(@AuthenticationPrincipal SinghaUser userDetails) {
         try {
-            User user = validateAndGetCurrentUser(userDetails);
+            User user = authenticationUtil.validateAndGetCurrentUser(userDetails);
             
             Map<String, Object> remain = smsService.getRemainCount();
             

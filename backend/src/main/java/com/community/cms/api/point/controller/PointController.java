@@ -8,7 +8,10 @@ import com.community.cms.api.user.repository.UserRepository;
 import com.community.cms.entity2.Channel;
 import com.community.cms.entity.User;
 import com.community.cms.entity2.ChannelMember;
+import com.community.cms.oauth.SinghaUser;
 import com.community.cms.util.ActivityLogHelper;
+import com.community.cms.util.AuthenticationUtil;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -40,18 +43,11 @@ public class PointController {
     private final ChannelRepository channelRepository;
     private final ChannelMemberRepository channelMemberRepository;
     private final ActivityLogHelper activityLogHelper;
-
+    private final AuthenticationUtil authenticationUtil;
     /**
      * 현재 인증된 사용자 조회 및 검증
      */
-    private User validateAndGetCurrentUser(SinghaUser userDetails) {
-        if (userDetails == null || userDetails.getUsername() == null) {
-            log.error("Unauthenticated access attempt detected");
-            throw new RuntimeException("인증되지 않은 접근입니다");
-        }
-        return userRepository.findByUserId(userDetails.getUsername())
-                .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다"));
-    }
+    
 
     /**
      * 채널 관리자 권한 검증
@@ -74,7 +70,7 @@ public class PointController {
             @RequestParam String channelUid,
             @AuthenticationPrincipal SinghaUser userDetails) {
         try {
-            User user = validateAndGetCurrentUser(userDetails);
+            User user = authenticationUtil.validateAndGetCurrentUser(userDetails);
             
             Integer currentPoint = pointService.getCurrentPoint(user.getUid(), channelUid);
             
@@ -102,7 +98,7 @@ public class PointController {
             @RequestParam(defaultValue = "20") int size,
             @AuthenticationPrincipal SinghaUser userDetails) {
         try {
-            User user = validateAndGetCurrentUser(userDetails);
+            User user = authenticationUtil.validateAndGetCurrentUser(userDetails);
             
             Map<String, Object> result = pointService.getPointHistory(
                     user.getUid(), 
@@ -129,7 +125,7 @@ public class PointController {
             @RequestBody Map<String, Object> request,
             @AuthenticationPrincipal SinghaUser userDetails) {
         try {
-            User user = validateAndGetCurrentUser(userDetails);
+            User user = authenticationUtil.validateAndGetCurrentUser(userDetails);
             
             String channelUid = (String) request.get("channelUid");
             String pointType = (String) request.get("pointType");
@@ -166,7 +162,7 @@ public class PointController {
             @RequestParam(defaultValue = "20") int size,
             @AuthenticationPrincipal SinghaUser userDetails) {
         try {
-            User currentUser = validateAndGetCurrentUser(userDetails);
+            User currentUser = authenticationUtil.validateAndGetCurrentUser(userDetails);
             validateChannelAdmin(channelUid, currentUser.getUid());
             
             // 채널 회원 목록 조회 (승인된 회원만)
@@ -220,7 +216,7 @@ public class PointController {
             @Valid @RequestBody AdminPointAdjustRequest request,
             @AuthenticationPrincipal SinghaUser userDetails) {
         try {
-            User currentUser = validateAndGetCurrentUser(userDetails);
+            User currentUser = authenticationUtil.validateAndGetCurrentUser(userDetails);
             validateChannelAdmin(request.getChannelUid(), currentUser.getUid());
             
             // 대상 사용자 확인
@@ -307,7 +303,7 @@ public class PointController {
             @RequestParam(defaultValue = "20") int size,
             @AuthenticationPrincipal SinghaUser userDetails) {
         try {
-            User currentUser = validateAndGetCurrentUser(userDetails);
+            User currentUser = authenticationUtil.validateAndGetCurrentUser(userDetails);
             validateChannelAdmin(channelUid, currentUser.getUid());
             
             // 대상 사용자 확인

@@ -28,6 +28,8 @@ import com.community.cms.common.code.ChannelMemberPermissionType;
 import com.community.cms.entity.User;
 import com.community.cms.entity2.Channel;
 import com.community.cms.entity2.ChannelMember;
+import com.community.cms.oauth.SinghaUser;
+import com.community.cms.util.AuthenticationUtil;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -45,18 +47,7 @@ public class ChannelMemberPermissionController {
     private final ChannelMemberRepository channelMemberRepository;
     private final UserRepository userRepository;
     private final ChannelRepository channelRepository;
-    
-    /**
-     * 현재 사용자 인증 및 조회
-     */
-    private User validateAndGetCurrentUser(SinghaUser userDetails) {
-        if (userDetails == null || userDetails.getUsername() == null) {
-            log.error("Unauthenticated access attempt detected");
-            throw new RuntimeException("인증되지 않은 접근입니다");
-        }
-        return userRepository.findByUserId(userDetails.getUsername())
-                .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다"));
-    }
+    private final AuthenticationUtil authenticationUtil;
     
     /**
      * 채널 관리자 권한 확인
@@ -92,7 +83,7 @@ public class ChannelMemberPermissionController {
             @PathVariable Integer channelMemberIdx,
             @AuthenticationPrincipal SinghaUser userDetails) {
         try {
-            User user = validateAndGetCurrentUser(userDetails);
+            User user = authenticationUtil.validateAndGetCurrentUser(userDetails);
             
             // 멤버의 채널 정보 확인
             ChannelMember member = channelMemberRepository.findById(channelMemberIdx)
@@ -121,7 +112,7 @@ public class ChannelMemberPermissionController {
             @Valid @RequestBody ChannelMemberPermissionDto.CreateRequest request,
             @AuthenticationPrincipal SinghaUser userDetails) {
         try {
-            User user = validateAndGetCurrentUser(userDetails);
+            User user = authenticationUtil.validateAndGetCurrentUser(userDetails);
             
             // 멤버의 채널 정보 확인
             ChannelMember member = channelMemberRepository.findById(request.getChannelMemberIdx())
@@ -150,7 +141,7 @@ public class ChannelMemberPermissionController {
             @Valid @RequestBody ChannelMemberPermissionDto.BulkUpdateRequest request,
             @AuthenticationPrincipal SinghaUser userDetails) {
         try {
-            User user = validateAndGetCurrentUser(userDetails);
+            User user = authenticationUtil.validateAndGetCurrentUser(userDetails);
             
             // 멤버의 채널 정보 확인
             ChannelMember member = channelMemberRepository.findById(request.getChannelMemberIdx())
@@ -180,7 +171,7 @@ public class ChannelMemberPermissionController {
             @RequestParam String permissionType,
             @AuthenticationPrincipal SinghaUser userDetails) {
         try {
-            validateAndGetCurrentUser(userDetails);
+            authenticationUtil.validateAndGetCurrentUser(userDetails);
             
             ChannelMemberPermissionType type = ChannelMemberPermissionType.fromCode(permissionType);
             ChannelMemberPermissionDto.CheckResponse response = 
@@ -204,7 +195,7 @@ public class ChannelMemberPermissionController {
             @RequestParam String permissionType,
             @AuthenticationPrincipal SinghaUser userDetails) {
         try {
-            User user = validateAndGetCurrentUser(userDetails);
+            User user = authenticationUtil.validateAndGetCurrentUser(userDetails);
             
             // domain → uid 변환 (channelUid가 domain일 수 있음)
             String actualChannelUid = getChannelUidByDomainOrUid(channelUid);
@@ -230,7 +221,7 @@ public class ChannelMemberPermissionController {
             @PathVariable Long permissionId,
             @AuthenticationPrincipal SinghaUser userDetails) {
         try {
-            validateAndGetCurrentUser(userDetails);
+            authenticationUtil.validateAndGetCurrentUser(userDetails);
             
             // TODO: 권한 삭제 전 관리자 권한 확인 로직 추가
             

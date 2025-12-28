@@ -5,6 +5,9 @@ import com.community.cms.api.space.dto.SpaceInvitationRequest;
 import com.community.cms.api.space.service.SpaceInvitationService;
 import com.community.cms.api.user.repository.UserRepository;
 import com.community.cms.entity.User;
+import com.community.cms.oauth.SinghaUser;
+import com.community.cms.util.AuthenticationUtil;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -28,23 +31,7 @@ public class SpaceInvitationController {
 
     private final SpaceInvitationService invitationService;
     private final UserRepository userRepository;
-
-    /**
-     * 현재 인증된 사용자 검증 및 반환
-     * UserDetails에서 username을 가져와 DB에서 User 엔티티 조회
-     * @param userDetails @AuthenticationPrincipal로 주입된 UserDetails
-     * @return 검증된 User 엔티티
-     */
-    private User validateAndGetCurrentUser(SinghaUser userDetails) {
-        if (userDetails == null || userDetails.getUsername() == null) {
-            log.error("Unauthenticated access attempt detected");
-            throw new RuntimeException("인증되지 않은 접근입니다");
-        }
-        // UserDetails의 username으로 DB에서 User 조회
-        return userRepository.findByUserId(userDetails.getUsername())
-                .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다"));
-    }
-
+    private final AuthenticationUtil authenticationUtil;
     /**
      * 초대 생성 (관리자만)
      * POST /api/space-invitations
@@ -52,9 +39,9 @@ public class SpaceInvitationController {
     @PostMapping
     public ResponseEntity<SpaceInvitationDto> createInvitation(
             @Valid @RequestBody SpaceInvitationRequest request,
-            @AuthenticationPrincipal UserDetails currentUser) {
+            @AuthenticationPrincipal SinghaUser currentUser) {
         
-        User user = validateAndGetCurrentUser(currentUser);
+        User user = authenticationUtil.validateAndGetCurrentUser(currentUser);
         
         SpaceInvitationDto invitation = invitationService.createInvitation(
                 request,
@@ -72,9 +59,9 @@ public class SpaceInvitationController {
     @PostMapping("/{invitationUid}/accept")
     public ResponseEntity<Map<String, String>> acceptInvitation(
             @PathVariable String invitationUid,
-            @AuthenticationPrincipal UserDetails currentUser) {
+            @AuthenticationPrincipal SinghaUser currentUser) {
         
-        User user = validateAndGetCurrentUser(currentUser);
+        User user = authenticationUtil.validateAndGetCurrentUser(currentUser);
         invitationService.acceptInvitation(invitationUid, user.getUid());
         return ResponseEntity.ok(Map.of("message", "초대를 수락했습니다."));
     }
@@ -86,9 +73,9 @@ public class SpaceInvitationController {
     @PostMapping("/{invitationUid}/reject")
     public ResponseEntity<Map<String, String>> rejectInvitation(
             @PathVariable String invitationUid,
-            @AuthenticationPrincipal UserDetails currentUser) {
+            @AuthenticationPrincipal SinghaUser currentUser) {
         
-        User user = validateAndGetCurrentUser(currentUser);
+        User user = authenticationUtil.validateAndGetCurrentUser(currentUser);
         invitationService.rejectInvitation(invitationUid, user.getUid());
         return ResponseEntity.ok(Map.of("message", "초대를 거절했습니다."));
     }
@@ -100,9 +87,9 @@ public class SpaceInvitationController {
     @DeleteMapping("/{invitationUid}")
     public ResponseEntity<Map<String, String>> cancelInvitation(
             @PathVariable String invitationUid,
-            @AuthenticationPrincipal UserDetails currentUser) {
+            @AuthenticationPrincipal SinghaUser currentUser) {
         
-        User user = validateAndGetCurrentUser(currentUser);
+        User user = authenticationUtil.validateAndGetCurrentUser(currentUser);
         invitationService.cancelInvitation(invitationUid, user.getUid());
         return ResponseEntity.ok(Map.of("message", "초대를 취소했습니다."));
     }
@@ -113,9 +100,9 @@ public class SpaceInvitationController {
      */
     @GetMapping("/my")
     public ResponseEntity<List<SpaceInvitationDto>> getMyInvitations(
-            @AuthenticationPrincipal UserDetails currentUser) {
+            @AuthenticationPrincipal SinghaUser currentUser) {
         
-        User user = validateAndGetCurrentUser(currentUser);
+        User user = authenticationUtil.validateAndGetCurrentUser(currentUser);
         List<SpaceInvitationDto> invitations = invitationService.getMyInvitations(user.getUid());
         return ResponseEntity.ok(invitations);
     }
@@ -126,9 +113,9 @@ public class SpaceInvitationController {
      */
     @GetMapping("/my/pending")
     public ResponseEntity<List<SpaceInvitationDto>> getMyPendingInvitations(
-            @AuthenticationPrincipal UserDetails currentUser) {
+            @AuthenticationPrincipal SinghaUser currentUser) {
         
-        User user = validateAndGetCurrentUser(currentUser);
+        User user = authenticationUtil.validateAndGetCurrentUser(currentUser);
         List<SpaceInvitationDto> invitations = invitationService.getMyPendingInvitations(user.getUid());
         return ResponseEntity.ok(invitations);
     }
@@ -140,9 +127,9 @@ public class SpaceInvitationController {
     @GetMapping("/space/{spaceUid}")
     public ResponseEntity<List<SpaceInvitationDto>> getSpaceInvitations(
             @PathVariable String spaceUid,
-            @AuthenticationPrincipal UserDetails currentUser) {
+            @AuthenticationPrincipal SinghaUser currentUser) {
         
-        User user = validateAndGetCurrentUser(currentUser);
+        User user = authenticationUtil.validateAndGetCurrentUser(currentUser);
         List<SpaceInvitationDto> invitations = invitationService.getSpaceInvitations(
                 spaceUid, user.getUid());
         return ResponseEntity.ok(invitations);
@@ -155,9 +142,9 @@ public class SpaceInvitationController {
     @GetMapping("/space/{spaceUid}/pending")
     public ResponseEntity<List<SpaceInvitationDto>> getSpacePendingInvitations(
             @PathVariable String spaceUid,
-            @AuthenticationPrincipal UserDetails currentUser) {
+            @AuthenticationPrincipal SinghaUser currentUser) {
         
-        User user = validateAndGetCurrentUser(currentUser);
+        User user = authenticationUtil.validateAndGetCurrentUser(currentUser);
         List<SpaceInvitationDto> invitations = invitationService.getSpacePendingInvitations(
                 spaceUid, user.getUid());
         return ResponseEntity.ok(invitations);

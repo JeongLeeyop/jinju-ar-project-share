@@ -5,6 +5,9 @@ import com.community.cms.api.space.service.SpaceService;
 import com.community.cms.api.user.repository.UserRepository;
 import com.community.cms.entity.Space;
 import com.community.cms.entity.User;
+import com.community.cms.oauth.SinghaUser;
+import com.community.cms.util.AuthenticationUtil;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -32,32 +35,15 @@ public class SpaceController {
 
     private final SpaceService spaceService;
     private final UserRepository userRepository;
-
-    /**
-     * 현재 인증된 사용자 검증 및 반환
-     * UserDetails에서 username을 가져와 DB에서 User 엔티티 조회
-     * 
-     * @param userDetails @AuthenticationPrincipal로 주입된 UserDetails
-     * @return 검증된 User 엔티티 (null 가능 - 공개 공간 접근 시)
-     */
-    private User validateAndGetCurrentUser(UserDetails userDetails) {
-        if (userDetails == null || userDetails.getUsername() == null) {
-            // 인증되지 않은 사용자 (공개 공간 접근 가능)
-            return null;
-        }
-        // UserDetails의 username으로 DB에서 User 조회
-        return userRepository.findByUserId(userDetails.getUsername())
-                .orElse(null);
-    }
-
+    private final AuthenticationUtil authenticationUtil;
     /**
      * 인증이 필수인 경우 사용자 검증
      * 
-     * @param userDetails @AuthenticationPrincipal로 주입된 UserDetails
+     * @param userDetails @AuthenticationPrincipal로 주입된 SinghaUser
      * @return 검증된 User 엔티티
      */
-    private User requireAuthenticatedUser(UserDetails userDetails) {
-        User user = validateAndGetCurrentUser(userDetails);
+    private User requireAuthenticatedUser(SinghaUser userDetails) {
+        User user = authenticationUtil.validateAndGetCurrentUser(userDetails);
         if (user == null) {
             log.error("Unauthenticated access attempt detected");
             throw new RuntimeException("인증되지 않은 접근입니다");
@@ -72,7 +58,7 @@ public class SpaceController {
     @PostMapping
     public ResponseEntity<?> createSpace(
             @Valid @RequestBody SpaceCreateRequest request,
-            @AuthenticationPrincipal UserDetails currentUser) {
+            @AuthenticationPrincipal SinghaUser currentUser) {
 
         try {
             User user = requireAuthenticatedUser(currentUser);
@@ -108,9 +94,9 @@ public class SpaceController {
     @GetMapping("/{spaceUid}")
     public ResponseEntity<SpaceDto> getSpace(
             @PathVariable String spaceUid,
-            @AuthenticationPrincipal UserDetails currentUser) {
+            @AuthenticationPrincipal SinghaUser currentUser) {
 
-        User user = validateAndGetCurrentUser(currentUser);
+        User user = authenticationUtil.validateAndGetCurrentUser(currentUser);
         String userUid = user != null ? user.getUid() : null;
         SpaceDto spaceDto = spaceService.getSpace(spaceUid, userUid);
         return ResponseEntity.ok(spaceDto);
@@ -123,9 +109,9 @@ public class SpaceController {
     @GetMapping("/channel/{channelUid}")
     public ResponseEntity<List<SpaceDto>> getSpacesByChannel(
             @PathVariable String channelUid,
-            @AuthenticationPrincipal UserDetails currentUser) {
+            @AuthenticationPrincipal SinghaUser currentUser) {
 
-        User user = validateAndGetCurrentUser(currentUser);
+        User user = authenticationUtil.validateAndGetCurrentUser(currentUser);
         String userUid = user != null ? user.getUid() : null;
         List<SpaceDto> spaces = spaceService.getSpacesByChannel(channelUid, userUid);
         return ResponseEntity.ok(spaces);
@@ -137,7 +123,7 @@ public class SpaceController {
      */
     @GetMapping("/my")
     public ResponseEntity<List<SpaceDto>> getMySpaces(
-            @AuthenticationPrincipal UserDetails currentUser) {
+            @AuthenticationPrincipal SinghaUser currentUser) {
 
         User user = requireAuthenticatedUser(currentUser);
         List<SpaceDto> spaces = spaceService.getMySpaces(user.getUid());
@@ -152,9 +138,9 @@ public class SpaceController {
     public ResponseEntity<List<SpaceDto>> searchSpaces(
             @RequestParam String channelUid,
             @RequestParam String keyword,
-            @AuthenticationPrincipal UserDetails currentUser) {
+            @AuthenticationPrincipal SinghaUser currentUser) {
 
-        User user = validateAndGetCurrentUser(currentUser);
+        User user = authenticationUtil.validateAndGetCurrentUser(currentUser);
         String userUid = user != null ? user.getUid() : null;
         List<SpaceDto> spaces = spaceService.searchSpaces(
                 channelUid, keyword, userUid);
@@ -169,9 +155,9 @@ public class SpaceController {
     public ResponseEntity<List<SpaceDto>> getSpacesByType(
             @PathVariable String channelUid,
             @PathVariable Space.SpaceType spaceType,
-            @AuthenticationPrincipal UserDetails currentUser) {
+            @AuthenticationPrincipal SinghaUser currentUser) {
 
-        User user = validateAndGetCurrentUser(currentUser);
+        User user = authenticationUtil.validateAndGetCurrentUser(currentUser);
         String userUid = user != null ? user.getUid() : null;
         List<SpaceDto> spaces = spaceService.getSpacesByType(
                 channelUid, spaceType, userUid);
@@ -185,10 +171,10 @@ public class SpaceController {
     @GetMapping("/channel/{channelUid}/paged")
     public ResponseEntity<Page<SpaceDto>> getSpacesPaged(
             @PathVariable String channelUid,
-            @AuthenticationPrincipal UserDetails currentUser,
+            @AuthenticationPrincipal SinghaUser currentUser,
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
 
-        User user = validateAndGetCurrentUser(currentUser);
+        User user = authenticationUtil.validateAndGetCurrentUser(currentUser);
         String userUid = user != null ? user.getUid() : null;
         Page<SpaceDto> spaces = spaceService.getSpacesPaged(
                 channelUid, userUid, pageable);
@@ -203,9 +189,9 @@ public class SpaceController {
     public ResponseEntity<SpaceDto> updateSpace(
             @PathVariable String spaceUid,
             @Valid @RequestBody SpaceUpdateRequest request,
-            @AuthenticationPrincipal UserDetails currentUser) {
+            @AuthenticationPrincipal SinghaUser currentUser) {
 
-        User user = validateAndGetCurrentUser(currentUser);
+        User user = authenticationUtil.validateAndGetCurrentUser(currentUser);
         SpaceDto spaceDto = spaceService.updateSpace(
                 spaceUid, request,
                 user.getUid(),
@@ -221,9 +207,9 @@ public class SpaceController {
     @DeleteMapping("/{spaceUid}")
     public ResponseEntity<Map<String, String>> deleteSpace(
             @PathVariable String spaceUid,
-            @AuthenticationPrincipal UserDetails currentUser) {
+            @AuthenticationPrincipal SinghaUser currentUser) {
 
-        User user = validateAndGetCurrentUser(currentUser);
+        User user = authenticationUtil.validateAndGetCurrentUser(currentUser);
         spaceService.deleteSpace(spaceUid, user.getUid());
         return ResponseEntity.ok(Map.of("message", "공간이 삭제되었습니다."));
     }
@@ -235,9 +221,9 @@ public class SpaceController {
     @DeleteMapping("/{spaceUid}/hard")
     public ResponseEntity<Map<String, String>> hardDeleteSpace(
             @PathVariable String spaceUid,
-            @AuthenticationPrincipal UserDetails currentUser) {
+            @AuthenticationPrincipal SinghaUser currentUser) {
 
-        User user = validateAndGetCurrentUser(currentUser);
+        User user = authenticationUtil.validateAndGetCurrentUser(currentUser);
         spaceService.hardDeleteSpace(spaceUid, user.getUid());
         return ResponseEntity.ok(Map.of("message", "공간이 영구 삭제되었습니다."));
     }
@@ -250,9 +236,9 @@ public class SpaceController {
     public ResponseEntity<Map<String, String>> addMember(
             @PathVariable String spaceUid,
             @PathVariable String userUid,
-            @AuthenticationPrincipal UserDetails currentUser) {
+            @AuthenticationPrincipal SinghaUser currentUser) {
 
-        User user = validateAndGetCurrentUser(currentUser);
+        User user = authenticationUtil.validateAndGetCurrentUser(currentUser);
         spaceService.addMember(
                 spaceUid, userUid,
                 user.getUid(),
@@ -269,9 +255,9 @@ public class SpaceController {
     public ResponseEntity<Map<String, String>> removeMember(
             @PathVariable String spaceUid,
             @PathVariable String userUid,
-            @AuthenticationPrincipal UserDetails currentUser) {
+            @AuthenticationPrincipal SinghaUser currentUser) {
 
-        User user = validateAndGetCurrentUser(currentUser);
+        User user = authenticationUtil.validateAndGetCurrentUser(currentUser);
         spaceService.removeMember(
                 spaceUid, userUid,
                 user.getUid(),
@@ -287,9 +273,9 @@ public class SpaceController {
     @PostMapping("/{spaceUid}/leave")
     public ResponseEntity<Map<String, String>> leaveSpace(
             @PathVariable String spaceUid,
-            @AuthenticationPrincipal UserDetails currentUser) {
+            @AuthenticationPrincipal SinghaUser currentUser) {
 
-        User user = validateAndGetCurrentUser(currentUser);
+        User user = authenticationUtil.validateAndGetCurrentUser(currentUser);
         spaceService.leaveSpace(spaceUid, user.getUid());
         return ResponseEntity.ok(Map.of("message", "공간을 나갔습니다."));
     }
@@ -314,9 +300,9 @@ public class SpaceController {
     public ResponseEntity<Map<String, String>> transferAdmin(
             @PathVariable String spaceUid,
             @PathVariable String newAdminUid,
-            @AuthenticationPrincipal UserDetails currentUser) {
+            @AuthenticationPrincipal SinghaUser currentUser) {
 
-        User user = validateAndGetCurrentUser(currentUser);
+        User user = authenticationUtil.validateAndGetCurrentUser(currentUser);
         spaceService.transferAdmin(spaceUid, newAdminUid, user.getUid());
         return ResponseEntity.ok(Map.of("message", "관리자가 변경되었습니다."));
     }
@@ -329,7 +315,7 @@ public class SpaceController {
     public ResponseEntity<List<Map<String, String>>> getInvitableUsers(
             @PathVariable String spaceUid,
             @RequestParam(required = false) String search,
-            @AuthenticationPrincipal UserDetails currentUser) {
+            @AuthenticationPrincipal SinghaUser currentUser) {
 
         User user = requireAuthenticatedUser(currentUser);
         List<Map<String, String>> users = spaceService.getInvitableUsers(spaceUid, user.getUid(), search);
@@ -344,7 +330,7 @@ public class SpaceController {
     public ResponseEntity<?> inviteMultipleUsers(
             @PathVariable String spaceUid,
             @RequestBody Map<String, List<String>> requestBody,
-            @AuthenticationPrincipal UserDetails currentUser) {
+            @AuthenticationPrincipal SinghaUser currentUser) {
 
         try {
             User user = requireAuthenticatedUser(currentUser);

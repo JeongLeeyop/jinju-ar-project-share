@@ -4,6 +4,9 @@ import com.community.cms.api.space.dto.*;
 import com.community.cms.api.space.service.SpacePostService;
 import com.community.cms.api.user.repository.UserRepository;
 import com.community.cms.entity.User;
+import com.community.cms.oauth.SinghaUser;
+import com.community.cms.util.AuthenticationUtil;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -31,30 +34,15 @@ public class SpacePostController {
 
     private final SpacePostService spacePostService;
     private final UserRepository userRepository;
-
-    /**
-     * 현재 인증된 사용자 검증 및 반환
-     * UserDetails에서 username을 가져와 DB에서 User 엔티티 조회
-     * @param userDetails @AuthenticationPrincipal로 주입된 UserDetails
-     * @return 검증된 User 엔티티 (null 가능 - 공개 공간 접근 시)
-     */
-    private User validateAndGetCurrentUser(SinghaUser userDetails) {
-        if (userDetails == null || userDetails.getUsername() == null) {
-            // 인증되지 않은 사용자 (공개 공간 접근 가능)
-            return null;
-        }
-        // UserDetails의 username으로 DB에서 User 조회
-        return userRepository.findByUserId(userDetails.getUsername())
-                .orElse(null);
-    }
-
+    private final AuthenticationUtil authenticationUtil;
+    
     /**
      * 인증이 필수인 경우 사용자 검증
-     * @param userDetails @AuthenticationPrincipal로 주입된 UserDetails
+     * @param userDetails @AuthenticationPrincipal로 주입된 SinghaUser
      * @return 검증된 User 엔티티
      */
     private User requireAuthenticatedUser(SinghaUser userDetails) {
-        User user = validateAndGetCurrentUser(userDetails);
+        User user = authenticationUtil.validateAndGetCurrentUser(userDetails);
         if (user == null) {
             log.error("Unauthenticated access attempt detected");
             throw new RuntimeException("인증되지 않은 접근입니다");
@@ -70,7 +58,7 @@ public class SpacePostController {
     public ResponseEntity<?> createPost(
             @PathVariable String spaceUid,
             @Valid @RequestBody SpacePostCreateRequest request,
-            @AuthenticationPrincipal UserDetails currentUser) {
+            @AuthenticationPrincipal SinghaUser currentUser) {
 
         try {
             User user = requireAuthenticatedUser(currentUser);
@@ -106,10 +94,10 @@ public class SpacePostController {
     public ResponseEntity<?> getPost(
             @PathVariable String spaceUid,
             @PathVariable String postUid,
-            @AuthenticationPrincipal UserDetails currentUser) {
+            @AuthenticationPrincipal SinghaUser currentUser) {
 
         try {
-            User user = validateAndGetCurrentUser(currentUser);
+            User user = authenticationUtil.validateAndGetCurrentUser(currentUser);
             String userUid = user != null ? user.getUid() : null;
 
             SpacePostDto postDto = spacePostService.getPost(postUid, userUid);
@@ -136,10 +124,10 @@ public class SpacePostController {
     @GetMapping
     public ResponseEntity<?> getPostsBySpace(
             @PathVariable String spaceUid,
-            @AuthenticationPrincipal UserDetails currentUser) {
+            @AuthenticationPrincipal SinghaUser currentUser) {
 
         try {
-            User user = validateAndGetCurrentUser(currentUser);
+            User user = authenticationUtil.validateAndGetCurrentUser(currentUser);
             String userUid = user != null ? user.getUid() : null;
 
             List<SpacePostDto> posts = spacePostService.getPostsBySpace(spaceUid, userUid);
@@ -166,12 +154,12 @@ public class SpacePostController {
     @GetMapping("/paged")
     public ResponseEntity<?> getPostsPaged(
             @PathVariable String spaceUid,
-            @AuthenticationPrincipal UserDetails currentUser,
+            @AuthenticationPrincipal SinghaUser currentUser,
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC)
             Pageable pageable) {
 
         try {
-            User user = validateAndGetCurrentUser(currentUser);
+            User user = authenticationUtil.validateAndGetCurrentUser(currentUser);
             String userUid = user != null ? user.getUid() : null;
 
             Page<SpacePostDto> posts = spacePostService.getPostsPaged(spaceUid, userUid, pageable);
@@ -199,10 +187,10 @@ public class SpacePostController {
     public ResponseEntity<?> searchPosts(
             @PathVariable String spaceUid,
             @RequestParam String keyword,
-            @AuthenticationPrincipal UserDetails currentUser) {
+            @AuthenticationPrincipal SinghaUser currentUser) {
 
         try {
-            User user = validateAndGetCurrentUser(currentUser);
+            User user = authenticationUtil.validateAndGetCurrentUser(currentUser);
             String userUid = user != null ? user.getUid() : null;
 
             List<SpacePostDto> posts = spacePostService.searchPosts(spaceUid, keyword, userUid);
@@ -231,7 +219,7 @@ public class SpacePostController {
             @PathVariable String spaceUid,
             @PathVariable String postUid,
             @Valid @RequestBody SpacePostUpdateRequest request,
-            @AuthenticationPrincipal UserDetails currentUser) {
+            @AuthenticationPrincipal SinghaUser currentUser) {
 
         try {
             User user = requireAuthenticatedUser(currentUser);
@@ -267,7 +255,7 @@ public class SpacePostController {
     public ResponseEntity<?> deletePost(
             @PathVariable String spaceUid,
             @PathVariable String postUid,
-            @AuthenticationPrincipal UserDetails currentUser) {
+            @AuthenticationPrincipal SinghaUser currentUser) {
 
         try {
             User user = requireAuthenticatedUser(currentUser);
@@ -297,7 +285,7 @@ public class SpacePostController {
     public ResponseEntity<?> toggleLike(
             @PathVariable String spaceUid,
             @PathVariable String postUid,
-            @AuthenticationPrincipal UserDetails currentUser) {
+            @AuthenticationPrincipal SinghaUser currentUser) {
 
         try {
             User user = requireAuthenticatedUser(currentUser);
@@ -329,7 +317,7 @@ public class SpacePostController {
             @PathVariable String spaceUid,
             @PathVariable String postUid,
             @Valid @RequestBody SpacePostCommentCreateRequest request,
-            @AuthenticationPrincipal UserDetails currentUser) {
+            @AuthenticationPrincipal SinghaUser currentUser) {
 
         try {
             User user = requireAuthenticatedUser(currentUser);
@@ -365,10 +353,10 @@ public class SpacePostController {
     public ResponseEntity<?> getCommentsByPost(
             @PathVariable String spaceUid,
             @PathVariable String postUid,
-            @AuthenticationPrincipal UserDetails currentUser) {
+            @AuthenticationPrincipal SinghaUser currentUser) {
 
         try {
-            User user = validateAndGetCurrentUser(currentUser);
+            User user = authenticationUtil.validateAndGetCurrentUser(currentUser);
             String userUid = user != null ? user.getUid() : null;
 
             List<SpacePostCommentDto> comments = spacePostService.getCommentsByPost(postUid, userUid);
@@ -394,7 +382,7 @@ public class SpacePostController {
             @PathVariable String postUid,
             @PathVariable String commentUid,
             @Valid @RequestBody SpacePostCommentCreateRequest request,
-            @AuthenticationPrincipal UserDetails currentUser) {
+            @AuthenticationPrincipal SinghaUser currentUser) {
 
         try {
             User user = requireAuthenticatedUser(currentUser);
@@ -431,7 +419,7 @@ public class SpacePostController {
             @PathVariable String spaceUid,
             @PathVariable String postUid,
             @PathVariable String commentUid,
-            @AuthenticationPrincipal UserDetails currentUser) {
+            @AuthenticationPrincipal SinghaUser currentUser) {
 
         try {
             User user = requireAuthenticatedUser(currentUser);

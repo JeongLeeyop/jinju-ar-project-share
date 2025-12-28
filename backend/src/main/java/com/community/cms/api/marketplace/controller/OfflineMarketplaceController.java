@@ -4,6 +4,9 @@ import com.community.cms.api.marketplace.dto.OfflineMarketplaceDto;
 import com.community.cms.api.marketplace.service.OfflineMarketplaceService;
 import com.community.cms.api.user.repository.UserRepository;
 import com.community.cms.entity.User;
+import com.community.cms.oauth.SinghaUser;
+import com.community.cms.util.AuthenticationUtil;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -27,18 +30,8 @@ public class OfflineMarketplaceController {
 
     private final OfflineMarketplaceService offlineMarketplaceService;
     private final UserRepository userRepository;
+    private final AuthenticationUtil authenticationUtil;
 
-    /**
-     * 현재 인증된 사용자 조회
-     */
-    private User validateAndGetCurrentUser(SinghaUser userDetails) {
-        if (userDetails == null || userDetails.getUsername() == null) {
-            log.error("Unauthenticated access attempt detected");
-            throw new RuntimeException("인증되지 않은 접근입니다");
-        }
-        return userRepository.findByUserId(userDetails.getUsername())
-                .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다"));
-    }
 
     /**
      * 오프라인 장터 생성 (커뮤니티 관리자만)
@@ -49,7 +42,7 @@ public class OfflineMarketplaceController {
             @Valid @RequestBody OfflineMarketplaceDto.CreateRequest request,
             @AuthenticationPrincipal SinghaUser userDetails) {
         try {
-            User user = validateAndGetCurrentUser(userDetails);
+            User user = authenticationUtil.validateAndGetCurrentUser(userDetails);
             OfflineMarketplaceDto result = offlineMarketplaceService.createOfflineMarketplace(
                     request, channelUid, user.getUid());
             return ResponseEntity.ok(result);
@@ -105,7 +98,7 @@ public class OfflineMarketplaceController {
             @Valid @RequestBody OfflineMarketplaceDto.UpdateRequest request,
             @AuthenticationPrincipal SinghaUser userDetails) {
         try {
-            User user = validateAndGetCurrentUser(userDetails);
+            User user = authenticationUtil.validateAndGetCurrentUser(userDetails);
             OfflineMarketplaceDto result = offlineMarketplaceService.updateOfflineMarketplace(
                     uid, request, user.getUid());
             return ResponseEntity.ok(result);
@@ -125,7 +118,7 @@ public class OfflineMarketplaceController {
             @PathVariable String uid,
             @AuthenticationPrincipal SinghaUser userDetails) {
         try {
-            User user = validateAndGetCurrentUser(userDetails);
+            User user = authenticationUtil.validateAndGetCurrentUser(userDetails);
             offlineMarketplaceService.deleteOfflineMarketplace(uid, user.getUid());
             return ResponseEntity.ok().build();
         } catch (RuntimeException e) {
