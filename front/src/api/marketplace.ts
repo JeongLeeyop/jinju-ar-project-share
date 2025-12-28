@@ -108,6 +108,7 @@ export interface MarketplaceProduct {
   // 거래중인 구매자 정보
   currentBuyerUid?: string;
   currentBuyerName?: string;
+  currentBuyerIconFileUid?: string;
   currentPurchaseUid?: string;
 }
 

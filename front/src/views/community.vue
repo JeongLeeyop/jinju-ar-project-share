@@ -6,8 +6,18 @@
     <!-- Main Content Area -->
     <div class="community-main">
       <!-- Hero Banner -->
-      <div class="hero-banner" :style="bannerStyle">
-        <img v-if="bannerImageUrl" :src="bannerImageUrl" alt="Community Banner" class="banner-image" @error="handleBannerError" />
+      <div class="hero-banner">
+        <template v-if="selectedChannel && selectedChannel.coverImageList && selectedChannel.coverImageList.length > 0">
+          <!-- 데스크탑: 캐러셀 -->
+          <el-carousel v-if="selectedChannel.coverImageList.length > 1" indicator-position="outside" height="350px" class="desktop-carousel">
+            <el-carousel-item v-for="item in selectedChannel.coverImageList" :key="item.uid">
+              <img :src="`${apiUrl}/attached-file/${item.fileUid}`" alt="Community Banner" class="banner-image" />
+            </el-carousel-item>
+          </el-carousel>
+          <!-- 단일 이미지인 경우 -->
+          <img v-else :src="bannerImageUrl" alt="Community Banner" class="banner-image" @error="handleBannerError" />
+        </template>
+        <!-- 커버 이미지가 없는 경우 기본 배경색만 표시 -->
       </div>
 
       <!-- Empty State -->
@@ -460,14 +470,16 @@ export default class extends Vue {
     this.writeFormVisible = false;
   }
 
-  private bannerImageUrl = 'https://images.unsplash.com/photo-1557804506-669a67965ba0?w=1920&h=400&fit=crop';
-
-  private bannerStyle = {
-    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-  };
+  // ✅ 배너 이미지 URL을 채널 coverImageList에서 가져옴
+  get bannerImageUrl(): string {
+    if (this.selectedChannel?.coverImageList && this.selectedChannel.coverImageList.length > 0) {
+      return `${this.apiUrl}/attached-file/${this.selectedChannel.coverImageList[0].fileUid}`;
+    }
+    return '';
+  }
 
   private handleBannerError() {
-    this.bannerImageUrl = '';
+    // 이미지 로드 실패 시 기본 배경색만 표시
   }
 
   private handleCreateSpace() {
@@ -533,6 +545,23 @@ export default class extends Vue {
   margin-left: -40px;
   margin-right: -40px;
   width: calc(100% + 80px);
+}
+
+.desktop-carousel {
+  width: 100%;
+  height: 100%;
+  
+  ::v-deep .el-carousel__container {
+    height: 100% !important;
+  }
+  
+  ::v-deep .el-carousel__item {
+    height: 100%;
+  }
+  
+  ::v-deep .el-carousel__indicators {
+    bottom: 20px;
+  }
 }
 
 .banner-image {

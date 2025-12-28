@@ -6,12 +6,16 @@ import com.community.cms.api.channel.repository.ChannelRepository;
 import com.community.cms.api.marketplace.dto.MarketplaceProductDto;
 import com.community.cms.api.marketplace.repository.MarketplaceProductImageRepository;
 import com.community.cms.api.marketplace.repository.MarketplaceProductRepository;
+import com.community.cms.api.marketplace.repository.MarketplacePurchaseRepository;
 import com.community.cms.api.marketplace.repository.OfflineMarketplaceRepository;
+import com.community.cms.api.user.repository.UserRepository;
 import com.community.cms.common.code.ChannelMemberPermissionType;
 import com.community.cms.entity.ChannelMemberPermission;
 import com.community.cms.entity.MarketplaceProduct;
 import com.community.cms.entity.MarketplaceProductImage;
+import com.community.cms.entity.MarketplacePurchase;
 import com.community.cms.entity.OfflineMarketplace;
+import com.community.cms.entity.User;
 import com.community.cms.entity2.Channel;
 import com.community.cms.entity2.ChannelMember;
 import lombok.RequiredArgsConstructor;
@@ -35,10 +39,12 @@ public class MarketplaceProductService {
 
     private final MarketplaceProductRepository productRepository;
     private final MarketplaceProductImageRepository imageRepository;
+    private final MarketplacePurchaseRepository purchaseRepository;
     private final OfflineMarketplaceRepository offlineMarketplaceRepository;
     private final ChannelRepository channelRepository;
     private final ChannelMemberRepository channelMemberRepository;
     private final ChannelMemberPermissionRepository permissionRepository;
+    private final UserRepository userRepository;
 
     /**
      * 상품 등록
@@ -392,12 +398,26 @@ public class MarketplaceProductService {
         boolean isTrading = "TRADING".equals(entity.getStatus());
         String currentBuyerUid = null;
         String currentBuyerName = null;
+        String currentBuyerIconFileUid = null;
         String currentPurchaseUid = null;
 
         if (isTrading && entity.getSellerUid().equals(currentUserUid)) {
             // 판매자가 조회하는 경우, 현재 거래중인 구매자 정보 조회
-            // purchaseRepository가 필요하므로 여기서는 null로 둠
-            // 실제로는 별도 쿼리 필요
+            MarketplacePurchase inProgressPurchase = purchaseRepository
+                    .findByProductUidAndStatus(entity.getUid(), "IN_PROGRESS")
+                    .orElse(null);
+            
+            if (inProgressPurchase != null) {
+                currentBuyerUid = inProgressPurchase.getBuyerUid();
+                currentPurchaseUid = inProgressPurchase.getUid();
+                
+                // 구매자 정보 조회
+                User buyer = userRepository.findById(currentBuyerUid).orElse(null);
+                if (buyer != null) {
+                    currentBuyerName = buyer.getActualName();
+                    currentBuyerIconFileUid = buyer.getIconFileUid();
+                }
+            }
         }
 
         return MarketplaceProductDto.builder()
@@ -424,6 +444,7 @@ public class MarketplaceProductService {
                 .isTrading(isTrading)
                 .currentBuyerUid(currentBuyerUid)
                 .currentBuyerName(currentBuyerName)
+                .currentBuyerIconFileUid(currentBuyerIconFileUid)
                 .currentPurchaseUid(currentPurchaseUid)
                 .build();
     }

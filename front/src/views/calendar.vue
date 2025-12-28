@@ -165,8 +165,12 @@
         </div>
       </div>
 
-      <!-- Floating Write Button (Mobile Only) -->
-      <button class="write-event-btn-fixed" @click="handleWriteModal">
+      <!-- Floating Write Button (Mobile Only, Admin Only) -->
+      <button 
+        v-if="isChannelAdmin"
+        class="write-event-btn-fixed" 
+        @click="handleWriteModal"
+      >
         <svg class="btn-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M12 5V19M5 12H19" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
@@ -445,6 +449,26 @@ export default class extends Vue {
     return UserModule.actualName || UserModule.userId || '사용자';
   }
 
+  // 커뮤니티 관리자 여부 확인
+  get isChannelAdmin(): boolean {
+    const currentChannel = ChannelModule.selectedChannel;
+    const currentUserUid = this.currentUserInfo?.uid;
+    
+    console.log('=== 관리자 체크 ===');
+    console.log('currentChannel:', currentChannel);
+    console.log('currentUserUid:', currentUserUid);
+    console.log('channel.userUid:', currentChannel?.userUid);
+    console.log('일치 여부:', currentChannel?.userUid === currentUserUid);
+    console.log('==================');
+    
+    if (!currentChannel || !currentUserUid) {
+      console.warn('⚠️ Channel 또는 UserUid가 없습니다');
+      return false;
+    }
+    
+    return currentChannel.userUid === currentUserUid;
+  }
+
   async mounted() {
     await this.loadCurrentUserInfo();
     await this.loadCurrentPoint();
@@ -532,6 +556,16 @@ export default class extends Vue {
 
 
   private handleWriteModal() {
+    // 커뮤니티 관리자만 일정 작성 가능
+    if (!this.isChannelAdmin) {
+      console.error('❌ 관리자 권한이 없습니다');
+      console.log('현재 사용자 정보:', this.currentUserInfo);
+      console.log('채널 정보:', ChannelModule.selectedChannel);
+      this.$message.warning('일정 작성은 커뮤니티 관리자만 가능합니다.');
+      return;
+    }
+    
+    console.log('✅ 관리자 권한 확인 완료');
     this.createEventModalVisible = true;
   }
 
