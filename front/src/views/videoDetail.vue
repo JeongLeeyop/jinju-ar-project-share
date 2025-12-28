@@ -180,7 +180,7 @@ export default class extends Vue {
       console.log('사용자가 로그인하지 않아 시청 기록을 저장하지 않습니다.');
       return;
     }
-    
+
     saveWatchHistory(this.watchHistoryData).then((res: any) => {
       console.log('현재 시청 구간 저장완료', {
         percent: this.watchHistoryData.percent,
