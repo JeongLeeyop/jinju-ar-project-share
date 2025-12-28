@@ -89,29 +89,35 @@
         </button>
 
         <h3 class="trade-modal-title">{{ product.title }}</h3>
-        <div class="trade-modal-price">{{ product.price }}</div>
+        <div class="trade-modal-price">{{ formattedPrice }}</div>
 
         <div class="points-breakdown">
           <div class="breakdown-header">
-            <h4>이명관 님의 R 포인트</h4>
+            <h4>{{ currentUserName }}님의 R 포인트</h4>
           </div>
           <div class="breakdown-items">
             <div class="breakdown-item">
               <span class="item-label">사용 가능한 R 포인트</span>
-              <span class="item-value">58,500</span>
+              <span class="item-value">{{ currentPoints.toLocaleString() }}</span>
             </div>
             <div class="breakdown-item">
               <span class="item-label">차감 R 포인트</span>
-              <span class="item-value">-15,000</span>
+              <span class="item-value">{{ deductPoints }}</span>
             </div>
             <div class="breakdown-item">
               <span class="item-label">잔액 R 포인트</span>
-              <span class="item-value primary">43,500</span>
+              <span class="item-value primary">{{ remainingPoints.toLocaleString() }}</span>
             </div>
           </div>
         </div>
 
-        <button class="confirm-trade-btn" @click="confirmTrade">R 포인트 지급하기</button>
+        <button 
+          class="confirm-trade-btn" 
+          @click="confirmTrade"
+          :disabled="purchasing || (product.productType !== 'SHARE' && currentPoints < product.price)"
+        >
+          {{ purchasing ? '처리 중...' : (product.productType === 'SHARE' ? '나눔 받기' : 'R 포인트 지급하기') }}
+        </button>
       </div>
     </el-dialog>
   </div>
@@ -120,7 +126,9 @@
 <script lang="ts">
 import { Component, Vue, Watch } from 'vue-property-decorator';
 import CommunitySidebar from './components/communitySidebar.vue';
-import { getProduct, MarketplaceProduct } from '@/api/marketplace';
+import { getProduct, MarketplaceProduct, instantOfflinePurchase } from '@/api/marketplace';
+import { getCurrentPoint } from '@/api/point';
+import { UserModule } from '@/store/modules/user';
 
 @Component({
   name: 'MarketplaceDetail',
@@ -133,6 +141,11 @@ export default class extends Vue {
   private currentImageIndex = 0;
   private tradeModalVisible = false;
   private loading = false;
+  private purchasing = false;
+
+  // 포인트 관련
+  private currentPoints = 0;
+  private loadingPoints = false;
 
   // ✅ apiUrl을 computed getter로 변경하여 템플릿에서 접근 가능하도록 수정
   get apiUrl() {
@@ -141,11 +154,29 @@ export default class extends Vue {
 
   async mounted() {
     await this.loadProduct();
+    await this.loadCurrentPoints();
   }
 
   @Watch('$route.params.productId')
   async onProductIdChange() {
     await this.loadProduct();
+    await this.loadCurrentPoints();
+  }
+
+  private async loadCurrentPoints() {
+    const channelUid = this.$route.params.domain;
+    if (!channelUid) return;
+
+    try {
+      this.loadingPoints = true;
+      const response = await getCurrentPoint(channelUid as string);
+      this.currentPoints = response.data?.currentBalance || 0;
+    } catch (error) {
+      console.error('포인트 조회 실패:', error);
+      this.currentPoints = 0;
+    } finally {
+      this.loadingPoints = false;
+    }
   }
 
   private async loadProduct() {
@@ -186,13 +217,42 @@ export default class extends Vue {
     this.tradeModalVisible = true;
   }
 
-  private confirmTrade() {
-    this.$message.success('거래가 완료되었습니다!');
-    this.tradeModalVisible = false;
-    this.$router.push({ 
-      name: 'Marketplace',
-      params: { domain: this.$route.params.domain || 'default' }
-    });
+  private async confirmTrade() {
+    if (!this.product) return;
+
+    // 나눔 상품이 아닌 경우 포인트 체크
+    const totalPrice = this.product.productType === 'SHARE' ? 0 : this.product.price;
+    if (totalPrice > 0 && this.currentPoints < totalPrice) {
+      this.$message.error('포인트가 부족합니다');
+      return;
+    }
+
+    try {
+      this.purchasing = true;
+      await instantOfflinePurchase(this.product.uid, {
+        quantity: 1,
+      });
+      
+      this.$message.success('거래가 완료되었습니다!');
+      this.tradeModalVisible = false;
+      
+      // 포인트 갱신
+      await this.loadCurrentPoints();
+      
+      // 목록으로 이동
+      this.$router.push({ 
+        name: 'OfflineMarketplace',
+        params: { 
+          domain: this.$route.params.domain || 'default',
+          marketplaceUid: this.product.offlineMarketplaceUid || '',
+        },
+      });
+    } catch (error: any) {
+      const message = error.response?.data?.message || '거래 처리에 실패했습니다';
+      this.$message.error(message);
+    } finally {
+      this.purchasing = false;
+    }
   }
 
   // 이미지 URL 생성
@@ -231,6 +291,25 @@ export default class extends Vue {
   // 위치 정보
   get locationText(): string {
     return this.product?.location || '';
+  }
+
+  // 현재 사용자 이름
+  get currentUserName(): string {
+    return UserModule.actualName || '사용자';
+  }
+
+  // 차감 포인트 (나눔은 0)
+  get deductPoints(): string {
+    if (!this.product) return '0';
+    const amount = this.product.productType === 'SHARE' ? 0 : this.product.price;
+    return `-${amount.toLocaleString()}`;
+  }
+
+  // 잔액 포인트
+  get remainingPoints(): number {
+    if (!this.product) return this.currentPoints;
+    const deduct = this.product.productType === 'SHARE' ? 0 : this.product.price;
+    return Math.max(0, this.currentPoints - deduct);
   }
 }
 </script>
@@ -679,12 +758,17 @@ export default class extends Vue {
   cursor: pointer;
   transition: background 0.2s;
 
-  &:hover {
+  &:hover:not(:disabled) {
     background: #0530CC;
   }
 
-  &:active {
+  &:active:not(:disabled) {
     background: #042099;
+  }
+
+  &:disabled {
+    background: #CECECE;
+    cursor: not-allowed;
   }
 
   @media screen and (max-width: 768px) {

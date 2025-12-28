@@ -151,6 +151,75 @@ public class MarketplacePurchaseService {
     }
 
     /**
+     * 오프라인 장터 즉시 구매 (구매자가 직접 구매)
+     */
+    @Transactional
+    public MarketplacePurchaseDto instantOfflinePurchase(
+            String productUid,
+            MarketplacePurchaseDto.InstantPurchaseRequest request,
+            String buyerUid,
+            String buyerName) {
+
+        MarketplaceProduct product = productRepository.findByUid(productUid)
+                .orElseThrow(() -> new RuntimeException("상품을 찾을 수 없습니다"));
+
+        // 자기 자신의 상품 구매 방지
+        if (product.getSellerUid().equals(buyerUid)) {
+            throw new RuntimeException("자신의 상품은 구매할 수 없습니다");
+        }
+
+        // 오프라인 장터 상품이 아니면 에러
+        if (product.getOfflineMarketplaceUid() == null) {
+            throw new RuntimeException("오프라인 장터 상품이 아닙니다");
+        }
+
+        // 장터 이용 권한 체크
+        checkMarketplaceUsePermission(product.getChannelUid(), buyerUid);
+
+        // 재고 확인
+        if (product.getStockQuantity() < request.getQuantity()) {
+            throw new RuntimeException("재고가 부족합니다");
+        }
+
+        // 총 가격 계산 (나눔 상품은 0원)
+        int totalPrice = "SHARE".equals(product.getCategory()) ? 0 : product.getPrice() * request.getQuantity();
+
+        // 포인트 차감 (나눔 상품이 아닐 경우만)
+        if (totalPrice > 0) {
+            deductPoints(buyerUid, product.getChannelUid(), totalPrice, productUid);
+        }
+
+        // 재고 감소
+        product.setStockQuantity(product.getStockQuantity() - request.getQuantity());
+        if (product.getStockQuantity() == 0) {
+            product.setStatus("SOLD_OUT");
+        }
+        productRepository.save(product);
+
+        // 구매 내역 생성
+        MarketplacePurchase purchase = MarketplacePurchase.builder()
+                .uid(UUID.randomUUID().toString())
+                .productUid(productUid)
+                .buyerUid(buyerUid)
+                .buyerName(buyerName)
+                .buyerContact(request.getBuyerContact())
+                .sellerUid(product.getSellerUid())
+                .quantity(request.getQuantity())
+                .totalPrice(totalPrice)
+                .status("COMPLETED")
+                .paymentMethod(totalPrice > 0 ? "POINT" : "FREE")
+                .isOffline(true)
+                .completedAt(LocalDateTime.now())
+                .build();
+
+        MarketplacePurchase saved = purchaseRepository.save(purchase);
+
+        log.info("Offline product purchased: {} by {} ({}P)", productUid, buyerUid, totalPrice);
+
+        return toDto(saved, product);
+    }
+
+    /**
      * 내 구매 내역 조회
      */
     @Transactional(readOnly = true)
