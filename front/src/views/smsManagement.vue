@@ -578,9 +578,11 @@ export default class extends Vue {
 
 .search-form {
   display: flex;
+  flex-wrap: wrap;
   gap: 12px;
 
   .el-input {
+    flex: 0 1 calc(100% - 103px);
     display: flex;
     align-items: center;
     gap: 8px;
@@ -603,6 +605,10 @@ export default class extends Vue {
       padding: 0 10px;
       border: none;
     }
+  }
+
+  .el-button {
+    flex: 0 1 90px;
   }
 }
 
@@ -933,8 +939,7 @@ export default class extends Vue {
   }
 }
 
-// 425px 이하 모바일 반응형
-@media (max-width: 500px) {
+@media screen and (max-width: 500px) {
   .sms-management-main {
     padding: 110px 20px 80px;
   }
@@ -974,6 +979,17 @@ export default class extends Vue {
     padding-bottom: 12px;
   }
 
+  .search-form {
+    
+    .el-input {
+      flex: 0 1 100%;
+    }
+
+    .el-button {
+      flex: 0 1 100%;
+    }
+  }
+
   .results-actions {
     width: 100%;
     display: flex;
@@ -990,7 +1006,7 @@ export default class extends Vue {
   }
 
   .member-item {
-    padding: 12px;
+    padding: 12px 0;
     gap: 10px;
 
     &.selected {
