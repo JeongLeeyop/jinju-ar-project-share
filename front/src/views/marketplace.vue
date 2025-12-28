@@ -429,6 +429,27 @@ export default class extends Vue {
   }
 
   private getStatusBadge(product: MarketplaceProduct): string {
+    // 거래중 상태 체크
+    if (product.status === 'TRADING') {
+      return '거래중';
+    }
+    
+    // 완료된 상태 체크
+    if (product.status === 'SOLD_OUT') {
+      const type = product.productType || (product as any).category;
+      switch (type) {
+        case 'SALE':
+          return '판매 완료';
+        case 'SHARE':
+          return '나눔 완료';
+        case 'REQUEST':
+          return '요청 완료';
+        default:
+          return '거래 완료';
+      }
+    }
+    
+    // 재고 기반 체크 (하위 호환)
     const stock = product.stock !== undefined ? product.stock : product.stockQuantity;
     if (stock === 0) {
       const type = product.productType || (product as any).category;

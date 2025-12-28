@@ -70,15 +70,26 @@
                 :class="{ 'apply-btn': isRequestType }"
                 @click="handleTrade"
               >
-                {{ isRequestType ? '지원하기' : '거래하기' }}
+                {{ isRequestType ? '지원하기' : (isShareType ? '나눔 받기' : '구매하기') }}
               </button>
-              <!-- 거래중 상태 표시 -->
-              <div v-else-if="product.status === 'TRADING'" class="status-badge trading">
+              <!-- 내 상품이고 거래중 상태일 때 - 내 장터 관리로 안내 -->
+              <div v-else-if="product.isMine && product.status === 'TRADING'" class="status-info">
+                <div class="status-badge trading">거래중</div>
+                <button class="goto-my-marketplace-btn" @click="goToMyMarketplace">
+                  내 장터에서 확정하기
+                </button>
+              </div>
+              <!-- 내 상품이 아니고 거래중 상태 표시 (다른 사람이 거래중) -->
+              <div v-else-if="!product.isMine && product.status === 'TRADING'" class="status-badge trading">
                 거래중
               </div>
               <!-- 품절 상태 표시 -->
               <div v-else-if="product.status === 'SOLD_OUT'" class="status-badge sold-out">
-                거래완료
+                {{ getSoldOutLabel }}
+              </div>
+              <!-- 내 상품일 때 판매중 표시 -->
+              <div v-else-if="product.isMine && product.status === 'ACTIVE'" class="status-badge active">
+                {{ getActiveLabel }}
               </div>
             </div>
 
@@ -119,7 +130,7 @@
 
         <div class="trade-info-message">
           <i class="el-icon-info"></i>
-          <span>거래가 시작되면 상품이 '거래중' 상태로 변경됩니다.<br/>판매자와 거래 완료 후 '지급완료하기'를 눌러 포인트를 지급해주세요.</span>
+          <span>거래가 시작되면 상품이 '거래중' 상태로 변경됩니다.<br/>판매자가 확정하면 포인트가 자동으로 차감됩니다.</span>
         </div>
 
         <div class="points-breakdown">
@@ -358,7 +369,7 @@ export default class extends Vue {
         quantity: 1,
       });
       
-      this.$message.success('거래가 시작되었습니다! 판매자와 거래 완료 후 내 장터에서 지급완료하기를 눌러주세요.');
+      this.$message.success('거래가 시작되었습니다! 판매자가 확정하면 포인트가 자동 차감됩니다.');
       this.tradeModalVisible = false;
       
       // 상품 정보 새로고침
@@ -466,6 +477,46 @@ export default class extends Vue {
     const type = this.product.productType || (this.product as any).category;
     const deduct = type === 'SHARE' ? 0 : this.product.price;
     return Math.max(0, this.currentPoints - deduct);
+  }
+  
+  // 판매완료 라벨
+  get getSoldOutLabel(): string {
+    if (!this.product) return '거래완료';
+    const type = this.product.productType || (this.product as any).category;
+    switch (type) {
+      case 'SALE':
+        return '판매완료';
+      case 'SHARE':
+        return '나눔완료';
+      case 'REQUEST':
+        return '요청완료';
+      default:
+        return '거래완료';
+    }
+  }
+  
+  // 활성 상태 라벨 (내 상품일 때)
+  get getActiveLabel(): string {
+    if (!this.product) return '판매중';
+    const type = this.product.productType || (this.product as any).category;
+    switch (type) {
+      case 'SALE':
+        return '판매중';
+      case 'SHARE':
+        return '나눔중';
+      case 'REQUEST':
+        return '요청중';
+      default:
+        return '판매중';
+    }
+  }
+  
+  // 내 장터 관리로 이동
+  private goToMyMarketplace() {
+    this.$router.push({
+      name: 'MyMarketplace',
+      params: { domain: this.$route.params.domain || 'default' }
+    });
   }
 }
 </script>
@@ -757,6 +808,36 @@ export default class extends Vue {
     background: #F5F5F5;
     color: #888;
     border: 2px solid #CCC;
+  }
+  
+  &.active {
+    background: #E3F2FD;
+    color: #073DFF;
+    border: 2px solid #073DFF;
+  }
+}
+
+.status-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.goto-my-marketplace-btn {
+  padding: 10px 16px;
+  background: #073DFF;
+  color: #FFF;
+  border: none;
+  border-radius: 8px;
+  font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+  
+  &:hover {
+    background: #0530CC;
   }
 }
 

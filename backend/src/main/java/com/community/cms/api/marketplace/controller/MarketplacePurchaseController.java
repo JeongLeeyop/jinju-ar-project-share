@@ -204,22 +204,18 @@ public class MarketplacePurchaseController {
     }
 
     /**
-     * 거래 완료 (구매자가 포인트 지급 확정)
+     * 거래 완료 (구매자가 포인트 지급 확정) - 더이상 사용되지 않음
+     * 판매자 확정 방식으로 변경됨 (seller-confirm 사용)
+     * @deprecated Use sellerConfirmTrade instead
      */
     @PostMapping("/{purchaseUid}/complete")
     public ResponseEntity<?> completeTrade(
             @PathVariable String purchaseUid,
             @AuthenticationPrincipal SinghaUser userDetails) {
-        try {
-            User user = authenticationUtil.validateAndGetCurrentUser(userDetails);
-            MarketplacePurchaseDto result = purchaseService.completeTrade(purchaseUid, user.getUid());
-            return ResponseEntity.ok(result);
-        } catch (RuntimeException e) {
-            log.error("Failed to complete trade: {}", e.getMessage());
-            Map<String, String> errorResponse = new HashMap<>();
-            errorResponse.put("message", e.getMessage());
-            return ResponseEntity.badRequest().body(errorResponse);
-        }
+        // 구매자 확정 방식은 더이상 지원하지 않음 - 판매자 확정 방식으로 변경
+        Map<String, String> errorResponse = new HashMap<>();
+        errorResponse.put("message", "거래 확정은 판매자만 가능합니다. 판매자가 확정할 때까지 기다려주세요.");
+        return ResponseEntity.badRequest().body(errorResponse);
     }
 
     /**
@@ -235,6 +231,25 @@ public class MarketplacePurchaseController {
             return ResponseEntity.ok(Map.of("message", "거래가 취소되었습니다"));
         } catch (RuntimeException e) {
             log.error("Failed to cancel trade: {}", e.getMessage());
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+    }
+
+    /**
+     * 판매자 확정 (판매자가 거래 완료 확정 - 포인트 지급)
+     */
+    @PostMapping("/{purchaseUid}/seller-confirm")
+    public ResponseEntity<?> sellerConfirmTrade(
+            @PathVariable String purchaseUid,
+            @AuthenticationPrincipal SinghaUser userDetails) {
+        try {
+            User user = authenticationUtil.validateAndGetCurrentUser(userDetails);
+            MarketplacePurchaseDto result = purchaseService.sellerConfirmTrade(purchaseUid, user.getUid());
+            return ResponseEntity.ok(result);
+        } catch (RuntimeException e) {
+            log.error("Failed to confirm trade by seller: {}", e.getMessage());
             Map<String, String> errorResponse = new HashMap<>();
             errorResponse.put("message", e.getMessage());
             return ResponseEntity.badRequest().body(errorResponse);

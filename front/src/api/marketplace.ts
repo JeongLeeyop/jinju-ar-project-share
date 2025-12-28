@@ -347,6 +347,13 @@ export const cancelTrade = (purchaseUid: string) =>
     method: 'post',
   });
 
+// 판매자 확정 (판매자가 거래 완료 확정 - 포인트 지급)
+export const sellerConfirmTrade = (purchaseUid: string) =>
+  request({
+    url: `${PURCHASES_PATH}/${purchaseUid}/seller-confirm`,
+    method: 'post',
+  });
+
 // REQUEST 상품 지원
 export const applyForRequest = (productUid: string, data: ApplyForRequestRequest) =>
   request({
