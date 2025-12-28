@@ -1,0 +1,45 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Gradient background -->
+  <defs>
+    <linearGradient id="bubbleBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#073DFF;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0530CC;stop-opacity:1" />
+    </linearGradient>
+    
+    <filter id="bubbleShadow">
+      <feDropShadow dx="0" dy="6" stdDeviation="10" flood-opacity="0.2"/>
+    </filter>
+  </defs>
+  
+  <rect width="512" height="512" rx="115" fill="url(#bubbleBg)"/>
+  
+  <!-- Chat bubble design with modern twist -->
+  <g transform="translate(256, 240)" filter="url(#bubbleShadow)">
+    <!-- Large main bubble -->
+    <path d="M -110 -60 
+             Q -110 -120, -50 -120
+             L 50 -120
+             Q 110 -120, 110 -60
+             L 110 30
+             Q 110 90, 50 90
+             L -30 90
+             L -60 120
+             L -60 90
+             L -50 90
+             Q -110 90, -110 30
+             Z" 
+          fill="white" opacity="0.95"/>
+    
+    <!-- Smaller bubble (overlapping) -->
+    <ellipse cx="85" cy="80" rx="55" ry="50" fill="white" opacity="0.85"/>
+    
+    <!-- Three dots inside main bubble -->
+    <circle cx="-40" cy="-15" r="12" fill="#073DFF"/>
+    <circle cx="0" cy="-15" r="12" fill="#073DFF"/>
+    <circle cx="40" cy="-15" r="12" fill="#073DFF"/>
+    
+    <!-- Small decorative dots in second bubble -->
+    <circle cx="70" cy="75" r="8" fill="#0530CC"/>
+    <circle cx="100" cy="75" r="8" fill="#0530CC"/>
+  </g>
+</svg>

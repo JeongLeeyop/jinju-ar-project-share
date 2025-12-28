@@ -1,0 +1,27 @@
+// package com.community.cms.api.channel.controller;
+
+// import java.util.List;
+
+// import org.springframework.http.ResponseEntity;
+// import org.springframework.security.access.prepost.PreAuthorize;
+// import org.springframework.web.bind.annotation.GetMapping;
+// import org.springframework.web.bind.annotation.RequestMapping;
+// import org.springframework.web.bind.annotation.RestController;
+
+// import com.community.cms.api.channel.dto.ChannelCategoryDto;
+// import com.community.cms.api.channel.service.AdmChannelCategoryService;
+
+// import lombok.AllArgsConstructor;
+
+// @RestController
+// @PreAuthorize("hasAnyRole('ROLE_ADMIN')")
+// @RequestMapping("/api/Channel/category")
+// @AllArgsConstructor
+// public class AdmChannelCategoryController {
+// 	private final AdmChannelCategoryService admChannelCategoryService;
+	
+// 	@GetMapping("/list")
+// 	public ResponseEntity<List<ChannelCategoryDto.detail>> listAll() {
+// 		return ResponseEntity.ok(admChannelCategoryService.listAll());
+// 	}
+// }

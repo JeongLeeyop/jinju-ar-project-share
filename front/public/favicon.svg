@@ -1,0 +1,28 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background Circle -->
+  <rect width="512" height="512" rx="115" fill="#073DFF"/>
+  
+  <!-- White Community Icon - Three people silhouettes -->
+  <g transform="translate(256, 256)">
+    <!-- Center person (slightly larger and in front) -->
+    <circle cx="0" cy="-30" r="45" fill="white"/>
+    <ellipse cx="0" cy="60" rx="70" ry="85" fill="white"/>
+    
+    <!-- Left person -->
+    <circle cx="-95" cy="-15" r="38" fill="white" opacity="0.85"/>
+    <ellipse cx="-95" cy="65" rx="60" ry="75" fill="white" opacity="0.85"/>
+    
+    <!-- Right person -->
+    <circle cx="95" cy="-15" r="38" fill="white" opacity="0.85"/>
+    <ellipse cx="95" cy="65" rx="60" ry="75" fill="white" opacity="0.85"/>
+  </g>
+  
+  <!-- Optional: Add a subtle gradient overlay for depth -->
+  <defs>
+    <linearGradient id="gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#073DFF;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0530CC;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="115" fill="url(#gradient)" opacity="0.3"/>
+</svg>
