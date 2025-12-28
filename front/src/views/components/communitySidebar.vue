@@ -201,7 +201,6 @@
           </div> -->
         </div>
       </div>
-
       <!-- 공간 관리자 메뉴 섹션 (공간생성 또는 오프라인장터등록 권한이 있는 경우에만 표시) -->
       <div v-if="hasManagerPermission || isChannelCreator" class="space-admin-section">
         <h3 class="section-title">매니저 메뉴</h3>
@@ -376,7 +375,7 @@ export default class extends Vue {
       this.isChannelCreator = channelResponse?.data.userUid === currentUserInfo.uid;
 
       // Check manager permissions (for Manager Menu)
-      // User needs either SPACE_CREATE or MARKETPLACE_OFFLINE_REGISTER permission
+      // User needs either SPACE_CREATE or OFFLINE_MARKETPLACE_REGISTER permission
       try {
         const spaceCreateResponse = await checkPermissionByUser(
           this.currentChannelUid,
@@ -384,8 +383,13 @@ export default class extends Vue {
         );
         const marketplaceOfflineResponse = await checkPermissionByUser(
           this.currentChannelUid,
-          'MARKETPLACE_OFFLINE_REGISTER'
+          'OFFLINE_MARKETPLACE_REGISTER'
         );
+
+        console.log('Permission check results:', {
+          spaceCreate: spaceCreateResponse.data.hasPermission,
+          marketplaceOffline: marketplaceOfflineResponse.data.hasPermission,
+        });
 
         this.hasManagerPermission = 
           spaceCreateResponse.data.hasPermission || 
@@ -636,6 +640,7 @@ export default class extends Vue {
   flex-direction: column;
   gap: 40px;
   text-align: left;
+  margin-bottom: 100px;
 }
 
 .sidebar-title {

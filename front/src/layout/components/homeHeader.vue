@@ -486,7 +486,7 @@ export default class extends Vue {
       this.isChannelCreator = channelResponse?.data.userUid === currentUserInfo.uid;
 
       // Check manager permissions (for Manager Menu)
-      // User needs either SPACE_CREATE or MARKETPLACE_OFFLINE_REGISTER permission
+      // User needs either SPACE_CREATE or OFFLINE_MARKETPLACE_REGISTER permission
       try {
         const spaceCreateResponse = await checkPermissionByUser(
           this.currentChannelUid,
@@ -494,7 +494,7 @@ export default class extends Vue {
         );
         const marketplaceOfflineResponse = await checkPermissionByUser(
           this.currentChannelUid,
-          'MARKETPLACE_OFFLINE_REGISTER'
+          'OFFLINE_MARKETPLACE_REGISTER'
         );
 
         this.hasManagerPermission = 

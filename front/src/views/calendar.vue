@@ -1864,11 +1864,9 @@ export default class extends Vue {
   cursor: pointer;
   padding: 0;
   color: #888;
-  transition: all 0.2s ease;
 
   &:hover {
     color: #000;
-    transform: rotate(90deg);
   }
 }
 
@@ -2627,110 +2625,270 @@ export default class extends Vue {
 
 /* Participants Modal Styles */
 .participants-modal {
+  border-radius: 16px !important;
+  overflow: hidden;
+
+  .el-dialog__header {
+    display: none;
+  }
+
+  .el-dialog__body {
+    padding: 0 !important;
+  }
+
   .modal-content-wrapper {
-    padding: 32px;
+    position: relative;
+    padding: 40px 32px 32px;
+    background: #FFFFFF;
+  }
+
+  .modal-close-btn {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    color: #6B7280;
+    transition: all 0.2s ease;
+    z-index: 10;
+
+    &:hover {
+      background: #F3F4F6;
+      color: #1F2937;
+    }
+
+    svg {
+      width: 20px;
+      height: 20px;
+    }
   }
 
   .modal-title {
+    font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
     font-size: 24px;
     font-weight: 700;
-    color: #1a1a1a;
-    margin-bottom: 8px;
+    color: #111827;
+    margin: 0 0 8px 0;
+    line-height: 1.3;
   }
 
   .modal-subtitle {
-    font-size: 14px;
+    font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
+    font-size: 15px;
+    font-weight: 500;
     color: #6B7280;
-    margin-bottom: 24px;
+    margin: 0 0 28px 0;
+    line-height: 1.5;
   }
 
   .participants-list {
-    min-height: 200px;
-    max-height: 500px;
+    min-height: 240px;
+    max-height: 480px;
     overflow-y: auto;
+    padding: 4px;
+
+    /* 스크롤바 스타일 */
+    &::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: #F3F4F6;
+      border-radius: 3px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: #D1D5DB;
+      border-radius: 3px;
+
+      &:hover {
+        background: #9CA3AF;
+      }
+    }
   }
 
   .empty-participants {
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
-    min-height: 200px;
+    min-height: 240px;
     color: #9CA3AF;
-    font-size: 14px;
+
+    p {
+      font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
+      font-size: 15px;
+      font-weight: 500;
+      margin: 0;
+    }
   }
 
   .participant-items {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 12px;
   }
 
   .participant-item {
+    gap:20px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 16px;
+    padding: 16px 20px;
     border: 1px solid #E5E7EB;
     border-radius: 12px;
-    background-color: #F9FAFB;
+    background: #FAFBFC;
+    // transition: all 0.2s ease;
+
+    &:hover {
+      background: #F3F4F6;
+      border-color: #D1D5DB;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    }
   }
 
   .participant-info {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 14px;
+    flex: 1;
+    min-width: 0;
   }
 
   .participant-avatar {
     flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+
+    svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
   }
 
   .participant-details {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 6px;
+    min-width: 0;
+    flex: 1;
   }
 
   .participant-name {
-    font-size: 14px;
+    font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
+    font-size: 15px;
     font-weight: 600;
-    color: #1F2937;
+    color: #111827;
+    line-height: 1.3;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .participant-date {
-    font-size: 12px;
+    font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
+    font-size: 13px;
+    font-weight: 400;
     color: #9CA3AF;
+    line-height: 1.3;
   }
 
   .grant-point-btn {
-    padding: 8px 16px;
-    background-color: #073DFF;
-    color: white;
+    flex-shrink: 0;
+    padding: 10px 20px;
+    background: #073DFF;
+    color: #FFFFFF;
     border: none;
     border-radius: 8px;
+    font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
     font-size: 14px;
     font-weight: 600;
+    line-height: 1;
     cursor: pointer;
     white-space: nowrap;
+    transition: all 0.2s ease;
     
     &:hover {
-      background-color: #0531CC;
+      background: #0531CC;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(7, 61, 255, 0.25);
+    }
+
+    &:active {
+      transform: translateY(0);
     }
     
     &:disabled {
-      background-color: #E5E7EB;
+      background: #E5E7EB;
       color: #9CA3AF;
       cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
     }
   }
 
   .point-granted-badge {
-    padding: 6px 12px;
-    background-color: #10B981;
-    color: white;
-    border-radius: 6px;
-    font-size: 12px;
+    flex-shrink: 0;
+    padding: 8px 16px;
+    background: #10B981;
+    color: #FFFFFF;
+    border-radius: 8px;
+    font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
+    font-size: 13px;
     font-weight: 600;
+    line-height: 1;
+    white-space: nowrap;
+  }
+}
+
+/* 모바일 대응 */
+@media (max-width: 768px) {
+  .participants-modal {
+    width: 90% !important;
+    max-width: 500px !important;
+
+    .modal-content-wrapper {
+      padding: 32px 20px 24px;
+    }
+
+    .modal-title {
+      font-size: 20px;
+    }
+
+    .modal-subtitle {
+      font-size: 14px;
+      margin-bottom: 20px;
+    }
+
+    .participants-list {
+      max-height: 400px;
+    }
+
+    .participant-item {
+      padding: 14px 16px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .participant-info {
+      gap: 12px;
+      flex: 1 1 100%;
+    }
+
+    .grant-point-btn,
+    .point-granted-badge {
+      width: 100%;
+      text-align: center;
+      justify-content: center;
+    }
   }
 }
 
