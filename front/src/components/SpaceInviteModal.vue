@@ -337,6 +337,7 @@ export default class extends Vue {
             min-width: 0;
 
             .user-name {
+              text-align: left;
               font-size: 14px;
               font-weight: 500;
               color: #333;

@@ -257,9 +257,17 @@
           </div>
 
           <div class="member-list-body">
+            <!-- 로딩 상태 -->
+            <div v-if="loadingMembers" class="loading-members">
+              <i class="el-icon-loading"></i>
+              <p>회원 목록을 불러오는 중...</p>
+            </div>
+
+            <!-- 회원 목록 -->
             <div
+              v-else
               v-for="member in filteredMembers"
-              :key="member.uid"
+              :key="member.memberUid"
               class="member-row"
             >
               <div class="member-info-cell">
@@ -307,7 +315,8 @@
               </div>
             </div>
 
-            <div v-if="filteredMembers.length === 0" class="empty-members">
+            <!-- 빈 상태 -->
+            <div v-if="!loadingMembers && filteredMembers.length === 0" class="empty-members">
               <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <circle cx="24" cy="24" r="24" fill="#D9D9D9"/>
                 <mask id="mask0_empty_community" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="0" y="0" width="48" height="48">
@@ -419,6 +428,8 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import CommunitySidebar from './components/communitySidebar.vue';
+import { getChannelDomainDetail } from '@/api/channel';
+import { getChannelMembersWithPoints, adminAdjustPoint, MemberWithPoint } from '@/api/point';
 
 interface PointSettings {
   postCreate: number;
@@ -431,9 +442,13 @@ interface PointSettings {
 }
 
 interface Member {
-  uid: string;
+  memberIdx: number;
+  memberUid: string;
+  userUid: string;
+  userId: string;
   name: string;
   email: string;
+  iconFileUid: string | null;
   point: number;
 }
 
@@ -446,9 +461,11 @@ interface Member {
 export default class extends Vue {
   private activeTab = 'point';
   private saving = false;
+  private currentChannelUid = '';
+  private loadingMembers = false;
 
   get apiUrl() {
-    return process.env.VUE_APP_COMMON_API || '/api';
+    return process.env.VUE_APP_BASE_API || '/api';
   }
 
   // 포인트 조정 관련
@@ -482,45 +499,56 @@ export default class extends Vue {
     courseComplete: 150,
   };
 
-  // Mock 회원 데이터
-  private members: Member[] = [
-    {
-      uid: '1',
-      name: '정이욥',
-      email: 'hong@example.com',
-      point: 1500,
-    },
-    {
-      uid: '2',
-      name: '오형래',
-      email: 'kim@example.com',
-      point: 2300,
-    },
-    {
-      uid: '3',
-      name: '배은별',
-      email: 'lee@example.com',
-      point: 890,
-    },
-    {
-      uid: '4',
-      name: '이은경',
-      email: 'park@example.com',
-      point: 4200,
-    },
-    {
-      uid: '5',
-      name: '이주현',
-      email: 'jung@example.com',
-      point: 650,
-    },
-    {
-      uid: '6',
-      name: '정이욥2',
-      email: 'choi@example.com',
-      point: 3100,
-    },
-  ];
+  // 회원 데이터
+  private members: Member[] = [];
+
+  async mounted() {
+    await this.loadChannelInfo();
+    await this.loadMembers();
+  }
+
+  private async loadChannelInfo() {
+    const domain = this.$route.params.domain;
+    if (!domain) return;
+
+    try {
+      const response = await getChannelDomainDetail(domain as string);
+      this.currentChannelUid = response.data.uid;
+    } catch (error) {
+      console.error('채널 정보 조회 실패:', error);
+      this.$message.error('채널 정보를 불러올 수 없습니다.');
+    }
+  }
+
+  private async loadMembers() {
+    if (!this.currentChannelUid) return;
+
+    try {
+      this.loadingMembers = true;
+      const response = await getChannelMembersWithPoints({
+        channelUid: this.currentChannelUid,
+        size: 1000, // 전체 회원 조회
+      });
+
+      // API 응답을 Member 인터페이스에 맞게 변환
+      this.members = (response.data.content || []).map((member: MemberWithPoint) => ({
+        memberIdx: member.memberIdx,
+        memberUid: member.memberUid,
+        userUid: member.userUid,
+        userId: member.userId,
+        name: member.actualName || member.userId,
+        email: member.email,
+        iconFileUid: member.iconFileUid,
+        point: member.currentPoint || 0,
+      }));
+    } catch (error) {
+      console.error('회원 목록 조회 실패:', error);
+      this.$message.error('회원 목록을 불러올 수 없습니다.');
+      this.members = [];
+    } finally {
+      this.loadingMembers = false;
+    }
+  }
 
   // 회원 검색 필터링
   get filteredMembers() {
@@ -578,35 +606,50 @@ export default class extends Vue {
   }
 
   // 포인트 조정 실행
-  private adjustPoint() {
+  private async adjustPoint() {
     if (!this.selectedMember || this.pointAmount <= 0) {
       this.$message.warning('올바른 포인트를 입력해주세요.');
       return;
     }
 
+    if (!this.currentChannelUid) {
+      this.$message.error('채널 정보를 찾을 수 없습니다.');
+      return;
+    }
+
     this.adjusting = true;
 
-    // 실제로는 API 호출
-    setTimeout(() => {
-      const member = this.members.find((m) => m.uid === this.selectedMember!.uid);
+    try {
+      // API 호출: 포인트 지급 또는 차감
+      const adjustAmount = this.pointModalType === 'add' ? this.pointAmount : -this.pointAmount;
+      
+      await adminAdjustPoint({
+        channelUid: this.currentChannelUid,
+        targetUserUid: this.selectedMember.userUid,
+        pointAmount: adjustAmount,
+        description: this.pointReason || (this.pointModalType === 'add' ? '관리자 포인트 지급' : '관리자 포인트 차감'),
+      });
+
+      // 로컬 상태 업데이트
+      const member = this.members.find((m) => m.memberUid === this.selectedMember!.memberUid);
       if (member) {
-        if (this.pointModalType === 'add') {
-          member.point += this.pointAmount;
-          this.$message.success(
-            `${member.name}님에게 ${this.pointAmount.toLocaleString()}P를 지급했습니다.`,
-          );
-        } else {
-          member.point -= this.pointAmount;
-          this.$message.success(
-            `${member.name}님으로부터 ${this.pointAmount.toLocaleString()}P를 차감했습니다.`,
-          );
-        }
+        member.point += adjustAmount;
       }
 
-      this.adjusting = false;
+      this.$message.success(
+        this.pointModalType === 'add'
+          ? `${this.selectedMember.name}님에게 ${this.pointAmount.toLocaleString()}P를 지급했습니다.`
+          : `${this.selectedMember.name}님으로부터 ${this.pointAmount.toLocaleString()}P를 차감했습니다.`
+      );
+
       this.pointModalVisible = false;
       this.selectedMember = null;
-    }, 1000);
+    } catch (error: any) {
+      console.error('포인트 조정 실패:', error);
+      this.$message.error(error.response?.data?.message || '포인트 조정에 실패했습니다.');
+    } finally {
+      this.adjusting = false;
+    }
   }
 }
 </script>
@@ -865,6 +908,24 @@ export default class extends Vue {
   overflow-y: auto;
 }
 
+.loading-members {
+  text-align: center;
+  padding: 60px 20px;
+  color: #666;
+
+  i {
+    font-size: 48px;
+    margin-bottom: 16px;
+    display: block;
+    color: #073DFF;
+  }
+
+  p {
+    font-size: 16px;
+    margin: 0;
+  }
+}
+
 .member-row {
   display: grid;
   grid-template-columns: 2fr 1fr 1fr;
@@ -898,6 +959,13 @@ export default class extends Vue {
     color: #073DFF;
     font-size: 24px;
     flex-shrink: 0;
+    overflow: hidden;
+
+    .member-avatar-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
   }
 
   .member-details {
@@ -1019,6 +1087,14 @@ export default class extends Vue {
     justify-content: center;
     color: #073DFF;
     font-size: 28px;
+    overflow: hidden;
+    flex-shrink: 0;
+
+    .member-avatar-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
   }
 
   .member-details {

@@ -178,9 +178,10 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
-import { getVideoList } from '@/api/video';
-import { IVideo } from '@/types/lession';
+import { Component, Vue, Watch } from 'vue-property-decorator';
+import { getVideoList, addVideo } from '@/api/video';
+import { getLession } from '@/api/lession';
+import { IVideo, ILession } from '@/types/lession';
 import Pagination from '@/components/Pagination/index.vue';
 import { ChannelModule } from '@/store/modules/channel';
 import HomeHeader from '@/layout/components/homeHeader.vue';
@@ -196,7 +197,7 @@ import CommunitySidebar from './components/communitySidebar.vue';
 })
 export default class extends Vue {
   mounted() {
-    this.getVideoList();
+    this.initPage();
   }
 
   activated() {
@@ -204,21 +205,43 @@ export default class extends Vue {
     this.getVideoList();
   }
 
+  @Watch('$route.params.lessionUid', { immediate: true })
+  onLessionUidChange(newVal: string, oldVal: string) {
+    if (newVal && newVal !== oldVal) {
+      this.lessionUid = newVal;
+      this.initPage();
+    }
+  }
+
+  private async initPage() {
+    this.lessionUid = this.$route.params.lessionUid;
+    if (!this.lessionUid) {
+      this.$message.error('강좌 정보를 찾을 수 없습니다.');
+      this.handleGoBack();
+      return;
+    }
+
+    // 강좌 정보 로드
+    await this.getLessionInfo();
+    // 영상 목록 로드
+    await this.getVideoList();
+  }
+
   private videoList: IVideo[] = [];
 
   private listQuery = {
     searchType: 'name',
     searchValue: '',
-    channelUid: ChannelModule.selectedChannel.uid,
+    lessionUid: '',
     size: 10,
     page: 1,
   };
 
   private channelUid: string = ChannelModule.selectedChannel.uid;
 
-  private lessionUid: string = this.$route.params.lessionUid;
+  private lessionUid: string = '';
 
-  private lessionTitle: string = '커뮤니티란 무엇인가?';
+  private lessionTitle: string = '';
 
   private totalElements: number = 0;
 
@@ -226,19 +249,53 @@ export default class extends Vue {
 
   private loading: boolean = true;
 
-  private getVideoList() {
-    this.loading = true;
-    getVideoList(this.listQuery).then((res) => {
+  private async getLessionInfo() {
+    try {
+      if (!this.lessionUid) return;
+      
+      const response = await getLession(this.lessionUid);
+      if (response.data) {
+        this.lessionTitle = response.data.name || '강좌';
+        console.log('강좌 정보 로드:', {
+          uid: this.lessionUid,
+          name: this.lessionTitle,
+        });
+      }
+    } catch (error) {
+      console.error('강좌 정보를 불러오는데 실패했습니다:', error);
+      this.lessionTitle = '강좌';
+    }
+  }
+
+  private async getVideoList() {
+    try {
+      this.loading = true;
+      
+      if (!this.lessionUid) {
+        console.warn('lessionUid가 없습니다.');
+        this.loading = false;
+        return;
+      }
+
+      const queryParams = {
+        ...this.listQuery,
+        lessionUid: this.lessionUid,
+      };
+
+      const res = await getVideoList(queryParams);
+      
       if (this.listQuery.page !== 1 && res.data.content.length === 0) {
         this.listQuery.page -= 1;
         this.getVideoList();
         return;
       }
-      this.videoList = res.data.content;
-      this.totalPages = res.data.totalPages;
-      this.totalElements = res.data.totalElements;
+      
+      this.videoList = res.data.content || [];
+      this.totalPages = res.data.totalPages || 0;
+      this.totalElements = res.data.totalElements || 0;
       
       console.log('영상 목록 로드 완료:', {
+        lessionUid: this.lessionUid,
         count: this.videoList.length,
         sample: this.videoList.length > 0 ? {
           title: this.videoList[0].title,
@@ -247,22 +304,26 @@ export default class extends Vue {
           lastWatchUpdate: this.videoList[0].lastWatchUpdate,
         } : null,
       });
-      
+    } catch (error) {
+      console.error('영상 목록 로드 실패:', error);
+      this.$message.error('영상 목록을 불러올 수 없습니다.');
+    } finally {
       this.loading = false;
-    }).catch(() => {
-      this.loading = false;
-    });
+    }
   }
 
   private getIndex(index: number) {
     const totalSize = (this.listQuery.page - 1) * this.listQuery.size;
-    return index + 1;
+    return totalSize + index + 1;
   }
 
-  private handleClickVideo(idx: string) {
+  private handleClickVideo(idx: string | number) {
     this.$router.push({
       name: 'VideoDetail',
-      params: { lessionUid: this.lessionUid, videoIdx: idx },
+      params: { 
+        lessionUid: this.lessionUid,
+        videoIdx: String(idx),
+      },
     });
   }
 
@@ -273,15 +334,21 @@ export default class extends Vue {
   private writeModalVisible = false;
   private formLoading = false;
 
-  private videoData: any = {
+  private videoData: Partial<IVideo> = {
     idx: '',
     title: '',
     description: '',
     content: '',
     urlCode: '',
-    lessionUid: this.$route.params.lessionUid,
+    lessionUid: null,
     fileList: [],
     timeLineList: [],
+    viewOrder: 0,
+    viewCount: 0,
+    myWatchPercent: 0,
+    lastWatchSecond: 0,
+    lastWatchUpdate: null,
+    createDate: '',
   };
 
   private youtubeLink = '';
@@ -304,6 +371,24 @@ export default class extends Vue {
   };
 
   private handleWriteModal() {
+    // Reset form data when opening modal
+    this.videoData = {
+      idx: '',
+      title: '',
+      description: '',
+      content: '',
+      urlCode: '',
+      lessionUid: this.lessionUid,
+      fileList: [],
+      timeLineList: [],
+      viewOrder: this.totalElements, // Set to last position
+      viewCount: 0,
+      myWatchPercent: 0,
+      lastWatchSecond: 0,
+      lastWatchUpdate: null,
+      createDate: '',
+    };
+    this.youtubeLink = '';
     this.writeModalVisible = true;
   }
 
@@ -341,28 +426,57 @@ export default class extends Vue {
         try {
           this.formLoading = true;
           
-          // API 호출 (addVideo import 필요)
-          const { addVideo } = await import('@/api/manager/video');
-          await addVideo(this.videoData);
+          // Validate lessionUid
+          if (!this.lessionUid) {
+            this.$message.error('강좌 정보를 찾을 수 없습니다.');
+            return;
+          }
+
+          // Prepare video data for API
+          const videoPayload: IVideo = {
+            idx: this.videoData.idx || '',
+            title: this.videoData.title || '',
+            description: this.videoData.description || '',
+            content: this.videoData.content || '',
+            urlCode: this.videoData.urlCode || '',
+            lessionUid: this.lessionUid,
+            viewOrder: this.videoData.viewOrder || 0,
+            viewCount: 0,
+            myWatchPercent: 0,
+            lastWatchSecond: 0,
+            lastWatchUpdate: null,
+            createDate: new Date().toISOString(),
+            fileList: [],
+            timeLineList: [],
+          };
+          
+          // Call API to add video
+          await addVideo(videoPayload);
           
           this.$message.success('강의 영상이 등록되었습니다.');
           this.writeModalVisible = false;
           
-          // 폼 초기화
+          // Reset form
           this.videoData = {
             idx: '',
             title: '',
             description: '',
             content: '',
             urlCode: '',
-            lessionUid: this.$route.params.lessionUid,
+            lessionUid: this.lessionUid,
             fileList: [],
             timeLineList: [],
+            viewOrder: 0,
+            viewCount: 0,
+            myWatchPercent: 0,
+            lastWatchSecond: 0,
+            lastWatchUpdate: null,
+            createDate: '',
           };
           this.youtubeLink = '';
           
-          // 목록 새로고침
-          this.getVideoList();
+          // Refresh video list
+          await this.getVideoList();
         } catch (error) {
           console.error('강의 영상 등록 실패:', error);
           this.$message.error('강의 영상 등록에 실패했습니다.');
@@ -381,9 +495,15 @@ export default class extends Vue {
       description: '',
       content: '',
       urlCode: '',
-      lessionUid: this.$route.params.lessionUid,
+      lessionUid: this.lessionUid,
       fileList: [],
       timeLineList: [],
+      viewOrder: 0,
+      viewCount: 0,
+      myWatchPercent: 0,
+      lastWatchSecond: 0,
+      lastWatchUpdate: null,
+      createDate: '',
     };
     this.youtubeLink = '';
   }
