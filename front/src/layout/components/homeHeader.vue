@@ -134,29 +134,33 @@
             <span>-활동리스트</span>
           </div>
 
-          <!-- 매니저 메뉴 섹션 -->
-          <div class="nav-divider"></div>
-          <div class="nav-item nav-section-title">
-            <span>매니저 메뉴</span>
-          </div>
-          <div class="nav-item nav-subitem" @click="navigateToPage('SpaceManagement')">
-            <span>-공간 관리</span>
-          </div>
-          <div class="nav-item nav-subitem" @click="navigateToPage('SmsManagement')">
-            <span>-문자 발송</span>
-          </div>
+          <!-- 매니저 메뉴 섹션 (공간생성 또는 오프라인장터등록 권한이 있는 경우에만 표시) -->
+          <template v-if="hasManagerPermission || isChannelCreator">
+            <div class="nav-divider"></div>
+            <div class="nav-item nav-section-title">
+              <span>매니저 메뉴</span>
+            </div>
+            <div class="nav-item nav-subitem" @click="navigateToPage('SpaceManagement')">
+              <span>-공간 관리</span>
+            </div>
+            <div class="nav-item nav-subitem" @click="navigateToPage('SmsManagement')">
+              <span>-문자 발송</span>
+            </div>
+          </template>
 
-          <!-- 관리자 메뉴 섹션 -->
-          <div class="nav-divider"></div>
-          <div class="nav-item nav-section-title">
-            <span>관리자 메뉴</span>
-          </div>
-          <div class="nav-item nav-subitem" @click="navigateToPage('MemberManagement')">
-            <span>-회원 관리</span>
-          </div>
-          <div class="nav-item nav-subitem" @click="navigateToPage('CommunityManagement')">
-            <span>-커뮤니티 관리</span>
-          </div>
+          <!-- 관리자 메뉴 섹션 (커뮤니티 생성자인 경우에만 표시) -->
+          <template v-if="isChannelCreator">
+            <div class="nav-divider"></div>
+            <div class="nav-item nav-section-title">
+              <span>관리자 메뉴</span>
+            </div>
+            <div class="nav-item nav-subitem" @click="navigateToPage('MemberManagement')">
+              <span>-회원 관리</span>
+            </div>
+            <div class="nav-item nav-subitem" @click="navigateToPage('CommunityManagement')">
+              <span>-커뮤니티 관리</span>
+            </div>
+          </template>
         </template>
       </div>
 
@@ -298,8 +302,9 @@ import UserInfo from '@/views/components/UserInfo.vue';
 import UserModal from '@/views/components/userModal.vue';
 import CreateSpaceModal from '@/views/components/CreateSpaceModal.vue';
 import { getUserInfo, updateOnline } from '@/api/user';
-import { getChannelMemberCount } from '@/api/channel';
+import { getChannelMemberCount, getChannelDomainDetail } from '@/api/channel';
 import { getSpacesByChannel, Space } from '@/api/space';
+import { checkPermissionByUser } from '@/api/channelMemberPermission';
 import { EventBus, EVENTS } from '@/utils/eventBus';
 import path from 'path';
 import { Component, Vue, Watch } from 'vue-property-decorator';
@@ -329,9 +334,10 @@ export default class extends Vue {
         }
       });
     }
-    // Fetch member count and spaces on initial load
+    // Fetch member count, spaces, and permissions on initial load
     this.fetchMemberCount();
     await this.loadSpaces();
+    await this.checkPermissions();
 
     // EventBus: 포인트 갱신 이벤트 리스닝
     EventBus.$on(EVENTS.POINTS_UPDATED, this.refreshUserPoints);
@@ -392,10 +398,18 @@ export default class extends Vue {
 
   private loadingSpaces = false;
 
+  // Permission and role flags
+  private hasManagerPermission = false;
+
+  private isChannelCreator = false;
+
+  private currentChannelUid = '';
+
   @Watch('$route.path')
   private async handlechangepath() {
     this.fetchMemberCount();
     await this.loadSpaces();
+    await this.checkPermissions();
     this.mobileMenuOpen = false;
     this.showMobileProfile = false;
   }
@@ -434,6 +448,64 @@ export default class extends Vue {
       this.spaces = [];
     } finally {
       this.loadingSpaces = false;
+    }
+  }
+
+  /**
+   * Check manager and admin permissions for menu visibility
+   */
+  private async checkPermissions() {
+    // Reset permissions
+    this.hasManagerPermission = false;
+    this.isChannelCreator = false;
+    this.currentChannelUid = '';
+
+    // Only check permissions when in community
+    if (!this.isInCommunity) {
+      return;
+    }
+
+    // Only check if user is logged in
+    if (!UserModule.isLogin) {
+      return;
+    }
+
+    const domain = this.$route.params.domain;
+    if (!domain) return;
+
+    try {
+      // Get channel information
+      const channelResponse = await getChannelDomainDetail(domain as string);
+      this.currentChannelUid = channelResponse.data.uid;
+
+      // Get current user information
+      const userResponse: any = await getUserInfo();
+      const currentUserInfo: any = userResponse.data;
+
+      // Check if user is the channel creator (for Admin Menu)
+      this.isChannelCreator = channelResponse?.data.userUid === currentUserInfo.uid;
+
+      // Check manager permissions (for Manager Menu)
+      // User needs either SPACE_CREATE or MARKETPLACE_OFFLINE_REGISTER permission
+      try {
+        const spaceCreateResponse = await checkPermissionByUser(
+          this.currentChannelUid,
+          'SPACE_CREATE'
+        );
+        const marketplaceOfflineResponse = await checkPermissionByUser(
+          this.currentChannelUid,
+          'MARKETPLACE_OFFLINE_REGISTER'
+        );
+
+        this.hasManagerPermission = 
+          spaceCreateResponse.data.hasPermission || 
+          marketplaceOfflineResponse.data.hasPermission;
+      } catch (error) {
+        console.error('권한 체크 실패:', error);
+        this.hasManagerPermission = false;
+      }
+    } catch (error) {
+      console.error('채널 정보 조회 실패:', error);
     }
   }
 
