@@ -76,6 +76,7 @@ class CalendarServiceImpl implements CalendarService {
     private final ChannelMemberRepository channelMemberRepository;
     private final com.community.cms.api.calendar.repository.CalendarLikeRepository calendarLikeRepository;
     private final com.community.cms.api.calendar.repository.CalendarCommentRepository calendarCommentRepository;
+    private final com.community.cms.api.channel.repository.ChannelRepository channelRepository;
 
     @Autowired
     PushAlarmService pushAlarmService;
@@ -208,24 +209,33 @@ class CalendarServiceImpl implements CalendarService {
         User user = userRepository.findById(authUser.getUser().getUid())
                 .orElseThrow(() -> new NotFoundException(NotFound.USER));
 
-        // Check permission (SCHEDULE_CREATE)
-        Optional<ChannelMember> memberOpt = channelMemberRepository.findByUserUidAndChannelUid(user.getUid(),
-                addDto.getChannelUid());
-        if (memberOpt.isEmpty() || !memberOpt.get().isApprovalStatus()) {
-            throw new RuntimeException("채널 멤버가 아니거나 승인되지 않았습니다.");
-        }
+        // Check if user is channel admin (커뮤니티 관리자는 모든 기능 수행 가능)
+        com.community.cms.entity2.Channel channel = channelRepository.findById(addDto.getChannelUid())
+                .orElseThrow(() -> new RuntimeException("채널을 찾을 수 없습니다."));
+        
+        boolean isChannelAdmin = channel.getUserUid().equals(user.getUid());
 
-        try {
-            var permissionCheck = permissionService.checkPermission(memberOpt.get().getIdx(),
-                    ChannelMemberPermissionType.SCHEDULE_CREATE);
-            if (!permissionCheck.isHasPermission()) {
-                throw new RuntimeException("일정 생성 권한이 없습니다.");
+        // If not admin, check if user is a member and has permission
+        if (!isChannelAdmin) {
+            // Check permission (SCHEDULE_CREATE)
+            Optional<ChannelMember> memberOpt = channelMemberRepository.findByUserUidAndChannelUid(user.getUid(),
+                    addDto.getChannelUid());
+            if (memberOpt.isEmpty() || !memberOpt.get().isApprovalStatus()) {
+                throw new RuntimeException("채널 멤버가 아니거나 승인되지 않았습니다.");
             }
-        } catch (RuntimeException e) {
-            if (e.getMessage().contains("일정 생성 권한이 없습니다")) {
-                throw e;
+
+            try {
+                var permissionCheck = permissionService.checkPermission(memberOpt.get().getIdx(),
+                        ChannelMemberPermissionType.SCHEDULE_CREATE);
+                if (!permissionCheck.isHasPermission()) {
+                    throw new RuntimeException("일정 생성 권한이 없습니다.");
+                }
+            } catch (RuntimeException e) {
+                if (e.getMessage().contains("일정 생성 권한이 없습니다")) {
+                    throw e;
+                }
+                // If permission not set, allow by default
             }
-            // If permission not set, allow by default
         }
 
         Calendar entity = CalendarMapper.INSTANCE.addDtoToEntity(addDto);
