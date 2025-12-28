@@ -823,6 +823,7 @@ import { UserModule } from '@/store/modules/user';
 import { ChannelModule } from '@/store/modules/channel';
 import { getTokenDecode } from '@/utils/cookies';
 import { getChannelMembersWithPoints, adminAdjustPoint, getTargetUserPointHistory, MemberWithPoint, PointHistory } from '@/api/point';
+import { EventBus, EVENTS } from '@/utils/eventBus';
 
 // API 응답에 맞는 인터페이스
 interface Member {
@@ -1713,6 +1714,9 @@ export default class extends Vue {
 
       // 목록 새로고침
       await this.loadMembersWithPoints();
+
+      // 헤더의 알포인트 갱신을 위해 EventBus로 이벤트 발생
+      EventBus.$emit(EVENTS.POINTS_UPDATED);
 
       this.closePointAdjustModal();
     } catch (error: any) {
