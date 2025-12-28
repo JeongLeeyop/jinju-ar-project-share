@@ -147,7 +147,8 @@ export default class extends Vue {
   private endDate = '2025.02.01';
 
   private periods = [
-    { label: '3개월', value: '3months' },
+  { label: '1개월', value: '1months' },  
+  { label: '3개월', value: '3months' },
     { label: '6개월', value: '6months' },
   ];
 
