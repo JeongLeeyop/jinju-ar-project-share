@@ -1,5 +1,5 @@
 <template>
-  <div class="space-management-page">
+  <div class="space-management-page" v-loading="loading">
     <CommunitySidebar 
       :selectedSpaceId="'space-management'" 
       @space-select="handleSpaceSelect"
@@ -8,6 +8,9 @@
     <div class="space-management-main">
       <div class="page-header">
         <h1 class="page-title">공간 관리</h1>
+        <p class="page-subtitle" v-if="!hasSpaceCreatePermission && !isChannelAdmin">
+          공간 관리 권한이 없습니다.
+        </p>
       </div>
 
       <!-- 탭 메뉴 (각 공간별) -->
@@ -27,29 +30,44 @@
       <!-- 선택된 공간의 멤버 관리 -->
       <div v-if="selectedSpace" class="member-management-section">
         <div class="section-header">
-          <h2 class="section-title">
-            <span class="space-dot" :class="selectedSpace.spaceType === 'BOARD' ? 'red-dot' : 'orange-dot'"></span>
-            {{ selectedSpace.name }} 멤버 관리
-          </h2>
-          <div class="space-info">
-            <span class="info-item">
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align: middle; margin-right: 4px;">
-                <circle cx="8" cy="8" r="8" fill="#D9D9D9"/>
-                <mask id="mask0_space_info" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="0" y="0" width="16" height="16">
+          <div class="section-header-left">
+            <h2 class="section-title">
+              <span class="space-dot" :class="selectedSpace.spaceType === 'BOARD' ? 'red-dot' : 'orange-dot'"></span>
+              {{ selectedSpace.name }} 멤버 관리
+            </h2>
+            <div class="space-info">
+              <span class="info-item">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align: middle; margin-right: 4px;">
                   <circle cx="8" cy="8" r="8" fill="#D9D9D9"/>
-                </mask>
-                <g mask="url(#mask0_space_info)">
-                  <rect x="1.78" y="9.33" width="12.44" height="14.22" rx="6.22" fill="#999"/>
-                  <circle cx="8" cy="4.89" r="3.11" fill="#999"/>
-                </g>
-              </svg>
-              멤버 {{ selectedSpace.memberCount || 0 }}명
-            </span>
-            <span class="info-item">
-              <i class="el-icon-date"></i>
-              생성일: {{ formatDate(selectedSpace.createdAt) }}
-            </span>
+                  <mask id="mask0_space_info" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="0" y="0" width="16" height="16">
+                    <circle cx="8" cy="8" r="8" fill="#D9D9D9"/>
+                  </mask>
+                  <g mask="url(#mask0_space_info)">
+                    <rect x="1.78" y="9.33" width="12.44" height="14.22" rx="6.22" fill="#999"/>
+                    <circle cx="8" cy="4.89" r="3.11" fill="#999"/>
+                  </g>
+                </svg>
+                멤버 {{ selectedSpace.memberCount || 0 }}명
+              </span>
+              <span class="info-item" :class="selectedSpace.isPublic ? 'public-badge' : 'private-badge'">
+                <i :class="selectedSpace.isPublic ? 'el-icon-unlock' : 'el-icon-lock'"></i>
+                {{ selectedSpace.isPublic ? '공개 공간' : '비공개 공간' }}
+              </span>
+              <span class="info-item">
+                <i class="el-icon-date"></i>
+                생성일: {{ formatDate(selectedSpace.createdAt) }}
+              </span>
+            </div>
           </div>
+          <el-button
+            type="danger"
+            size="small"
+            icon="el-icon-delete"
+            @click="deleteSpace(selectedSpace)"
+            :loading="loading"
+          >
+            공간 삭제
+          </el-button>
         </div>
 
         <!-- 검색 -->
@@ -71,7 +89,13 @@
           >
             <div class="member-info">
               <div class="member-avatar">
-                <img v-if="member.iconFileUid" :src="`${apiUrl}/attached-file/${member.iconFileUid}`" alt="프로필 이미지" class="member-avatar-img">
+                <img 
+                  v-if="member.iconFileUid || member.profileImageUid || member.profileImage" 
+                  :src="getMemberImage(member)" 
+                  alt="프로필 이미지" 
+                  class="member-avatar-img"
+                  @error="onImageError"
+                >
                 <svg v-else width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <circle cx="20" cy="20" r="20" fill="#D9D9D9"/>
                   <mask id="mask0_space_member" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="0" y="0" width="40" height="40">
@@ -84,8 +108,8 @@
                 </svg>
               </div>
               <div class="member-details">
-                <h4 class="member-name">{{ member.name }}</h4>
-                <p class="member-email">{{ member.email }}</p>
+                <h4 class="member-name">{{ member.name || member.userName || '이름 없음' }}</h4>
+                <p class="member-email">{{ member.email || '-' }}</p>
               </div>
             </div>
             <div class="member-actions">
@@ -94,9 +118,17 @@
                 size="small"
                 icon="el-icon-delete"
                 @click="kickMember(member)"
+                :disabled="selectedSpace.isPublic"
               >
                 추방
               </el-button>
+              <el-tooltip 
+                v-if="selectedSpace.isPublic" 
+                content="공개 공간에서는 멤버를 추방할 수 없습니다" 
+                placement="top"
+              >
+                <i class="el-icon-info" style="color: #999; margin-left: 4px;"></i>
+              </el-tooltip>
             </div>
           </div>
 
@@ -157,7 +189,13 @@
               />
               <div class="member-info">
                 <div class="member-avatar">
-                  <img v-if="member.iconFileUid" :src="`${apiUrl}/attached-file/${member.iconFileUid}`" alt="프로필 이미지" class="member-avatar-img">
+                  <img 
+                    v-if="member.iconFileUid || member.profileImageUid || member.profileImage" 
+                    :src="getMemberImage(member)" 
+                    alt="프로필 이미지" 
+                    class="member-avatar-img"
+                    @error="onImageError"
+                  >
                   <svg v-else width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <circle cx="20" cy="20" r="20" fill="#D9D9D9"/>
                     <mask id="mask0_invite_member" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="0" y="0" width="40" height="40">
@@ -170,8 +208,8 @@
                   </svg>
                 </div>
                 <div class="member-details">
-                  <h4 class="member-name">{{ member.name }}</h4>
-                  <p class="member-email">{{ member.email }}</p>
+                  <h4 class="member-name">{{ member.name || member.userName || '이름 없음' }}</h4>
+                  <p class="member-email">{{ member.email || '-' }}</p>
                 </div>
               </div>
             </div>
@@ -219,7 +257,18 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import CommunitySidebar from './components/communitySidebar.vue';
-import { getSpaceMembers, getInvitableUsers, inviteToSpace } from '@/api/space';
+import { 
+  getSpacesByChannel, 
+  getSpaceMembers, 
+  getInvitableUsers, 
+  inviteToSpace, 
+  removeMember,
+  deleteSpace,
+  Space as SpaceType,
+} from '@/api/space';
+import { checkPermissionByUser } from '@/api/channelMemberPermission';
+import { getChannelDomainDetail } from '@/api/channel';
+import { getUserInfo } from '@/api/user';
 
 interface Space {
   uid: string;
@@ -228,12 +277,20 @@ interface Space {
   memberCount?: number;
   createdAt?: string;
   isPublic: boolean;
+  channelUid?: string;
+  isActive?: boolean;
+  iconUrl?: string;
 }
 
 interface Member {
   uid: string;
+  userUid?: string;
   name: string;
+  userName?: string;
   email: string;
+  iconFileUid?: string;
+  profileImageUid?: string;
+  profileImage?: string;
 }
 
 @Component({
@@ -247,103 +304,36 @@ export default class extends Vue {
   private memberSearchQuery = '';
   private inviteSearchQuery = '';
   private selectedInviteMembers: string[] = [];
+  private currentChannelUid = '';
+  private loading = false;
+  private hasSpaceCreatePermission = false;
+  private isChannelAdmin = false;
 
   get apiUrl() {
     return process.env.VUE_APP_COMMON_API || '/api';
   }
 
-  // Mock 데이터 (실제로는 API 연동 필요)
-  private boardSpaces: Space[] = [
-    {
-      uid: '1',
-      name: '자유 게시판',
-      spaceType: 'BOARD',
-      memberCount: 15,
-      createdAt: '2024-01-15',
-      isPublic: false,
-    },
-    /* {
-      uid: '2',
-      name: '공지사항',
-      spaceType: 'BOARD',
-      memberCount: 30,
-      createdAt: '2024-02-20',
-      isPublic: true,
-    }, */
-  ];
-
-  private chatSpaces: Space[] = [
-    {
-      uid: '3',
-      name: '일반 채팅방',
-      spaceType: 'CHAT',
-      memberCount: 25,
-      createdAt: '2024-01-10',
-      isPublic: false,
-    },
-  ];
-
-  private members: Member[] = [
-    {
-      uid: '1',
-      name: '정이욥',
-      email: 'hong@example.com',
-    },
-    {
-      uid: '2',
-      name: '오형래',
-      email: 'kim@example.com',
-    },
-    {
-      uid: '3',
-      name: '배은별',
-      email: 'lee@example.com',
-    },
-  ];
-
-  // 커뮤니티 전체 멤버 목록 (초대 가능한 멤버)
-  private communityMembers: Member[] = [
-    {
-      uid: '4',
-      name: '이은경',
-      email: 'park@example.com',
-    },
-    {
-      uid: '5',
-      name: '이주현',
-      email: 'jung@example.com',
-    },
-    {
-      uid: '6',
-      name: '정이욥2',
-      email: 'choi@example.com',
-    },
-    {
-      uid: '7',
-      name: '홍길동',
-      email: 'kang@example.com',
-    },
-    {
-      uid: '8',
-      name: '홍길동',
-      email: 'yoon@example.com',
-    },
-    {
-      uid: '9',
-      name: '홍길동',
-      email: 'lim@example.com',
-    },
-    {
-      uid: '10',
-      name: '홍길동',
-      email: 'han@example.com',
-    },
-  ];
+  // 실제 공간 목록 (API에서 가져온 데이터)
+  private allSpacesList: Space[] = [];
 
   // 모든 공간 목록 (게시판 + 채팅)
   get allSpaces() {
-    return [...this.boardSpaces, ...this.chatSpaces];
+    return this.allSpacesList.filter(space => space.isActive !== false);
   }
+
+  get boardSpaces() {
+    return this.allSpaces.filter(space => space.spaceType === 'BOARD');
+  }
+
+  get chatSpaces() {
+    return this.allSpaces.filter(space => space.spaceType === 'CHAT');
+  }
+
+  // 현재 공간의 멤버 목록
+  private members: Member[] = [];
+
+  // 초대 가능한 멤버 목록
+  private communityMembers: Member[] = [];
 
   // 현재 공간 멤버 필터링
   get filteredMembers() {
@@ -352,7 +342,7 @@ export default class extends Vue {
     }
     const query = this.memberSearchQuery.toLowerCase();
     return this.members.filter(
-      (member) =>
+      (member: Member) =>
         member.name.toLowerCase().includes(query) ||
         member.email.toLowerCase().includes(query),
     );
@@ -360,9 +350,9 @@ export default class extends Vue {
 
   // 초대 가능한 멤버 목록 (현재 공간 멤버 제외)
   get availableInviteMembers() {
-    const currentMemberUids = this.members.map((m) => m.uid);
+    const currentMemberUids = this.members.map((m: Member) => m.uid);
     return this.communityMembers.filter(
-      (member) => !currentMemberUids.includes(member.uid),
+      (member: Member) => !currentMemberUids.includes(member.uid),
     );
   }
 
@@ -373,23 +363,126 @@ export default class extends Vue {
     }
     const query = this.inviteSearchQuery.toLowerCase();
     return this.availableInviteMembers.filter(
-      (member) =>
+      (member: Member) =>
         member.name.toLowerCase().includes(query) ||
         member.email.toLowerCase().includes(query),
     );
+  }
+
+  // 라이프사이클: 페이지 진입 시 권한 체크 및 데이터 로드
+  async created() {
+    await this.checkPermissions();
+    if (this.hasSpaceCreatePermission || this.isChannelAdmin) {
+      await this.loadSpaces();
+    }
+  }
+
+  // 권한 체크
+  private async checkPermissions() {
+    try {
+      // URL에서 채널 도메인 가져오기
+      const domain = this.$route.params.domain;
+      if (!domain) {
+        this.$message.error('커뮤니티 정보를 찾을 수 없습니다.');
+        this.$router.push('/');
+        return;
+      }
+
+      // 채널 정보 가져오기
+      const channelResponse = await getChannelDomainDetail(domain);
+      this.currentChannelUid = channelResponse.data.uid;
+
+      // 공간 생성 권한 체크
+      const permissionResponse = await checkPermissionByUser(
+        this.currentChannelUid, 
+        'SPACE_CREATE'
+      );
+      this.hasSpaceCreatePermission = permissionResponse.data.hasPermission;
+
+      // 커뮤니티 관리자 권한 체크
+      const response: any = await getUserInfo();
+      const currentUserInfo: any = response.data;
+
+      this.isChannelAdmin = channelResponse?.data.userUid === currentUserInfo.uid;
+
+      // 권한이 없으면 접근 거부
+      if (!this.hasSpaceCreatePermission && !this.isChannelAdmin) {
+        this.$message.error('공간 관리 권한이 없습니다.');
+        this.$router.push(`/channel/${domain}`);
+      }
+    } catch (error: any) {
+      console.error('권한 체크 실패:', error);
+      this.$message.error('권한 확인에 실패했습니다.');
+      const domain = this.$route.params.domain;
+      if (domain) {
+        this.$router.push(`/channel/${domain}`);
+      } else {
+        this.$router.push('/');
+      }
+    }
+  }
+
+  // 공간 목록 로드
+  private async loadSpaces() {
+    if (!this.currentChannelUid) return;
+
+    this.loading = true;
+    try {
+      const response = await getSpacesByChannel(this.currentChannelUid);
+      this.allSpacesList = response.data;
+      
+      // 첫 번째 공간 자동 선택
+      if (this.allSpacesList.length > 0) {
+        this.selectSpace(this.allSpacesList[0]);
+      }
+    } catch (error: any) {
+      const message = error.response?.data?.message || '공간 목록 조회에 실패했습니다.';
+      this.$message.error(message);
+    } finally {
+      this.loading = false;
+    }
   }
 
   private handleSpaceSelect(spaceId: string) {
     console.log('Space selected:', spaceId);
   }
 
-  private selectSpace(space: Space) {
+  private async selectSpace(space: Space) {
     this.selectedSpace = space;
+    
+    // 공간 선택 시 멤버 목록과 초대 가능 사용자 목록 로드
+    await this.loadMembers();
+    if (!space.isPublic) {
+      await this.loadInvitableUsers();
+    }
   }
 
   private formatDate(date?: string) {
     if (!date) return '-';
     return new Date(date).toLocaleDateString('ko-KR');
+  }
+
+  // 멤버 이미지 URL 가져오기
+  private getMemberImage(member: Member): string {
+    const imageUid = member.iconFileUid || member.profileImageUid || member.profileImage;
+    if (!imageUid) return '';
+    
+    // 이미 전체 URL인 경우 그대로 반환
+    if (imageUid.startsWith('http://') || imageUid.startsWith('https://')) {
+      return imageUid;
+    }
+    
+    // API URL과 조합하여 반환
+    return `${this.apiUrl}/attached-file/${imageUid}`;
+  }
+
+  // 이미지 로드 실패 시 처리
+  private onImageError(event: Event) {
+    const target = event.target as HTMLImageElement;
+    if (target) {
+      // 기본 아바타로 변경 (이미지 숨기기)
+      target.style.display = 'none';
+    }
   }
 
   // 초대할 멤버 선택 토글
@@ -411,20 +504,25 @@ export default class extends Vue {
   private async inviteSelectedMembers() {
     if (this.selectedInviteMembers.length === 0) return;
 
-    const selectedNames = this.communityMembers
-      .filter((m) => this.selectedInviteMembers.includes(m.uid))
-      .map((m) => m.name)
+    const selectedMembers = this.communityMembers.filter((m: Member) => 
+      this.selectedInviteMembers.includes(m.uid)
+    );
+    
+    const selectedNames = selectedMembers
+      .map((m: Member) => m.name || m.userName || '이름 없음')
       .join(', ');
 
+    this.loading = true;
     try {
       // 각 선택된 멤버에게 초대 발송
-      const invitePromises = this.selectedInviteMembers.map((userUid) => 
-        inviteToSpace({
+      const invitePromises = selectedMembers.map((member: Member) => {
+        const targetUid = member.userUid || member.uid;
+        return inviteToSpace({
           spaceUid: this.selectedSpace!.uid,
-          invitedUserUid: userUid,
+          invitedUserUid: targetUid,
           message: `${this.selectedSpace!.name} 공간에 초대합니다.`,
-        })
-      );
+        });
+      });
 
       await Promise.all(invitePromises);
 
@@ -440,45 +538,152 @@ export default class extends Vue {
       await this.loadMembers();
       await this.loadInvitableUsers();
     } catch (error: any) {
+      console.error('멤버 초대 에러:', error);
       const message = error.response?.data?.message || '멤버 초대에 실패했습니다.';
       this.$message.error(message);
+    } finally {
+      this.loading = false;
     }
   }
 
+  // 공간 멤버 목록 로드
   private async loadMembers() {
     if (!this.selectedSpace) return;
     
+    this.loading = true;
     try {
       const response = await getSpaceMembers(this.selectedSpace.uid);
-      // 멤버 목록 업데이트 로직 필요
-      console.log('멤버 목록:', response.data);
+      const rawMembers = response.data || [];
+      
+      // API 응답 데이터를 Member 인터페이스 형식으로 변환
+      this.members = rawMembers.map((member: any) => ({
+        uid: member.uid || member.userUid || '',
+        userUid: member.userUid || member.uid,
+        name: member.name || member.userName || member.actualName || '이름 없음',
+        userName: member.userName || member.name,
+        email: member.email || member.userId || '',
+        iconFileUid: member.iconFileUid || member.profileImageUid || member.profileImage || null,
+        profileImageUid: member.profileImageUid || member.iconFileUid,
+        profileImage: member.profileImage || member.iconFileUid,
+      }));
+      
+      console.log('Loaded members:', this.members); // 디버깅용
+      
+      // 멤버 수 업데이트
+      if (this.selectedSpace) {
+        this.selectedSpace.memberCount = this.members.length;
+      }
     } catch (error: any) {
+      console.error('멤버 목록 조회 에러:', error);
       const message = error.response?.data?.message || '멤버 목록 조회에 실패했습니다.';
       this.$message.error(message);
+      this.members = [];
+    } finally {
+      this.loading = false;
     }
   }
 
+  // 초대 가능한 사용자 목록 로드
   private async loadInvitableUsers() {
     if (!this.selectedSpace) return;
     
+    this.loading = true;
     try {
       const response = await getInvitableUsers(this.selectedSpace.uid);
-      // 초대 가능 사용자 목록 업데이트 로직 필요
-      console.log('초대 가능 사용자:', response.data);
+      const rawUsers = response.data || [];
+      
+      // API 응답 데이터를 Member 인터페이스 형식으로 변환
+      this.communityMembers = rawUsers.map((member: any) => ({
+        uid: member.uid || member.userUid || '',
+        userUid: member.userUid || member.uid,
+        name: member.name || member.userName || member.actualName || '이름 없음',
+        userName: member.userName || member.name,
+        email: member.email || member.userId || '',
+        iconFileUid: member.iconFileUid || member.profileImageUid || member.profileImage || null,
+        profileImageUid: member.profileImageUid || member.iconFileUid,
+        profileImage: member.profileImage || member.iconFileUid,
+      }));
+      
+      console.log('Loaded invitable users:', this.communityMembers); // 디버깅용
     } catch (error: any) {
+      console.error('초대 가능 사용자 조회 에러:', error);
       const message = error.response?.data?.message || '초대 가능 사용자 조회에 실패했습니다.';
       this.$message.error(message);
+      this.communityMembers = [];
+    } finally {
+      this.loading = false;
     }
   }
 
+  // 멤버 추방
   private kickMember(member: Member) {
-    this.$confirm(`${member.name}님을 추방하시겠습니까?`, '멤버 추방', {
+    // 공개 공간에서는 추방 불가
+    if (this.selectedSpace?.isPublic) {
+      this.$message.warning('공개 공간에서는 멤버를 추방할 수 없습니다.');
+      return;
+    }
+
+    this.$confirm(`${member.name || member.userName}님을 추방하시겠습니까?`, '멤버 추방', {
       confirmButtonText: '추방',
       cancelButtonText: '취소',
       type: 'warning',
-    }).then(() => {
-      this.$message.success(`${member.name}님을 추방했습니다.`);
-      // 실제로는 API 호출 및 목록 갱신 필요
+    }).then(async () => {
+      if (!this.selectedSpace) return;
+
+      this.loading = true;
+      try {
+        // userUid가 있으면 사용, 없으면 uid 사용
+        const targetUid = member.userUid || member.uid;
+        await removeMember(this.selectedSpace.uid, targetUid);
+        this.$message.success(`${member.name || member.userName}님을 추방했습니다.`);
+        
+        // 목록 갱신
+        await this.loadMembers();
+        if (!this.selectedSpace.isPublic) {
+          await this.loadInvitableUsers();
+        }
+      } catch (error: any) {
+        console.error('멤버 추방 에러:', error);
+        const message = error.response?.data?.message || '멤버 추방에 실패했습니다.';
+        this.$message.error(message);
+      } finally {
+        this.loading = false;
+      }
+    }).catch(() => {
+      // 취소
+    });
+  }
+
+  // 공간 삭제 (소프트 삭제)
+  private deleteSpace(space: Space) {
+    this.$confirm(
+      `"${space.name}" 공간을 삭제하시겠습니까? 이 작업은 공간을 비활성화하며, 멤버들은 더 이상 이 공간을 볼 수 없게 됩니다.`,
+      '공간 삭제',
+      {
+        confirmButtonText: '삭제',
+        cancelButtonText: '취소',
+        type: 'warning',
+        dangerouslyUseHTMLString: true,
+      }
+    ).then(async () => {
+      this.loading = true;
+      try {
+        await deleteSpace(space.uid);
+        this.$message.success(`"${space.name}" 공간이 삭제되었습니다.`);
+        
+        // 목록에서 제거 (또는 재로드)
+        await this.loadSpaces();
+        
+        // 선택된 공간이 삭제된 경우 선택 해제
+        if (this.selectedSpace?.uid === space.uid) {
+          this.selectedSpace = null;
+        }
+      } catch (error: any) {
+        const message = error.response?.data?.message || '공간 삭제에 실패했습니다.';
+        this.$message.error(message);
+      } finally {
+        this.loading = false;
+      }
     }).catch(() => {
       // 취소
     });
@@ -509,18 +714,48 @@ export default class extends Vue {
   font-size: 32px;
   font-weight: 700;
   line-height: 100%;
-  margin: 0;
+  margin: 0 0 8px 0;
+}
+
+.page-subtitle {
+  color: #999;
+  font-size: 14px;
+  margin: 8px 0 0 0;
 }
 
 // 탭 메뉴
 .tabs-section {
   display: flex;
+  flex-wrap: wrap;
   gap: 20px;
   margin-bottom: 40px;
   border-bottom: 2px solid #EBEBEB;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  
+  &::-webkit-scrollbar {
+    height: 4px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: #EBEBEB;
+    border-radius: 2px;
+    
+    &:hover {
+      background: #D0D0D0;
+    }
+  }
 }
 
 .tab-btn {
+  flex: 0 0 auto; // 고정 너비로 변경
+  min-width: fit-content;
   padding: 16px 24px;
   background: none;
   border: none;
@@ -533,6 +768,7 @@ export default class extends Vue {
   display: flex;
   align-items: center;
   gap: 8px;
+  white-space: nowrap; // 텍스트 줄바꿈 방지
 
   &:hover {
     color: #073DFF;
@@ -635,6 +871,14 @@ export default class extends Vue {
   justify-content: center;
   color: #073DFF;
   font-size: 24px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.member-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .member-details {
@@ -855,11 +1099,16 @@ export default class extends Vue {
   gap: 16px;
 }
 
+.section-header-left {
+  flex: 1;
+  min-width: 0;
+}
+
 .section-title {
   font-size: 26px;
   font-weight: 700;
   color: #222;
-  margin: 0;
+  margin: 0 0 12px 0;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -880,6 +1129,32 @@ export default class extends Vue {
 
   i {
     color: #073DFF;
+  }
+
+  &.public-badge {
+    background: #E3F2FD;
+    color: #1976D2;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 13px;
+
+    i {
+      color: #1976D2;
+    }
+  }
+
+  &.private-badge {
+    background: #FFF3E0;
+    color: #F57C00;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 13px;
+
+    i {
+      color: #F57C00;
+    }
   }
 }
 
@@ -928,13 +1203,46 @@ export default class extends Vue {
   }
 
   .tabs-section {
+    position: relative;
     gap: 12px;
     overflow-x: auto;
+    overflow-y: hidden;
     white-space: nowrap;
     padding-bottom: 2px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    
+    &::-webkit-scrollbar {
+      display: none;
+    }
+    
+    // 좌우 그라데이션 효과로 스크롤 가능함을 암시
+    &::before,
+    &::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      bottom: 2px;
+      width: 20px;
+      pointer-events: none;
+      z-index: 1;
+    }
+    
+    &::before {
+      left: 0;
+      background: linear-gradient(to right, rgba(248, 249, 250, 0.9), transparent);
+    }
+    
+    &::after {
+      right: 0;
+      background: linear-gradient(to left, rgba(248, 249, 250, 0.9), transparent);
+    }
   }
 
   .tab-btn {
+    flex: 0 0 auto;
+    min-width: fit-content;
+    max-width: 160px;
     font-size: 16px;
     padding: 12px 16px;
   }
@@ -948,11 +1256,25 @@ export default class extends Vue {
     align-items: flex-start;
   }
 
+  .section-header-left {
+    width: 100%;
+  }
+
   .space-info {
     width: 100%;
-    flex-direction: column;
-    align-items: flex-start;
+    flex-wrap: wrap;
     gap: 8px;
+  }
+
+  .info-item {
+    &.public-badge,
+    &.private-badge {
+      order: -1;
+      width: 100%;
+      justify-content: center;
+      padding: 8px 12px;
+      font-size: 14px;
+    }
   }
 
   .member-item {
@@ -963,9 +1285,14 @@ export default class extends Vue {
 
   .member-actions {
     width: 100%;
+    align-items: center;
 
     .el-button {
-      width: 100%;
+      flex: 1;
+    }
+
+    .el-icon-info {
+      font-size: 18px;
     }
   }
 
@@ -1014,22 +1341,30 @@ export default class extends Vue {
   }
 
   .tabs-section {
-    gap: 0;
+    gap: 8px;
     margin-bottom: 24px;
     overflow-x: auto;
+    overflow-y: hidden;
     -webkit-overflow-scrolling: touch;
-
+    scrollbar-width: none; // Firefox
+    
     &::-webkit-scrollbar {
-      display: none;
+      display: none; // Chrome, Safari, Edge
     }
+    
+    // 스크롤 스냅 추가 (선택사항)
+    scroll-snap-type: x proximity;
+    scroll-behavior: smooth;
   }
 
   .tab-btn {
-    flex: 1;
-    min-width: max-content;
-    padding: 12px 12px;
+    flex: 0 0 auto; // flex: 1 대신 auto로 변경
+    min-width: fit-content;
+    max-width: 150px; // 최대 너비 제한
+    padding: 12px 16px;
     gap: 6px;
     white-space: nowrap;
+    scroll-snap-align: start; // 스크롤 스냅 정렬
   }
 
   .space-dot {
@@ -1045,6 +1380,19 @@ export default class extends Vue {
   .section-header {
     margin-bottom: 20px;
     gap: 12px;
+    flex-direction: column;
+    
+    // 삭제 버튼을 전체 너비로 조정
+    > .el-button {
+      width: 100%;
+      margin-top: 8px;
+      order: 1;
+    }
+  }
+
+  .section-header-left {
+    width: 100%;
+    order: 0;
   }
 
   .section-title {
@@ -1053,12 +1401,25 @@ export default class extends Vue {
   }
 
   .space-info {
-    gap: 6px;
+    gap: 8px;
     font-size: 12px;
+    flex-wrap: wrap;
+    width: 100%;
   }
 
   .info-item {
     gap: 4px;
+    font-size: 12px;
+
+    &.public-badge,
+    &.private-badge {
+      order: -1;
+      width: 100%;
+      justify-content: center;
+      padding: 6px 12px;
+      font-size: 13px;
+      margin-bottom: 8px;
+    }
   }
 
   .search-section {
@@ -1099,9 +1460,18 @@ export default class extends Vue {
   }
 
   .member-actions {
+    width: 100%;
+    align-items: center;
+    justify-content: space-between;
+
     .el-button {
-      padding: 8px 12px;
-      font-size: 12px;
+      flex: 1;
+      max-width: calc(100% - 30px);
+    }
+
+    .el-icon-info {
+      font-size: 20px;
+      margin-left: 8px;
     }
   }
 
@@ -1179,6 +1549,35 @@ export default class extends Vue {
     }
   }
 
+  .public-space-notice {
+    padding: 20px 16px;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+
+    .notice-icon {
+      width: 40px;
+      height: 40px;
+      margin-bottom: 12px;
+
+      i {
+        font-size: 20px;
+      }
+    }
+
+    .notice-content {
+      h3 {
+        font-size: 16px;
+        margin-bottom: 6px;
+      }
+
+      p {
+        font-size: 13px;
+        line-height: 1.5;
+      }
+    }
+  }
+
   .empty-container {
     padding: 60px 20px;
 
@@ -1207,6 +1606,83 @@ export default class extends Vue {
       width: 16px;
       height: 16px;
     }
+  }
+
+  // Element UI 툴팁 모바일 최적화
+  ::v-deep .el-tooltip__popper {
+    font-size: 12px;
+    max-width: 200px;
+  }
+
+  // 공개 공간 아이콘 강조
+  .el-icon-info {
+    color: #F57C00 !important;
+  }
+}
+
+// 추가 반응형 - 매우 작은 화면 (360px 이하)
+@media screen and (max-width: 360px) {
+  .space-management-main {
+    padding: 100px 12px 60px 12px;
+  }
+
+  .page-title {
+    font-size: 18px;
+  }
+
+  .tab-btn {
+    flex: 0 0 auto;
+    min-width: fit-content;
+    max-width: 120px; // 초소형 화면에서는 더 작게
+    padding: 10px 12px;
+    font-size: 13px;
+    gap: 4px;
+  }
+
+  .space-dot {
+    width: 10px;
+    height: 10px;
+  }
+
+  .member-management-section {
+    padding: 16px 12px;
+  }
+
+  .section-title {
+    font-size: 16px;
+  }
+
+  .member-avatar {
+    width: 36px;
+    height: 36px;
+  }
+
+  .member-name {
+    font-size: 13px;
+  }
+
+  .member-email {
+    font-size: 11px;
+  }
+
+  .info-item {
+    font-size: 11px;
+
+    &.public-badge,
+    &.private-badge {
+      font-size: 12px;
+      padding: 5px 10px;
+    }
+  }
+
+  .section-header > .el-button {
+    font-size: 13px;
+    padding: 10px 16px;
+  }
+
+  .member-actions .el-button {
+    font-size: 12px;
+    padding: 8px 12px;
   }
 }
 </style>
