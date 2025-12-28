@@ -570,16 +570,17 @@ export default class extends Vue {
 }
 
 .products-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  display: flex;
+  flex-wrap: wrap;
   gap: 40px;
   margin-bottom: 60px;
 }
 
 .product-card {
+  flex: 0 1 calc(100% / 4 - 37px);
   display: flex;
   flex-direction: column;
-  gap: 21px;
+  gap: 20px;
   cursor: pointer;
   transition: transform 0.2s;
 
@@ -591,6 +592,7 @@ export default class extends Vue {
 .product-image-wrapper {
   position: relative;
   width: 100%;
+  height: 300px;
   // aspect-ratio: 34/27;
   border-radius: 10px;
   overflow: hidden;
@@ -605,7 +607,7 @@ export default class extends Vue {
 .product-image {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   transition: filter 0.2s;
 }
 
@@ -1069,43 +1071,28 @@ export default class extends Vue {
 }
 
 @media screen and (max-width: 1200px) {
-  .products-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 30px;
-  }
-
-  .marketplace-main {
-    padding: 30px;
-  }
+  .products-grid {gap: 30px;}
+  .product-card {flex: 0 1 calc(100% / 3 - 20px);}
+  .product-image-wrapper {height: 250px;}
+  .marketplace-main { padding: 30px;}
 }
 
 @media screen and (max-width: 1024px) {
   .marketplace-main {margin:120px 0 0 240px}
 
-  .write-post-btn-fixed {
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
-    left: auto;
-    right: 24px;
-    bottom: 24px;
+  .write-post-btn-fixed { width: 60px; height: 60px; border-radius: 50%; left: auto; right: 24px; bottom: 24px;
 
-    .btn-text {
-      display: none;
-    }
+    .btn-text{ display: none;}
 
-    .btn-icon {
-      display: block;
-    }
+    .btn-icon{ display: block;}
   }
 
-  .detail-layout {
-    flex-direction: column;
-  }
+  .products-grid {gap: 20px;}
+  .product-card {flex: 0 1 calc(100% / 2 - 10px);}
+  .product-image-wrapper {height: 200px;}
 
-  .detail-right {
-    width: 100%;
-  }
+  .detail-layout{ flex-direction: column;}
+  .detail-right{ width: 100%;}
 }
 
 @media screen and (max-width: 768px) {
@@ -1120,7 +1107,6 @@ export default class extends Vue {
   }
 
   .filter-section {
-    justify-content: center;
     gap: 8px;
     margin-bottom: 32px;
   }
@@ -1174,5 +1160,6 @@ export default class extends Vue {
 
 @media screen and (max-width: 500px) {
   .marketplace-main {margin:80px 0 0 0}
+  .filter-section{ justify-content: center;}
 }
 </style>

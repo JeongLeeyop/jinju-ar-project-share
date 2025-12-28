@@ -496,8 +496,8 @@ export default class extends Vue {
 
 .space-management-main {
   flex: 1;
-  margin-left: 310px;
-  padding: 40px 60px;
+  margin-left: 270px;
+  padding: 160px 40px 100px 40px;
 }
 
 .page-header {
@@ -572,9 +572,26 @@ export default class extends Vue {
 .search-section {
   margin-bottom: 24px;
 
+  ::v-deep .el-input {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 16px 20px;
+    border-radius: 10px;
+    border: 2px solid #EBEBEB;
+  }
+
   ::v-deep .el-input__inner {
-    height: 44px;
-    border-radius: 8px;
+    height: auto;
+    flex: 1;
+    border: none;
+    outline: none;
+    color: #222;
+    font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 100%;
+    background: transparent;
   }
 }
 
@@ -809,7 +826,7 @@ export default class extends Vue {
 }
 
 .section-title {
-  font-size: 24px;
+  font-size: 26px;
   font-weight: 700;
   color: #222;
   margin: 0;

@@ -79,7 +79,7 @@
             </div>
             <div class="schedule-actions">
               <button class="action-btn primary" @click.stop="viewParticipants(schedule)">
-                참여자 보기
+                참여자
               </button>
               <button class="action-btn secondary" @click.stop="editSchedule(schedule)">
                 수정
@@ -917,12 +917,16 @@ export default class extends Vue {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  flex-wrap: wrap;
+  gap: 20px;
 }
 
 .schedule-card {
+  flex: 0 1 calc(100% / 3 - 14px);
   background: #FFF;
   border-radius: 12px;
   padding: 20px;
+  padding: 40px 30px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
   transition: all 0.2s;
 
@@ -949,15 +953,20 @@ export default class extends Vue {
 }
 
 .schedule-title {
+  flex: 1;
+  min-height: 70px;
+  font-size: 28px;
+  line-height: 1.4;
+  text-align: left;
   color: #222;
   font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
   font-size: 18px;
   font-weight: 600;
-  line-height: 1.4;
   margin: 0;
   cursor: pointer;
   flex: 1;
   transition: color 0.2s;
+//   transition: color 0.2s;
 
   &:hover {
     color: #073DFF;
@@ -999,7 +1008,7 @@ export default class extends Vue {
 .schedule-info {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 15px;
   margin-bottom: 16px;
 
   p {
@@ -1007,6 +1016,7 @@ export default class extends Vue {
     color: #666;
     font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
     font-size: 14px;
+    font-size: 20px;
     display: flex;
     align-items: center;
     gap: 8px;
@@ -1030,11 +1040,11 @@ export default class extends Vue {
 
 .action-btn {
   flex: 1;
-  height: 40px;
+  height: 52px;
   border: none;
   border-radius: 8px;
   font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
-  font-size: 14px;
+  font-size: 18px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
@@ -1389,6 +1399,14 @@ export default class extends Vue {
       background: #E0E0E0;
     }
   }
+}
+
+@media screen and (max-width: 1400px) {
+  .schedule-card {flex: 0 1 calc(100% / 2 - 10px);}
+}
+
+@media screen and (max-width: 1024px) {
+  .schedule-title {font-size: 24px; min-height: 50px;}
 }
 
 // 425px 이하 모바일 반응형
