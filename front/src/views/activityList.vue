@@ -135,8 +135,6 @@ interface TransactionItem {
 })
 export default class extends Vue {
   private selectedPeriod = '1month';
-  private startDate = '';
-  private endDate = '';
   private currentChannel: any = null;
 
   // pagination
@@ -284,7 +282,7 @@ export default class extends Vue {
   private async loadActivities() {
     if (!this.channelUid) return;
 
-    this.loading = true;
+    // this.loading = true;
     try {
       const params: any = {
         channelUid: this.channelUid,
@@ -333,7 +331,7 @@ export default class extends Vue {
       this.activitiesData = [];
       this.total = 0;
     } finally {
-      this.loading = false;
+      // this.loading = false;
     }
   }
 
