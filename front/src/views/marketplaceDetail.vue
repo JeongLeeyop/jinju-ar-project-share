@@ -217,6 +217,7 @@ import CommunitySidebar from './components/communitySidebar.vue';
 import { getProduct, MarketplaceProduct, startTrade, applyForRequest } from '@/api/marketplace';
 import { getCurrentPoint } from '@/api/point';
 import { UserModule } from '@/store/modules/user';
+import { ChannelModule } from '@/store/modules/channel';
 
 @Component({
   name: 'MarketplaceDetail',
@@ -278,12 +279,13 @@ export default class extends Vue {
   }
 
   private async loadCurrentPoints() {
-    const channelUid = this.$route.params.domain;
+    // ChannelModule에서 실제 channelUid 가져오기
+    const channelUid = ChannelModule.selectedChannel?.uid;
     if (!channelUid) return;
 
     try {
       this.loadingPoints = true;
-      const response = await getCurrentPoint(channelUid as string);
+      const response = await getCurrentPoint(channelUid);
       this.currentPoints = response.data?.currentBalance || 0;
     } catch (error) {
       console.error('포인트 조회 실패:', error);
