@@ -23,6 +23,7 @@ import com.community.cms.api.comment.dto.CommentDto;
 import com.community.cms.api.comment.dto.search.CommentSearch;
 import com.community.cms.api.comment.service.CommentService;
 import com.community.cms.entity.Comment;
+import com.community.cms.oauth.SinghaUser;
 
 import lombok.AllArgsConstructor;
 

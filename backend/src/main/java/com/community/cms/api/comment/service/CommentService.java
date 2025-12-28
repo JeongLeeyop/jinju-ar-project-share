@@ -29,6 +29,7 @@ import com.community.cms.entity.Post;
 import com.community.cms.entity.User;
 import com.community.cms.entity2.EventHistory;
 import com.community.cms.entity2.EventType;
+import com.community.cms.oauth.SinghaUser;
 
 import lombok.AllArgsConstructor;
 

@@ -41,6 +41,7 @@ import com.community.cms.entity.User;
 import com.community.cms.entity2.EventType;
 import com.community.cms.fcm.model.PushNotificationRequest;
 import com.community.cms.fcm.service.PushNotificationService;
+import com.community.cms.oauth.SinghaUser;
 
 import lombok.AllArgsConstructor;
 

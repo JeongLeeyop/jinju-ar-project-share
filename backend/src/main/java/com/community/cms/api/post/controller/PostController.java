@@ -30,6 +30,8 @@ import com.community.cms.api.post.dto.mapper.PostMapper;
 import com.community.cms.api.post.dto.search.PostSearch;
 import com.community.cms.api.post.service.PostService;
 import com.community.cms.entity.Post;
+import com.community.cms.oauth.SinghaUser;
+
 import org.springframework.data.domain.Sort;
 
 import lombok.AllArgsConstructor;
