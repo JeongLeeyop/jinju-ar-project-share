@@ -17,7 +17,7 @@
               :key="period.value"
               class="period-btn"
               :class="{ active: selectedPeriod === period.value }"
-              @click="onSelectPeriod(period.value)"
+              @click="selectedPeriod = period.value"
             >
               {{ period.label }}
             </button>
@@ -28,8 +28,11 @@
               <div class="date-input-wrapper">
                 <input
                   v-model="startDate"
-                  type="date"
+                  type="text"
+                  placeholder="2025.01.01"
                   class="date-input"
+                  @focus="$event.target.type='date'"
+                  @blur="$event.target.type='text'"
                 />
                 <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M14.625 6.1875L9 11.8125L3.375 6.1875" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
@@ -43,8 +46,11 @@
               <div class="date-input-wrapper">
                 <input
                   v-model="endDate"
-                  type="date"
+                  type="text"
+                  placeholder="2025.02.01"
                   class="date-input"
+                  @focus="$event.target.type='date'"
+                  @blur="$event.target.type='text'"
                 />
                 <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M14.625 6.1875L9 11.8125L3.375 6.1875" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
@@ -61,17 +67,11 @@
       <div class="activity-section activity-history-section">
         <!-- <h2 class="section-title">활동 리스트</h2> -->
 
-        <!-- Loading State -->
-        <div v-if="loading" class="loading-state">
-          <i class="el-icon-loading"></i>
-          <p>활동 내역을 불러오는 중...</p>
-        </div>
-
         <!-- Activity List -->
-        <div v-else class="activities-list">
+        <div class="activities-list">
           <div
             v-for="(activity, index) in filteredActivities"
-            :key="activity.type + index"
+            :key="index"
             class="activity-item"
             :class="{ first: index === 0 }"
           >
@@ -118,6 +118,14 @@ interface ActivityItem {
   type: string;
 }
 
+interface TransactionItem {
+  title: string;
+  date: string;
+  amount: number;
+  type: 'deduct' | 'earn';
+  typeLabel: string;
+}
+
 @Component({
   name: 'ActivityList',
   components: {
@@ -129,16 +137,16 @@ export default class extends Vue {
   private selectedPeriod = '1month';
   private startDate = '';
   private endDate = '';
-  private loading = false;
   private currentChannel: any = null;
 
   // pagination
   private page = 1; // UI 페이지(1-based)
   private limit = 10; // 페이지 사이즈
   private total = 0; // 전체 항목 수
+  private startDate = '2025.01.01';
+  private endDate = '2025.02.01';
 
   private periods = [
-    { label: '1개월', value: '1month' },
     { label: '3개월', value: '3months' },
     { label: '6개월', value: '6months' },
   ];
@@ -377,7 +385,7 @@ export default class extends Vue {
 
 .activity-main {
   margin-left: 267px;
-  padding: 160px 40px 20px;
+  padding: 160px 30px 20px;
   flex: 1;
   min-height: calc(100vh - 124px);
   display: flex;
@@ -387,6 +395,100 @@ export default class extends Vue {
 
 .mobile-only {
   display: none;
+}
+
+.profile-card {
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  gap: 20px;
+  border-radius: 10px;
+  border: 2px solid #EBEBEB;
+  background: #FFF;
+
+  .profile-info {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .profile-avatar {
+    width: 100px;
+    height: 100px;
+    flex-shrink: 0;
+
+    svg {
+      width: 100%;
+      height: 100%;
+    }
+  }
+
+  .profile-details {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .profile-name {
+    color: #000;
+    text-align: center;
+    font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
+    font-size: 18px;
+    font-weight: 600;
+    line-height: 100%;
+    margin: 0;
+  }
+
+  .points-badge {
+    display: flex;
+    padding: 10px 12px;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    border-radius: 20px;
+    background: rgba(7, 61, 255, 0.10);
+  }
+
+  .points-text {
+    color: #073DFF;
+    font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 100%;
+  }
+
+  .profile-edit-btn {
+    display: flex;
+    height: 54px;
+    padding: 12px;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    border-radius: 10px;
+    background: #073DFF;
+    border: none;
+    color: #FFF;
+    text-align: center;
+    font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 100%;
+    cursor: pointer;
+    transition: all 0.3s ease;
+
+    &:hover {
+      background: #0535e6;
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(7, 61, 255, 0.2);
+    }
+
+    &:active {
+      transform: translateY(0);
+    }
+  }
 }
 
 .activity-section {
@@ -536,6 +638,83 @@ export default class extends Vue {
 
   &:active {
     transform: translateY(0);
+  }
+}
+
+.transactions-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.transaction-item {
+  padding: 20px 0;
+  border-top: 1px solid #222;
+  transition: background 0.2s ease;
+
+  &.first {
+    border-top: 2px solid #222;
+  }
+
+  &:hover {
+    background: rgba(7, 61, 255, 0.02);
+  }
+}
+
+.transaction-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.transaction-title {
+  color: #000;
+  font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 100%;
+  text-align: left;
+}
+
+.transaction-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.transaction-date {
+  color: #000;
+  font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 100%;
+}
+
+.transaction-amount-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.transaction-amount {
+  color: #000;
+  font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 100%;
+}
+
+.transaction-type {
+  font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 100%;
+
+  &.deduct {
+    color: #FF3B30;
+  }
+
+  &.earn {
+    color: #34C759;
   }
 }
 
