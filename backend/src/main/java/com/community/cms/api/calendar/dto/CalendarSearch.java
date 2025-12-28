@@ -1,5 +1,7 @@
 package com.community.cms.api.calendar.dto;
 
+import java.time.LocalDateTime;
+
 import org.springframework.util.StringUtils;
 
 import com.querydsl.core.BooleanBuilder;
@@ -26,6 +28,11 @@ public class CalendarSearch{
         if (StringUtils.hasText(channelUid)){
            builder.and(calendar.channelUid.eq(channelUid));
         }
+        
+        // 3일 이상 지난 일정 필터링 (startDate 기준)
+        LocalDateTime threeDaysAgo = LocalDateTime.now().minusDays(3);
+        builder.and(calendar.startDate.goe(threeDaysAgo));
+        
         if (StringUtils.hasText(startDate) && StringUtils.hasText(endDate)) {
             /* StringTemplate formattedStartDate = Expressions.stringTemplate(
                 "DATE_FORMAT({0}, {1})",

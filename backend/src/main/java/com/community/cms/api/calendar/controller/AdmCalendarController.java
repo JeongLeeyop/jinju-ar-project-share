@@ -39,8 +39,8 @@ public class AdmCalendarController {
 
     @PreAuthorize("permitAll()")
     @GetMapping
-    public ResponseEntity<Page<CalendarDto.fullCalendar>> list(@AuthenticationPrincipal SinghaUser authUser, CalendarSearch search, @PageableDefault(direction = Direction.DESC, sort = { "createDate" }) Pageable pageable) {
-        pageable = PageRequest.of(0, Integer.MAX_VALUE);
+    public ResponseEntity<Page<CalendarDto.fullCalendar>> list(@AuthenticationPrincipal SinghaUser authUser, CalendarSearch search, @PageableDefault(direction = Direction.DESC, sort = { "idx" }) Pageable pageable) {
+        pageable = PageRequest.of(0, Integer.MAX_VALUE, Direction.ASC, "start");
         return ResponseEntity.ok(admCalendarService.list(authUser, search, pageable));
     }
     

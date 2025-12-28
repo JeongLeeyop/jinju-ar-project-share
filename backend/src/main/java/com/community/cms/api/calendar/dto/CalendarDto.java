@@ -34,9 +34,20 @@ public class CalendarDto {
 
     @Data
     public static class fullCalendar {
+        private Integer idx;
         private String title;
         private LocalDateTime start;
         private LocalDateTime end;
+        private String location;
+        private Integer points;
+        private String eventType;
+        private String writerUid;
+        private String writerName;
+        private Integer participantCount;
+        private Boolean isParticipating;
+        private Integer likeCount;
+        private Boolean isLiked;
+        private Integer commentCount;
         private extendedProps extendedProps;
     }
 

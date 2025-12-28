@@ -48,9 +48,16 @@
                   <span>{{ event.location || '산청의료협동조합 본관 2층' }}</span>
                 </div>
 
-                <div v-if="event.points" class="meta-item">
-                  <div class="points-badge">R</div>
-                  <span class="points-value">{{ event.points || '5,000' }}</span>
+                <!-- 일정 타입 (무료/유료/획득) 및 포인트 정보 -->
+                <div class="meta-item event-type-indicator">
+                  <span v-if="event.type === 'free'" class="type-badge type-free">무료</span>
+                  <span v-else-if="event.type === 'paid'" class="type-badge type-paid">
+                    유료 {{ event.points ? `${Number(event.points).toLocaleString()}P` : '' }}
+                  </span>
+                  <span v-else-if="event.type === 'earn'" class="type-badge type-earn">
+                    획득 {{ event.points ? `+${Number(event.points).toLocaleString()}P` : '' }}
+                  </span>
+                  <span v-else class="type-badge type-free">-</span>
                 </div>
               </div>
             </div>
@@ -61,7 +68,7 @@
               :disabled="isOwnEvent(event)"
               @click="handleJoinEvent(event)"
             >
-              {{ isOwnEvent(event) ? '본인이 작성한 일정' : '참여하기' }}
+              {{ isOwnEvent(event) ? '내가 작성한 일정' : '참여하기' }}
             </button>
           </div>
 
@@ -72,6 +79,7 @@
             <div class="event-card">
               <!-- User Info -->
               <div class="user-info">
+                <div class="user-info-wr">
                 <div class="user-avatar">
                   <img v-if="event.iconFileUid" :src="`${apiUrl}/attached-file/${event.iconFileUid}`" alt="프로필 이미지" class="user-avatar-img">
                   <svg v-else width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -87,6 +95,18 @@
                 </div>
                 <span class="user-name">{{ event.writer || '작성자 미상' }}</span>
               </div>
+
+                <!-- 본인 작성 일정인 경우 ... 버튼 표시 -->
+                <el-dropdown v-if="isOwnEvent(event)" trigger="click" @command="handleEventAction">
+                  <span class="el-dropdown-link">
+                    <i class="el-icon-more"></i>
+                  </span>
+                  <el-dropdown-menu slot="dropdown">
+                    <el-dropdown-item :command="{action: 'edit', event: event}">수정</el-dropdown-item>
+                    <el-dropdown-item :command="{action: 'delete', event: event}">삭제</el-dropdown-item>
+                  </el-dropdown-menu>
+                </el-dropdown>
+            </div>
 
               <!-- Event Details -->
               <div class="event-details">
@@ -185,13 +205,13 @@
       :show-close="false"
     >
       <div class="modal-content-wrapper">
-        <button class="modal-close-btn" @click="createEventModalVisible = false">
+        <button class="modal-close-btn" @click="closeCreateModal">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
         </button>
 
-        <h2 class="modal-title">어떤 일정인가요?</h2>
+        <h2 class="modal-title">{{ isEditMode ? '일정 수정하기' : '어떤 일정인가요?' }}</h2>
 
         <div class="form-container">
           <!-- Event Title -->
@@ -281,29 +301,43 @@
           <!-- Event Type -->
           <div class="form-group">
             <label class="form-label">일정 참여 방법</label>
-            <div class="event-type-buttons">
-              <button
-                v-for="type in eventTypes"
-                :key="type.value"
-                class="event-type-btn"
-                :class="{ active: eventForm.type === type.value }"
-                @click="eventForm.type = type.value"
-              >
-                {{ type.label }}
-              </button>
+            <div v-if="isEditMode" class="event-type-readonly">
+              <div class="readonly-badge">
+                <span v-if="eventForm.type === 'free'" class="type-badge type-free">무료</span>
+                <span v-else-if="eventForm.type === 'paid'" class="type-badge type-paid">
+                  유료 {{ eventForm.points ? `${Number(eventForm.points).toLocaleString()}P` : '' }}
+                </span>
+                <span v-else-if="eventForm.type === 'earn'" class="type-badge type-earn">
+                  획득 {{ eventForm.points ? `+${Number(eventForm.points).toLocaleString()}P` : '' }}
+                </span>
+              </div>
+              <p class="readonly-notice">※ 일정 참여 방법 및 포인트는 수정할 수 없습니다.</p>
             </div>
-            <input
-              v-if="eventForm.type !== 'free'"
-              v-model="eventForm.points"
-              type="text"
-              class="form-input"
-              placeholder="R포인트를 작성해 주세요."
-            />
+            <template v-else>
+              <div class="event-type-buttons">
+                <button
+                  v-for="type in eventTypes"
+                  :key="type.value"
+                  class="event-type-btn"
+                  :class="{ active: eventForm.type === type.value }"
+                  @click="eventForm.type = type.value"
+                >
+                  {{ type.label }}
+                </button>
+              </div>
+              <input
+                v-if="eventForm.type !== 'free'"
+                v-model="eventForm.points"
+                type="text"
+                class="form-input"
+                placeholder="R포인트를 작성해 주세요."
+              />
+            </template>
           </div>
 
           <!-- Submit Button -->
           <button class="submit-button" @click="handleCreateEvent">
-            일정 만들기
+            {{ isEditMode ? '일정 수정하기' : '일정 만들기' }}
           </button>
         </div>
       </div>
@@ -374,6 +408,7 @@ import { getCurrentPoint } from '@/api/point';
 import { getUserInfo } from '@/api/user';
 import { ChannelModule } from '@/store/modules/channel';
 import { UserModule } from '@/store/modules/user';
+import request from '@/utils/request';
 import moment from 'moment';
 
 @Component({
@@ -447,6 +482,11 @@ export default class extends Vue {
   // Safe computed property for current user name
   get currentUserName() {
     return UserModule.actualName || UserModule.userId || '사용자';
+  }
+
+  // 수정 모드 여부 확인
+  get isEditMode(): boolean {
+    return this.selectedEvent && this.selectedEvent.idx !== undefined && this.createEventModalVisible;
   }
 
   // 커뮤니티 관리자 여부 확인
@@ -566,6 +606,18 @@ export default class extends Vue {
     }
     
     console.log('✅ 관리자 권한 확인 완료');
+    // 새 일정 작성을 위해 폼 초기화 및 선택된 이벤트 리셋
+    this.selectedEvent = {};
+    this.eventForm = {
+      title: '',
+      description: '',
+      date: '',
+      startTime: '',
+      endTime: '',
+      location: '',
+      type: 'free',
+      points: '',
+    };
     this.createEventModalVisible = true;
   }
 
@@ -592,6 +644,75 @@ export default class extends Vue {
     return event.writerUid && currentUserUid && event.writerUid === currentUserUid;
   }
 
+  // Dropdown 메뉴 액션 핸들러
+  private handleEventAction(command: any) {
+    const { action, event } = command;
+    
+    if (action === 'edit') {
+      this.handleEditEvent(event);
+    } else if (action === 'delete') {
+      this.handleDeleteEvent(event);
+    }
+  }
+
+  // 일정 수정 핸들러
+  private handleEditEvent(event: any) {
+    // 일정 데이터를 폼에 로드
+    this.eventForm = {
+      title: event.title,
+      description: event.description || event.content || event.extendedProps?.description || '',
+      date: moment(event.start || event.startDate).format('YYYY-MM-DD'),
+      startTime: moment(event.start || event.startDate).format('HH:mm'),
+      endTime: moment(event.end || event.endDate).format('HH:mm'),
+      location: event.location || '',
+      type: event.eventType || 'free',
+      points: event.points ? String(event.points) : '',
+    };
+    
+    // 수정할 일정 정보 저장
+    this.selectedEvent = event;
+    this.createEventModalVisible = true;
+  }
+
+  // 일정 삭제 핸들러
+  private async handleDeleteEvent(event: any) {
+    try {
+      const confirmed = await this.$confirm(
+        '정말 이 일정을 삭제하시겠습니까?',
+        '일정 삭제',
+        {
+          confirmButtonText: '삭제',
+          cancelButtonText: '취소',
+          type: 'warning',
+        }
+      );
+
+      if (confirmed) {
+        // API 호출 (백엔드에 deleteCalendar 메서드가 필요합니다)
+        await this.deleteCalendarEvent(event.idx);
+        
+        this.$message.success('일정이 삭제되었습니다.');
+        
+        // 목록 새로고침
+        this.fetchEventList();
+      }
+    } catch (error: any) {
+      if (error !== 'cancel') {
+        console.error('Error deleting event:', error);
+        this.$message.error(error.response?.data?.message || '일정 삭제에 실패했습니다.');
+      }
+    }
+  }
+
+  // 일정 삭제 API 호출
+  private async deleteCalendarEvent(eventIdx: number) {
+    const response = await request({
+      url: `/calendar/${eventIdx}`,
+      method: 'delete',
+    });
+    return response;
+  }
+
   private async handleCreateEvent() {
     // Validate form
     if (!this.eventForm.title) {
@@ -613,7 +734,7 @@ export default class extends Vue {
       const startDateTime = `${dateStr}T${this.eventForm.startTime}:00`;
       const endDateTime = `${dateStr}T${this.eventForm.endTime}:00`;
 
-      await addCalendar({
+      const eventData = {
         title: this.eventForm.title,
         content: this.eventForm.description,
         startDate: startDateTime,
@@ -622,27 +743,46 @@ export default class extends Vue {
         eventType: this.eventForm.type,
         points: this.eventForm.type !== 'free' ? parseInt(this.eventForm.points) || 0 : 0,
         channelUid: ChannelModule.selectedChannel.uid,
-      });
-      
-      this.$message.success('일정이 생성되었습니다!');
-      this.createEventModalVisible = false;
-      this.eventForm = {
-        title: '',
-        description: '',
-        date: '',
-        startTime: '',
-        endTime: '',
-        location: '',
-        type: 'free',
-        points: '',
       };
+
+      if (this.isEditMode) {
+        // 수정 모드
+        await request({
+          url: `/calendar/${this.selectedEvent.idx}`,
+          method: 'put',
+          data: eventData,
+        });
+        this.$message.success('일정이 수정되었습니다!');
+      } else {
+        // 생성 모드
+        await addCalendar(eventData);
+        this.$message.success('일정이 생성되었습니다!');
+      }
+      
+      this.closeCreateModal();
       
       // Refresh the list
       this.fetchEventList();
     } catch (error: any) {
-      console.error('Error creating event:', error);
-      this.$message.error(error.response?.data?.message || '일정 생성에 실패했습니다.');
+      console.error('Error creating/updating event:', error);
+      this.$message.error(error.response?.data?.message || (this.isEditMode ? '일정 수정에 실패했습니다.' : '일정 생성에 실패했습니다.'));
     }
+  }
+
+  // 모달 닫기 및 폼 초기화
+  private closeCreateModal() {
+    this.createEventModalVisible = false;
+    this.selectedEvent = {};
+    this.eventForm = {
+      title: '',
+      description: '',
+      date: '',
+      startTime: '',
+      endTime: '',
+      location: '',
+      type: 'free',
+      points: '',
+    };
   }
 
   private async handleConfirmJoin() {
@@ -981,6 +1121,40 @@ export default class extends Vue {
   }
 }
 
+/* 일정 타입 뱃지 스타일 */
+.event-type-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.type-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.type-free {
+  background: rgba(34, 197, 94, 0.1);
+  color: #16A34A;
+}
+
+.type-paid {
+  background: rgba(239, 68, 68, 0.1);
+  color: #DC2626;
+}
+
+.type-earn {
+  background: rgba(59, 130, 246, 0.1);
+  color: #2563EB;
+}
+
 .points-badge {
   display: flex;
   width: 24px;
@@ -1117,6 +1291,9 @@ export default class extends Vue {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex: 1;
+  justify-content: space-between;
+  .user-info-wr{display: flex; align-items: center; gap: 8px;}
 
   .user-avatar {
     flex-shrink: 0;
@@ -1144,6 +1321,27 @@ export default class extends Vue {
     font-size: 20px;
     font-weight: 600;
     line-height: 100%;
+  }
+}
+
+/* Element UI Dropdown 스타일 */
+.el-dropdown-link {
+  cursor: pointer;
+  color: #888;
+  font-size: 20px;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s;
+  margin-left: auto;
+  
+  &:hover {
+    color: #222;
+  }
+  
+  i {
+    font-size: 20px;
   }
 }
 
@@ -1733,6 +1931,26 @@ export default class extends Vue {
 .event-type-buttons {
   display: flex;
   gap: 20px;
+}
+
+/* 수정 모드에서 읽기 전용 일정 타입 표시 */
+.event-type-readonly {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.readonly-badge {
+  display: flex;
+  align-items: center;
+}
+
+.readonly-notice {
+  color: #888;
+  font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  margin: 0;
 }
 
 .event-type-btn {

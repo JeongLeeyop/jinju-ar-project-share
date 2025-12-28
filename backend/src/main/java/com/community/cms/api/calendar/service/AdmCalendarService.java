@@ -134,10 +134,14 @@ class AdmCalendarServiceImpl implements AdmCalendarService {
         admCalendarRepository.save(entity);
     }
     
+    @Transactional
     @Override
-    public void update(SinghaUser authUser, Calendar Calendar, CalendarDto.update updateDto) {
-        Calendar = AdmCalendarMapper.INSTANCE.updateDtoToEntity(updateDto, Calendar);
-		admCalendarRepository.save(Calendar);
+    public void update(SinghaUser authUser, Calendar calendar, CalendarDto.update updateDto) {
+        // @MappingTarget을 사용하여 기존 엔티티를 업데이트
+        AdmCalendarMapper.INSTANCE.updateDtoToEntity(updateDto, calendar);
+        // JPA는 @Transactional 내에서 변경을 자동으로 감지하므로 save() 호출 불필요
+        // 하지만 명시적으로 save()를 호출해도 문제없음
+        admCalendarRepository.save(calendar);
     }
     
     @Override

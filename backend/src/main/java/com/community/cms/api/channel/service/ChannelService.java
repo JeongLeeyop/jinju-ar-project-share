@@ -200,6 +200,7 @@ class ChannelServiceImpl implements ChannelService {
         Optional<User> creator = userRepository.findById(dto.getUserUid());
         if (creator.isPresent()) {
             dto.setCreatorName(creator.get().getActualName());
+            dto.setUserId(creator.get().getUserId());
         }
 
         // 카테고리 이름 설정 (첫 번째 카테고리)
@@ -216,28 +217,12 @@ class ChannelServiceImpl implements ChannelService {
                     .findByUserUidAndChannelUid(authUser.getUser().getUid(), dto.getUid());
             dto.setMyJoinStatus(channelMember.isPresent());
             dto.setMyApprovalStatus(channelMember.isPresent() && channelMember.get().isApprovalStatus());
-            // 크리에이터인 경우, 내 커뮤니티인지 확인
-            if (authUser.getAuthorities().stream()
-                    .anyMatch(authority -> authority.getAuthority().equals("ROLE_CREATOR"))) {
-                dto.setMyChannelStatus(dto.getUserUid().equals(authUser.getUser().getUid()));
-            } else {
-                dto.setMyChannelStatus(false);
-            }
+            dto.setMyChannelStatus(dto.getUserUid().equals(authUser.getUser().getUid()));
+            
             // TO-DO 소개페이지는 카운트 안되게 해야함
             eventHistoryService.visitAdd(new EventHistoryDto.add(EventType.VISIT.toString(),
                     authUser.getUser().getUid(), dto.getUid(), null, null, null, null));
         }
-
-        // 온라인 접속자 수 확인
-        List<Object> allPrincipals = sessionRegistry.getAllPrincipals();
-        List<String> userList = allPrincipals.stream().filter(principal -> principal instanceof SinghaUser)
-                .map(principal -> {
-                    SinghaUser principalMap = (SinghaUser) principal;
-                    return principalMap.getUser().getUid();
-                }).collect(Collectors.toList());
-        dto.setOnlineCount(
-                channelMemberRepository.countByChannelUidAndUserUidInAndApprovalStatus(dto.getUid(), userList, true));
-
         return dto;
     }
 
