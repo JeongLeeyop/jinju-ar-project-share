@@ -330,6 +330,40 @@ public class MarketplaceProductService {
     }
 
     /**
+     * 내 등록 상품 목록 조회 (특정 채널, 온라인/오프라인 필터)
+     */
+    @Transactional(readOnly = true)
+    public Page<MarketplaceProductDto> getMyRegisteredProducts(
+            String channelDomain,
+            String marketplaceType,  // "online", "offline", null(전체)
+            String userUid,
+            Pageable pageable) {
+        
+        // domain → channelUid 변환
+        String channelUid = getChannelUidByDomain(channelDomain);
+        
+        Page<MarketplaceProduct> products;
+        
+        if ("online".equalsIgnoreCase(marketplaceType)) {
+            // 온라인 상품만
+            products = productRepository
+                    .findBySellerUidAndChannelUidAndOfflineMarketplaceUidIsNullOrderByCreatedAtDesc(
+                            userUid, channelUid, pageable);
+        } else if ("offline".equalsIgnoreCase(marketplaceType)) {
+            // 오프라인 상품만
+            products = productRepository
+                    .findBySellerUidAndChannelUidAndOfflineMarketplaceUidIsNotNullOrderByCreatedAtDesc(
+                            userUid, channelUid, pageable);
+        } else {
+            // 전체 (온라인 + 오프라인)
+            products = productRepository
+                    .findBySellerUidAndChannelUidOrderByCreatedAtDesc(userUid, channelUid, pageable);
+        }
+        
+        return products.map(product -> toDto(product, userUid));
+    }
+
+    /**
      * Entity to DTO
      */
     private MarketplaceProductDto toDto(MarketplaceProduct entity, String currentUserUid) {

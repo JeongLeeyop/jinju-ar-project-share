@@ -2,15 +2,18 @@ package com.community.cms.api.marketplace.service;
 
 import com.community.cms.api.channel.repository.ChannelMemberPermissionRepository;
 import com.community.cms.api.channel.repository.ChannelMemberRepository;
+import com.community.cms.api.channel.repository.ChannelRepository;
 import com.community.cms.api.marketplace.dto.MarketplaceProductDto;
 import com.community.cms.api.marketplace.dto.MarketplacePurchaseDto;
 import com.community.cms.api.marketplace.repository.MarketplaceProductImageRepository;
 import com.community.cms.api.marketplace.repository.MarketplaceProductRepository;
 import com.community.cms.api.marketplace.repository.MarketplacePurchaseRepository;
+import com.community.cms.api.marketplace.repository.OfflineMarketplaceRepository;
 import com.community.cms.api.point.repository.PointHistoryRepository;
 import com.community.cms.api.user.repository.UserRepository;
 import com.community.cms.common.code.ChannelMemberPermissionType;
 import com.community.cms.entity.*;
+import com.community.cms.entity2.Channel;
 import com.community.cms.entity2.ChannelMember;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -33,6 +36,8 @@ public class MarketplacePurchaseService {
     private final MarketplacePurchaseRepository purchaseRepository;
     private final MarketplaceProductRepository productRepository;
     private final MarketplaceProductImageRepository imageRepository;
+    private final OfflineMarketplaceRepository offlineMarketplaceRepository;
+    private final ChannelRepository channelRepository;
     private final PointHistoryRepository pointHistoryRepository;
     private final UserRepository userRepository;
     private final ChannelMemberRepository channelMemberRepository;
@@ -166,6 +171,44 @@ public class MarketplacePurchaseService {
     }
 
     /**
+     * 내 구매 내역 조회 (특정 채널, 온라인/오프라인 필터)
+     */
+    @Transactional(readOnly = true)
+    public Page<MarketplacePurchaseDto> getMyPurchasedProducts(
+            String channelDomain,
+            String marketplaceType,  // "online", "offline", null(전체)
+            String buyerUid,
+            Pageable pageable) {
+        
+        // domain → channelUid 변환
+        Channel channel = channelRepository.findByDomain(channelDomain)
+                .orElseThrow(() -> new RuntimeException("채널을 찾을 수 없습니다"));
+        String channelUid = channel.getUid();
+        
+        Page<MarketplacePurchase> purchases;
+        
+        if ("online".equalsIgnoreCase(marketplaceType)) {
+            // 온라인 상품만
+            purchases = purchaseRepository
+                    .findByBuyerUidAndChannelUidAndOnline(buyerUid, channelUid, pageable);
+        } else if ("offline".equalsIgnoreCase(marketplaceType)) {
+            // 오프라인 상품만
+            purchases = purchaseRepository
+                    .findByBuyerUidAndChannelUidAndOffline(buyerUid, channelUid, pageable);
+        } else {
+            // 전체 (온라인 + 오프라인)
+            purchases = purchaseRepository
+                    .findByBuyerUidAndChannelUid(buyerUid, channelUid, pageable);
+        }
+        
+        return purchases.map(p -> {
+            MarketplaceProduct product = productRepository.findByUid(p.getProductUid())
+                    .orElse(null);
+            return toDto(p, product);
+        });
+    }
+
+    /**
      * 상품별 구매 내역 조회 (판매자용)
      */
     @Transactional(readOnly = true)
@@ -255,15 +298,26 @@ public class MarketplacePurchaseService {
         String thumbnailUid = null;
         String productTitle = "삭제된 상품";
         String productCategory = "";
+        String offlineMarketplaceUid = null;
+        String offlineMarketplaceName = null;
 
         if (product != null) {
             productTitle = product.getTitle();
             productCategory = product.getCategory();
+            offlineMarketplaceUid = product.getOfflineMarketplaceUid();
             
             thumbnailUid = imageRepository
                     .findByProductUidAndIsThumbnailTrue(product.getUid())
                     .map(MarketplaceProductImage::getFileUid)
                     .orElse(null);
+            
+            // 오프라인 장터 이름 조회
+            if (offlineMarketplaceUid != null) {
+                offlineMarketplaceName = offlineMarketplaceRepository
+                        .findByUid(offlineMarketplaceUid)
+                        .map(OfflineMarketplace::getName)
+                        .orElse(null);
+            }
         }
 
         return MarketplacePurchaseDto.builder()
@@ -271,6 +325,8 @@ public class MarketplacePurchaseService {
                 .productUid(entity.getProductUid())
                 .productTitle(productTitle)
                 .productCategory(productCategory)
+                .offlineMarketplaceUid(offlineMarketplaceUid)
+                .offlineMarketplaceName(offlineMarketplaceName)
                 .buyerUid(entity.getBuyerUid())
                 .buyerName(entity.getBuyerName())
                 .buyerContact(entity.getBuyerContact())

@@ -180,6 +180,14 @@ export const getMyProducts = (page = 0, size = 20) =>
     params: { page, size },
   });
 
+// 내 등록 상품 목록 (특정 채널, 온라인/오프라인 필터)
+export const getMyRegisteredProducts = (channelDomain: string, marketplaceType?: string, page = 0, size = 20) =>
+  request({
+    url: `${PRODUCTS_PATH}/my/${channelDomain}`,
+    method: 'get',
+    params: { marketplaceType, page, size },
+  });
+
 // 상품 상세 조회
 export const getProduct = (uid: string) =>
   request({
@@ -209,6 +217,8 @@ export interface MarketplacePurchase {
   productUid: string;
   productTitle: string;
   productCategory: string;
+  offlineMarketplaceUid: string | null;
+  offlineMarketplaceName: string | null;
   buyerUid: string;
   buyerName: string;
   buyerContact: string | null;
@@ -254,10 +264,10 @@ export const getMyPurchases = (page = 0, size = 20) =>
     params: { page, size },
   });
 
-// 상품별 구매 내역 조회 (판매자용)
-export const getProductPurchases = (productUid: string, page = 0, size = 20) =>
+// 내 구매 내역 조회 (특정 채널, 온라인/오프라인 필터)
+export const getMyPurchasedProducts = (channelDomain: string, marketplaceType?: string, page = 0, size = 20) =>
   request({
-    url: `${PURCHASES_PATH}/product/${productUid}`,
+    url: `${PURCHASES_PATH}/my/${channelDomain}`,
     method: 'get',
-    params: { page, size },
+    params: { marketplaceType, page, size },
   });

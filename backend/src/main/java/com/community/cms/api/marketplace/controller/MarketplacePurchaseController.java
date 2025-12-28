@@ -106,6 +106,28 @@ public class MarketplacePurchaseController {
     }
 
     /**
+     * 내 구매 내역 조회 (특정 채널, 온라인/오프라인 필터)
+     */
+    @GetMapping("/my/{channelDomain}")
+    public ResponseEntity<?> getMyPurchasedProducts(
+            @PathVariable String channelDomain,
+            @RequestParam(required = false) String marketplaceType,  // "online", "offline", null(전체)
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PageableDefault(size = 20) Pageable pageable) {
+        try {
+            User user = validateAndGetCurrentUser(userDetails);
+            Page<MarketplacePurchaseDto> result = purchaseService.getMyPurchasedProducts(
+                    channelDomain, marketplaceType, user.getUid(), pageable);
+            return ResponseEntity.ok(result);
+        } catch (RuntimeException e) {
+            log.error("Failed to get my purchased products: {}", e.getMessage());
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+    }
+
+    /**
      * 상품별 구매 내역 조회 (판매자용)
      */
     @GetMapping("/product/{productUid}")

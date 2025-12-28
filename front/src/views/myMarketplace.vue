@@ -15,16 +15,41 @@
         <button 
           class="tab-btn" 
           :class="{ active: activeTab === 'registered' }"
-          @click="activeTab = 'registered'"
+          @click="activeTab = 'registered'; onTabChange();"
         >
           내 등록 상품
         </button>
         <button 
           class="tab-btn" 
           :class="{ active: activeTab === 'purchased' }"
-          @click="activeTab = 'purchased'"
+          @click="activeTab = 'purchased'; onTabChange();"
         >
           내 구매 상품
+        </button>
+      </div>
+
+      <!-- 온라인/오프라인 필터 -->
+      <div class="filter-section">
+        <button 
+          class="filter-btn" 
+          :class="{ active: marketplaceFilter === 'all' }"
+          @click="marketplaceFilter = 'all'; onFilterChange();"
+        >
+          전체
+        </button>
+        <button 
+          class="filter-btn" 
+          :class="{ active: marketplaceFilter === 'online' }"
+          @click="marketplaceFilter = 'online'; onFilterChange();"
+        >
+          온라인 장터
+        </button>
+        <button 
+          class="filter-btn" 
+          :class="{ active: marketplaceFilter === 'offline' }"
+          @click="marketplaceFilter = 'offline'; onFilterChange();"
+        >
+          오프라인 장터
         </button>
       </div>
 
@@ -48,12 +73,15 @@
             </div>
             <div class="product-info">
               <h3 class="product-title" @click="openProductDetail(product)">{{ product.title }}</h3>
-              <p class="product-type-badge">{{ getProductTypeLabel(product.productType) }}</p>
+              <p class="product-type-badge">{{ getProductTypeLabel(product.category || product.productType) }}</p>
+              <p v-if="product.offlineMarketplaceName" class="product-marketplace-name">
+                <i class="el-icon-office-building"></i> {{ product.offlineMarketplaceName }}
+              </p>
               <p class="product-location">{{ product.location }}</p>
               <p class="product-price">{{ formatPrice(product) }}</p>
               
               <!-- 오프라인 상품인 경우 회원번호 입력 버튼 -->
-              <div v-if="product.isOffline" class="action-buttons">
+              <div v-if="product.isOffline || product.offlineMarketplaceUid" class="action-buttons">
                 <button class="action-btn primary" @click.stop="openPointDeductModal(product)">
                   회원번호 입력
                 </button>
@@ -84,9 +112,11 @@
               <img :src="getProductImage(product)" :alt="product.title" class="product-image" />
             </div>
             <div class="product-info">
-              <h3 class="product-title">{{ product.title }}</h3>
-              <p class="product-type-badge">{{ getProductTypeLabel(product.productType) }}</p>
-              <p class="product-location">{{ product.location }}</p>
+              <h3 class="product-title">{{ product.productTitle }}</h3>
+              <p class="product-type-badge">{{ getProductTypeLabel(product.productCategory) }}</p>
+              <p v-if="product.offlineMarketplaceName" class="product-marketplace-name">
+                <i class="el-icon-office-building"></i> {{ product.offlineMarketplaceName }}
+              </p>
               <p class="product-price">{{ formatPrice(product) }}</p>
               <p class="purchase-date">구매일: {{ formatDate(product.purchasedAt) }}</p>
               
@@ -175,21 +205,7 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import CommunitySidebar from './components/communitySidebar.vue';
-
-// 임시 인터페이스 (실제 API 연동시 @/api/marketplace에서 가져오기)
-interface MarketplaceProduct {
-  uid: string;
-  title: string;
-  description: string;
-  productType: 'SALE' | 'SHARE' | 'REQUEST';
-  price: number;
-  location: string;
-  stock: number;
-  status: 'AVAILABLE' | 'RESERVED' | 'SOLD_OUT';
-  imageUrls: string[];
-  isOffline: boolean;
-  purchasedAt?: string;
-}
+import { getMyRegisteredProducts, getMyPurchasedProducts, MarketplaceProduct, MarketplacePurchase } from '@/api/marketplace';
 
 @Component({
   name: 'MyMarketplace',
@@ -199,115 +215,15 @@ interface MarketplaceProduct {
 })
 export default class extends Vue {
   private activeTab: 'registered' | 'purchased' = 'registered';
+  private marketplaceFilter: 'all' | 'online' | 'offline' = 'all';
   private loadingRegistered = false;
   private loadingPurchased = false;
   
-  // 내 등록 상품 (덤프 데이터)
-  private registeredProducts: MarketplaceProduct[] = [
-    {
-      uid: 'reg-1',
-      title: '유기농 토마토 (1kg)',
-      description: '신선한 유기농 토마토입니다',
-      productType: 'SALE',
-      price: 5000,
-      location: '진주시',
-      stock: 10,
-      status: 'AVAILABLE',
-      imageUrls: ['https://images.unsplash.com/photo-1546470427-227a94f7a8f4?w=300&h=300&fit=crop'],
-      isOffline: true,
-    },
-    {
-      uid: 'reg-2',
-      title: '직접 만든 수제 쨈',
-      description: '딸기로 만든 수제 쨈입니다',
-      productType: 'SALE',
-      price: 8000,
-      location: '진주시',
-      stock: 5,
-      status: 'AVAILABLE',
-      imageUrls: ['https://images.unsplash.com/photo-1506368249639-73a05d6f6488?w=300&h=300&fit=crop'],
-      isOffline: true,
-    },
-    {
-      uid: 'reg-3',
-      title: '책 나눔합니다',
-      description: '깨끗한 상태의 책',
-      productType: 'SHARE',
-      price: 0,
-      location: '진주시',
-      stock: 1,
-      status: 'AVAILABLE',
-      imageUrls: ['https://images.unsplash.com/photo-1512820790803-83ca734da794?w=300&h=300&fit=crop'],
-      isOffline: false,
-    },
-    {
-      uid: 'reg-4',
-      title: '친환경 세제 구합니다',
-      description: '친환경 세제 필요합니다',
-      productType: 'REQUEST',
-      price: 3000,
-      location: '진주시',
-      stock: 1,
-      status: 'AVAILABLE',
-      imageUrls: ['https://images.unsplash.com/photo-1563453392212-326f5e854473?w=300&h=300&fit=crop'],
-      isOffline: false,
-    },
-    {
-      uid: 'reg-5',
-      title: '유기농 감자 (2kg)',
-      description: '신선한 감자입니다',
-      productType: 'SALE',
-      price: 6000,
-      location: '진주시',
-      stock: 0,
-      status: 'SOLD_OUT',
-      imageUrls: ['https://images.unsplash.com/photo-1518977676601-b53f82aba655?w=300&h=300&fit=crop'],
-      isOffline: true,
-    },
-  ];
-
-  // 내 구매 상품 (덤프 데이터)
-  private purchasedProducts: MarketplaceProduct[] = [
-    {
-      uid: 'pur-1',
-      title: '유기농 사과 (5kg)',
-      description: '달콤한 사과입니다',
-      productType: 'SALE',
-      price: 15000,
-      location: '진주시',
-      stock: 1,
-      status: 'SOLD_OUT',
-      imageUrls: ['https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?w=300&h=300&fit=crop'],
-      isOffline: true,
-      purchasedAt: '2025-12-20T10:30:00',
-    },
-    {
-      uid: 'pur-2',
-      title: '수제 두부',
-      description: '콩으로 만든 두부',
-      productType: 'SALE',
-      price: 4000,
-      location: '진주시',
-      stock: 1,
-      status: 'SOLD_OUT',
-      imageUrls: ['https://images.unsplash.com/photo-1515543237350-b3eea1ec8082?w=300&h=300&fit=crop'],
-      isOffline: true,
-      purchasedAt: '2025-12-22T14:20:00',
-    },
-    {
-      uid: 'pur-3',
-      title: '친환경 샴푸',
-      description: '무첨가 샴푸',
-      productType: 'SALE',
-      price: 12000,
-      location: '진주시',
-      stock: 1,
-      status: 'SOLD_OUT',
-      imageUrls: ['https://images.unsplash.com/photo-1535585209827-a15fcdbc4c2d?w=300&h=300&fit=crop'],
-      isOffline: false,
-      purchasedAt: '2025-12-25T09:15:00',
-    },
-  ];
+  // 내 등록 상품
+  private registeredProducts: MarketplaceProduct[] = [];
+  
+  // 내 구매 상품
+  private purchasedProducts: MarketplacePurchase[] = [];
 
   // 포인트 차감 모달
   private pointDeductModalVisible = false;
@@ -319,26 +235,79 @@ export default class extends Vue {
   };
 
   mounted() {
-    // 실제 API 연동시 데이터 로드
-    // this.loadRegisteredProducts();
-    // this.loadPurchasedProducts();
+    this.loadRegisteredProducts();
+  }
+
+  private get channelDomain(): string {
+    return this.$route.params.domain || '';
+  }
+
+  private async loadRegisteredProducts() {
+    try {
+      this.loadingRegistered = true;
+      const marketplaceType = this.marketplaceFilter === 'all' ? undefined : this.marketplaceFilter;
+      const response = await getMyRegisteredProducts(this.channelDomain, marketplaceType);
+      this.registeredProducts = response.data.content || [];
+    } catch (error: any) {
+      const message = error.response?.data?.message || '등록 상품 조회에 실패했습니다';
+      this.$message.error(message);
+    } finally {
+      this.loadingRegistered = false;
+    }
+  }
+
+  private async loadPurchasedProducts() {
+    try {
+      this.loadingPurchased = true;
+      const marketplaceType = this.marketplaceFilter === 'all' ? undefined : this.marketplaceFilter;
+      const response = await getMyPurchasedProducts(this.channelDomain, marketplaceType);
+      this.purchasedProducts = response.data.content || [];
+    } catch (error: any) {
+      const message = error.response?.data?.message || '구매 상품 조회에 실패했습니다';
+      this.$message.error(message);
+    } finally {
+      this.loadingPurchased = false;
+    }
   }
 
   private handleSpaceSelect(spaceId: string) {
     console.log('Space selected:', spaceId);
   }
 
-  private getProductImage(product: MarketplaceProduct): string {
-    if (product.imageUrls && product.imageUrls.length > 0 && product.imageUrls[0]) {
-      return product.imageUrls[0];
+  private onTabChange() {
+    this.marketplaceFilter = 'all';
+    if (this.activeTab === 'registered') {
+      this.loadRegisteredProducts();
+    } else {
+      this.loadPurchasedProducts();
     }
-    // 기본 이미지 (더 안정적인 소스)
+  }
+
+  private onFilterChange() {
+    if (this.activeTab === 'registered') {
+      this.loadRegisteredProducts();
+    } else {
+      this.loadPurchasedProducts();
+    }
+  }
+
+  private getProductImage(product: MarketplaceProduct | MarketplacePurchase): string {
+    // MarketplacePurchase의 경우 thumbnailUid 사용
+    if ('thumbnailUid' in product && product.thumbnailUid) {
+      return `/api/attached-file/${product.thumbnailUid}`;
+    }
+    
+    // MarketplaceProduct의 경우 imageUids 사용
+    if ('imageUids' in product && product.imageUids && product.imageUids.length > 0) {
+      return `/api/attached-file/${product.imageUids[0]}`;
+    }
+    
     return 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=300&h=300&fit=crop';
   }
 
   private getStatusBadge(product: MarketplaceProduct): string {
     if (product.status === 'SOLD_OUT') return '품절';
-    if (product.status === 'RESERVED') return '예약중';
+    if (product.status === 'HIDDEN') return '비공개';
     return '';
   }
 
@@ -351,11 +320,23 @@ export default class extends Vue {
     return labels[type] || type;
   }
 
-  private formatPrice(product: MarketplaceProduct): string {
-    if (product.productType === 'SHARE') {
+  private formatPrice(product: MarketplaceProduct | MarketplacePurchase): string {
+    // MarketplaceProduct
+    if ('productType' in product && product.productType === 'SHARE') {
       return '나눔';
     }
-    return `${product.price.toLocaleString()} R포인트`;
+    
+    // MarketplacePurchase
+    if ('totalPrice' in product) {
+      return `${product.totalPrice.toLocaleString()} R포인트`;
+    }
+    
+    // MarketplaceProduct
+    if ('price' in product) {
+      return `${product.price.toLocaleString()} R포인트`;
+    }
+    
+    return '0 R포인트';
   }
 
   private formatDate(dateString?: string): string {
@@ -365,11 +346,10 @@ export default class extends Vue {
   }
 
   private openProductDetail(product: MarketplaceProduct) {
-    // 상품 상세 페이지로 이동
     this.$router.push({
       name: 'MarketplaceDetail',
       params: {
-        domain: this.$route.params.domain || 'default',
+        domain: this.channelDomain,
         productId: product.uid,
       },
     });
@@ -409,7 +389,6 @@ export default class extends Vue {
       //   deductPoints: this.deductForm.deductPoints,
       // });
 
-      // 임시 딜레이
       await new Promise(resolve => setTimeout(resolve, 1000));
 
       this.$message.success('포인트가 차감되었습니다');
@@ -423,8 +402,7 @@ export default class extends Vue {
   }
 
   // 환불 요청
-  private async requestRefund(product: MarketplaceProduct) {
-    // 환불 안내 메시지만 표시
+  private async requestRefund(product: MarketplacePurchase) {
     this.$message.warning('환불을 원하시면 관리자에게 요청하세요');
   }
 }
@@ -460,7 +438,7 @@ export default class extends Vue {
 .tabs-section {
   display: flex;
   gap: 20px;
-  margin-bottom: 40px;
+  margin-bottom: 24px;
   border-bottom: 2px solid #EBEBEB;
 }
 
@@ -473,12 +451,7 @@ export default class extends Vue {
   font-size: 18px;
   font-weight: 600;
   cursor: pointer;
-//   transition: all 0.2s;
   position: relative;
-
-  &:hover {
-    color: #073DFF;
-  }
 
   &.active {
     color: #073DFF;
@@ -492,6 +465,31 @@ export default class extends Vue {
       height: 3px;
       background: #073DFF;
     }
+  }
+}
+
+// 필터 섹션
+.filter-section {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 40px;
+}
+
+.filter-btn {
+  padding: 10px 20px;
+  background: #F5F5F5;
+  border: 1px solid #EBEBEB;
+  border-radius: 8px;
+  color: #666;
+  font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+
+  &.active {
+    background: #073DFF;
+    color: #FFF;
+    border-color: #073DFF;
   }
 }
 
@@ -532,21 +530,10 @@ export default class extends Vue {
   border-radius: 12px;
   overflow: hidden;
   cursor: pointer;
-//   transition: all 0.3s;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-
-  &:hover {
-    // transform: translateY(-4px);
-    // box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
-  }
 
   &.purchased-card {
     cursor: default;
-
-    &:hover {
-    //   transform: none;
-    //   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-    }
   }
 }
 
@@ -633,6 +620,20 @@ export default class extends Vue {
   font-size: 12px;
   font-weight: 600;
   margin-bottom: 8px;
+}
+
+.product-marketplace-name {
+  color: #666;
+  font-size: 14px;
+  font-weight: 500;
+  margin: 0 0 8px 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+
+  i {
+    font-size: 14px;
+  }
 }
 
 .product-location {
@@ -859,16 +860,10 @@ export default class extends Vue {
   font-size: 18px;
   font-weight: 700;
   cursor: pointer;
-//   transition: all 0.2s;
 
   &:hover:not(:disabled) {
     background: #0535e6;
-    // transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(7, 61, 255, 0.3);
-  }
-
-  &:active:not(:disabled) {
-    // transform: translateY(0);
   }
 
   &:disabled {

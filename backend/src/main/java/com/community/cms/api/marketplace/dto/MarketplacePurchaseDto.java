@@ -20,6 +20,8 @@ public class MarketplacePurchaseDto {
     private String productUid;
     private String productTitle;
     private String productCategory;
+    private String offlineMarketplaceUid;
+    private String offlineMarketplaceName;
     private String buyerUid;
     private String buyerName;
     private String buyerContact;
