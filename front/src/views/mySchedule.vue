@@ -771,11 +771,11 @@ export default class extends Vue {
 .my-schedule-main {
   flex: 1;
   margin-left: 270px;
-  padding: 140px 40px 40px;
+  padding: 160px 40px 40px;
 
   @media screen and (max-width: 1024px) {
     margin-left: 240px;
-    padding: 140px 30px 20px;
+    padding: 160px 30px 20px;
   }
   
   @media screen and (max-width: 768px) {
@@ -822,16 +822,11 @@ export default class extends Vue {
     border: none;
     color: #666;
     font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
-    font-size: 16px;
+    font-size: 18px;
     font-weight: 600;
     cursor: pointer;
     position: relative;
     transition: color 0.2s;
-
-    @media (max-width: 768px) {
-      padding: 10px 14px;
-      font-size: 14px;
-    }
 
     &:hover {
       color: #073DFF;
@@ -915,7 +910,6 @@ export default class extends Vue {
 // 일정 리스트
 .schedules-list {
   display: flex;
-  flex-direction: column;
   gap: 16px;
   flex-wrap: wrap;
   gap: 20px;
@@ -945,28 +939,19 @@ export default class extends Vue {
   align-items: flex-start;
   margin-bottom: 12px;
   gap: 12px;
-
-  @media (max-width: 768px) {
-    flex-direction: column;
-    gap: 8px;
-  }
 }
 
 .schedule-title {
-  flex: 1;
-  min-height: 70px;
   font-size: 28px;
+  min-height: 70px;
   line-height: 1.4;
   text-align: left;
   color: #222;
   font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
-  font-size: 18px;
   font-weight: 600;
   margin: 0;
   cursor: pointer;
-  flex: 1;
   transition: color 0.2s;
-//   transition: color 0.2s;
 
   &:hover {
     color: #073DFF;
@@ -1012,13 +997,12 @@ export default class extends Vue {
   margin-bottom: 16px;
 
   p {
+    display: flex;
     margin: 0;
     color: #666;
     font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
-    font-size: 14px;
     font-size: 20px;
-    display: flex;
-    align-items: center;
+    text-align: left;
     gap: 8px;
 
     i {
@@ -1405,13 +1389,25 @@ export default class extends Vue {
   .schedule-card {flex: 0 1 calc(100% / 2 - 10px);}
 }
 
-@media screen and (max-width: 1024px) {
+@media screen and (max-width: 1024px) { 
+  .my-schedule-main {padding: 160px 20px 40px;}
+  .schedule-card {padding: 30px 25px;}
   .schedule-title {font-size: 24px; min-height: 60px;}
   .schedule-info p {font-size: 18px;}
 }
+@media screen and (max-width: 768px) { 
+  .tabs-section {
+    .tab-btn {
+      flex: 0 1 calc(100% / 3 - 6px);
+      font-size: 16px;
+    }
+  }
+  .my-schedule-main {padding: 120px 20px 40px;}
+}
+@media screen and (max-width: 500px) {
+  .my-schedule-main {padding: 100px 20px 40px;}
+  .schedule-card {flex: 0 1 100%;}
 
-// 425px 이하 모바일 반응형
-@media (max-width: 425px) {
   .page-header {
     margin-bottom: 24px;
 
@@ -1425,9 +1421,7 @@ export default class extends Vue {
     margin-bottom: 24px;
 
     .tab-btn {
-      flex: 1;
-      padding: 12px 8px;
-      font-size: 13px;
+      padding: 15px 10px;
       text-align: center;
       white-space: nowrap;
     }
@@ -1475,32 +1469,9 @@ export default class extends Vue {
     border-radius: 10px;
   }
 
-  .schedule-header {
-    margin-bottom: 12px;
-    gap: 8px;
-  }
-
-  .schedule-title {
-    font-size: 16px;
-  }
-
   .status-badge {
     padding: 4px 10px;
     font-size: 11px;
-  }
-
-  .schedule-info {
-    gap: 6px;
-    margin-bottom: 14px;
-
-    p {
-      font-size: 13px;
-      gap: 6px;
-
-      i {
-        font-size: 14px;
-      }
-    }
   }
 
   .schedule-actions {
@@ -1508,8 +1479,8 @@ export default class extends Vue {
   }
 
   .action-btn {
+    font-size: 16px;
     height: 36px;
-    font-size: 13px;
     border-radius: 6px;
   }
 

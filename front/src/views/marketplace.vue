@@ -579,7 +579,7 @@ export default class extends Vue {
 .product-card {
   flex: 0 1 calc(100% / 4 - 37px);
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
   gap: 20px;
   cursor: pointer;
   transition: transform 0.2s;
@@ -591,7 +591,8 @@ export default class extends Vue {
 
 .product-image-wrapper {
   position: relative;
-  width: 100%;
+  flex: 0 1 100%;
+  max-width: 300px;
   height: 300px;
   // aspect-ratio: 34/27;
   border-radius: 10px;
@@ -640,16 +641,18 @@ export default class extends Vue {
 }
 
 .product-info {
+  flex: 0 1 100%;
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
 .product-title {
-  color: #222;
-  font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
+  flex: 0 1 100%;
   font-size: 24px;
   font-weight: 800;
+  font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
+  color: #222;
   line-height: 100%;
   margin: 0;
   overflow: hidden;
@@ -658,19 +661,21 @@ export default class extends Vue {
 }
 
 .product-location {
-  color: #888;
-  font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
+  flex: 0 1 100%;
   font-size: 18px;
   font-weight: 400;
+  font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
+  color: #888;
   line-height: 100%;
   margin: 0;
 }
 
 .product-price {
-  color: #073DFF;
-  font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
+  flex: 0 1 100%;
   font-size: 24px;
   font-weight: 800;
+  font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
+  color: #073DFF;
   line-height: 100%;
   margin: 0;
 }
