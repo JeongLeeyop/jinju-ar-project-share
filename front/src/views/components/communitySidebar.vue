@@ -355,7 +355,12 @@ export default class extends Vue {
   }
 
   private async loadSpaces() {
-    const channelUid = this.$route.params.domain;
+    let channelUid = '';
+    await getChannelDomainDetail(this.$route.params.domain).then((res) => {
+      if (res.status === 200) {
+        channelUid = res.data.uid;
+      }
+    });
     if (!channelUid) return;
 
     try {

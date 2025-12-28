@@ -63,12 +63,15 @@ public class SpaceService {
             throw new IllegalArgumentException("공간 이름은 최대 7자까지 가능합니다.");
         }
 
+        // ✅ channelUid 변환: request에서 받은 값이 domain인지 uid인지 확인하고 실제 uid로 변환
+        String actualChannelUid = resolveChannelUid(request.getChannelUid());
+
         // 공간 생성 제한 확인: 사용자당 게시판 1개, 채팅 1개만 허용
-        validateSpaceCreationLimit(request.getChannelUid(), adminUid, request.getSpaceType());
+        validateSpaceCreationLimit(actualChannelUid, adminUid, request.getSpaceType());
 
         // 공간 생성
         Space space = Space.builder()
-                .channelUid(request.getChannelUid())
+                .channelUid(actualChannelUid)  // ✅ 실제 channel uid 사용
                 .name(request.getName())
                 .description(request.getDescription())
                 .spaceType(request.getSpaceType())
@@ -90,14 +93,14 @@ public class SpaceService {
             spaceRepository.save(savedSpace);
         }
 
-        // 활동 로그 기록
+        // 활동 로그 기록 (✅ 실제 channelUid 사용)
         activityLogHelper.logSpaceCreated(
                 adminUid, adminName,
-                request.getChannelUid(), "",
+                actualChannelUid, "",
                 savedSpace.getUid(), savedSpace.getName());
 
-        log.info("공간 생성 완료: spaceUid={}, name={}, adminUid={}, spaceType={}, isPublic={}",
-                savedSpace.getUid(), savedSpace.getName(), adminUid, savedSpace.getSpaceType(), savedSpace.isPublic());
+        log.info("공간 생성 완료: spaceUid={}, name={}, adminUid={}, spaceType={}, isPublic={}, channelUid={}",
+                savedSpace.getUid(), savedSpace.getName(), adminUid, savedSpace.getSpaceType(), savedSpace.isPublic(), actualChannelUid);
 
         return SpaceDto.fromEntity(savedSpace, adminUid);
     }
@@ -144,8 +147,13 @@ public class SpaceService {
      */
     private int getPublicSpaceMemberCount(Space space) {
         try {
-            Channel channel = channelRepository.findByDomain(space.getChannelUid()).orElse(null);
+            // ✅ channelUid는 실제 uid가 저장되어 있으므로 findByUid 사용
+            // 하지만 기존 데이터는 domain이 저장되어 있을 수 있으므로 fallback 처리
+            Channel channel = channelRepository.findByUid(space.getChannelUid())
+                    .orElseGet(() -> channelRepository.findByDomain(space.getChannelUid()).orElse(null));
+            
             if (channel == null) {
+                log.warn("Channel을 찾을 수 없음: channelUid={}", space.getChannelUid());
                 return 0;
             }
             
@@ -796,11 +804,14 @@ public class SpaceService {
     /**
      * 사용자가 채널의 승인된 멤버인지 확인
      */
-    private boolean isChannelMember(String channelDomain, String userUid) {
+    private boolean isChannelMember(String channelUidOrDomain, String userUid) {
         try {
-            // Channel 조회 (domain으로)
-            Channel channel = channelRepository.findByDomain(channelDomain).orElse(null);
+            // ✅ uid 또는 domain으로 Channel 조회 (fallback 처리)
+            Channel channel = channelRepository.findByUid(channelUidOrDomain)
+                    .orElseGet(() -> channelRepository.findByDomain(channelUidOrDomain).orElse(null));
+            
             if (channel == null) {
+                log.warn("Channel을 찾을 수 없음: {}", channelUidOrDomain);
                 return false;
             }
             
@@ -809,8 +820,8 @@ public class SpaceService {
                     userUid, channel.getUid(), true);
                     
         } catch (Exception e) {
-            log.error("채널 멤버 확인 실패: channelDomain={}, userUid={}, error={}", 
-                    channelDomain, userUid, e.getMessage());
+            log.error("채널 멤버 확인 실패: channelUidOrDomain={}, userUid={}, error={}", 
+                    channelUidOrDomain, userUid, e.getMessage());
             return false;
         }
     }
@@ -818,18 +829,22 @@ public class SpaceService {
     /**
      * 사용자가 채널 관리자인지 확인
      */
-    private boolean isChannelAdmin(String channelDomain, String userUid) {
+    private boolean isChannelAdmin(String channelUidOrDomain, String userUid) {
         try {
-            Channel channel = channelRepository.findByDomain(channelDomain).orElse(null);
+            // ✅ uid 또는 domain으로 Channel 조회 (fallback 처리)
+            Channel channel = channelRepository.findByUid(channelUidOrDomain)
+                    .orElseGet(() -> channelRepository.findByDomain(channelUidOrDomain).orElse(null));
+            
             if (channel == null) {
+                log.warn("Channel을 찾을 수 없음: {}", channelUidOrDomain);
                 return false;
             }
             
             return channel.getUserUid() != null && channel.getUserUid().equals(userUid);
                     
         } catch (Exception e) {
-            log.error("채널 관리자 확인 실패: channelDomain={}, userUid={}, error={}", 
-                    channelDomain, userUid, e.getMessage());
+            log.error("채널 관리자 확인 실패: channelUidOrDomain={}, userUid={}, error={}", 
+                    channelUidOrDomain, userUid, e.getMessage());
             return false;
         }
     }
@@ -848,15 +863,16 @@ public class SpaceService {
         }
         
         // 2. 커뮤니티(채널) 관리자 체크 - Channel의 userUid 확인
-        // channelUid에는 domain이 저장되어 있으므로 findByDomain 사용
         log.info("공간 관리자 아님. 커뮤니티 관리자 권한 확인 시작...");
         
         try {
-            Channel channel = channelRepository.findByDomain(space.getChannelUid()).orElse(null);
+            // ✅ uid 또는 domain으로 Channel 조회 (fallback 처리)
+            Channel channel = channelRepository.findByUid(space.getChannelUid())
+                    .orElseGet(() -> channelRepository.findByDomain(space.getChannelUid()).orElse(null));
             
             if (channel != null) {
-                log.info("Channel 조회 성공: domain={}, channelUid={}, channelUserUid={}", 
-                        channel.getDomain(), channel.getUid(), channel.getUserUid());
+                log.info("Channel 조회 성공: uid={}, domain={}, channelUserUid={}", 
+                        channel.getUid(), channel.getDomain(), channel.getUserUid());
                 
                 // Channel의 userUid와 현재 사용자 UID 비교
                 if (channel.getUserUid() != null && channel.getUserUid().equals(userUid)) {
@@ -867,7 +883,7 @@ public class SpaceService {
                 log.warn("❌ 커뮤니티 관리자 아님: userUid={}, channelUserUid={}", 
                         userUid, channel.getUserUid());
             } else {
-                log.warn("❌ Channel을 찾을 수 없음: domain={}", space.getChannelUid());
+                log.warn("❌ Channel을 찾을 수 없음: channelUid={}", space.getChannelUid());
             }
             
         } catch (Exception e) {
@@ -876,5 +892,33 @@ public class SpaceService {
         
         log.info("=== 관리자 권한 검증 실패 ===");
         throw new IllegalAccessError("공간 관리자 또는 커뮤니티 관리자만 수행할 수 있습니다.");
+    }
+
+    /**
+     * channelUid 변환 헬퍼 메서드
+     * - 입력값이 domain인 경우 실제 channel uid로 변환
+     * - 입력값이 이미 uid인 경우 그대로 반환
+     */
+    private String resolveChannelUid(String channelUidOrDomain) {
+        if (channelUidOrDomain == null || channelUidOrDomain.trim().isEmpty()) {
+            throw new IllegalArgumentException("채널 정보가 없습니다.");
+        }
+
+        // 1. 먼저 domain으로 조회 시도
+        Channel channel = channelRepository.findByDomain(channelUidOrDomain).orElse(null);
+        if (channel != null) {
+            log.debug("Channel found by domain: {} -> uid: {}", channelUidOrDomain, channel.getUid());
+            return channel.getUid();
+        }
+
+        // 2. uid로 조회 시도
+        channel = channelRepository.findByUid(channelUidOrDomain).orElse(null);
+        if (channel != null) {
+            log.debug("Channel found by uid: {}", channelUidOrDomain);
+            return channel.getUid();
+        }
+
+        // 3. 둘 다 실패하면 예외
+        throw new IllegalArgumentException("채널을 찾을 수 없습니다: " + channelUidOrDomain);
     }
 }
