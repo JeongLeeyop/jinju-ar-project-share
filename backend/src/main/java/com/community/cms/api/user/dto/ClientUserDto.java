@@ -105,6 +105,7 @@ public class ClientUserDto {
         private String actualName;
         private String email;
         private String iconFileUid;
+        private String concatNumber;
     }
 
     @Data
