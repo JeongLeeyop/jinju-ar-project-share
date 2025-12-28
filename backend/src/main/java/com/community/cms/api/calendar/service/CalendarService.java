@@ -365,7 +365,7 @@ class CalendarServiceImpl implements CalendarService {
                 .channelUid(calendar.getChannelUid())
                 .pointsAmount(points)
                 .status(ParticipantStatus.REGISTERED)
-                .pointGranted("earn".equals(eventType) ? false : null)
+                .pointGranted(false)  // 기본값 false (earn 타입은 나중에 true로 변경)
                 .build();
         participantRepository.save(participant);
 
