@@ -2,12 +2,12 @@
     <div class="write_wr">
         <el-form v-loading="formLoading" ref="postForm" class="post-form" label-width="auto" :model="formData"
             :rules="rules">
-            <el-form-item label="카테고리" prop="category" style="text-align: left;">
+            <!-- <el-form-item label="카테고리" prop="category" style="text-align: left;">
                 <el-select v-model="formData.categoryList[0]" value-key="categoryUid">
                     <el-option v-for="useCategory in boardUseCategoryList" :key="useCategory.categoryUid"
                         :value="{ categoryUid: useCategory.categoryUid }" :label="useCategory.category.name" />
                 </el-select>
-            </el-form-item>
+            </el-form-item> -->
             <el-form-item label="공지글 여부" prop="noticeStatus" style="text-align: left;" v-if="selectedChannel.myChannelStatus">
                 <el-switch v-model="formData.noticeStatus"></el-switch>
             </el-form-item>

@@ -62,14 +62,26 @@
               </div>
             </div>
 
-            <button 
-              class="join-button" 
-              :class="{ 'is-own-event': isOwnEvent(event) }"
-              :disabled="isOwnEvent(event)"
-              @click="handleJoinEvent(event)"
-            >
-              {{ isOwnEvent(event) ? '내가 작성한 일정' : '참여하기' }}
-            </button>
+            <div class="action-buttons">
+              <!-- 본인 일정이면 참여자 관리 버튼 표시 -->
+              <button 
+                v-if="isOwnEvent(event)"
+                class="manage-participants-button"
+                @click="handleViewParticipants(event)"
+              >
+                참여자 관리
+              </button>
+              
+              <!-- 본인 일정이 아니면 참여하기 버튼 표시 -->
+              <button 
+                v-else
+                class="join-button"
+                :disabled="event.isParticipating"
+                @click="handleJoinEvent(event)"
+              >
+                {{ event.isParticipating ? '참여중' : '참여하기' }}
+              </button>
+            </div>
           </div>
 
           <!-- Event Content Card -->
@@ -390,6 +402,69 @@
         </button>
       </div>
     </el-dialog>
+
+    <!-- Participants Management Modal -->
+    <el-dialog
+      :visible.sync="participantsModalVisible"
+      width="600px"
+      custom-class="participants-modal"
+      :show-close="false"
+    >
+      <div class="modal-content-wrapper">
+        <button class="modal-close-btn" @click="participantsModalVisible = false">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+
+        <h2 class="modal-title">참여자 관리</h2>
+        <div class="modal-subtitle">{{ selectedEvent.title }}</div>
+
+        <div class="participants-list" v-loading="loadingParticipants">
+          <div v-if="participantsList.length === 0" class="empty-participants">
+            <p>참여자가 없습니다.</p>
+          </div>
+          <div v-else class="participant-items">
+            <div 
+              v-for="participant in participantsList"
+              :key="participant.idx"
+              class="participant-item"
+            >
+              <div class="participant-info">
+                <div class="participant-avatar">
+                  <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="18" cy="18" r="18" fill="#D9D9D9"/>
+                    <mask :id="'mask_participant_' + participant.idx" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="0" y="0" width="36" height="36">
+                      <circle cx="18" cy="18" r="18" fill="#D9D9D9"/>
+                    </mask>
+                    <g :mask="'url(#mask_participant_' + participant.idx + ')'">
+                      <rect x="4" y="21" width="28" height="32" rx="14" fill="#F5F5F5"/>
+                      <circle cx="18" cy="11" r="7" fill="#F5F5F5"/>
+                    </g>
+                  </svg>
+                </div>
+                <div class="participant-details">
+                  <span class="participant-name">{{ participant.userName }}</span>
+                  <span class="participant-date">{{ participant.createdAt | formatDate }}</span>
+                </div>
+              </div>
+              
+              <!-- 획득 타입 일정인 경우에만 포인트 지급 버튼 표시 -->
+              <button 
+                v-if="selectedEvent.type === 'earn' && !participant.pointGranted"
+                class="grant-point-btn"
+                @click="handleGrantPoint(participant)"
+              >
+                포인트 지급 ({{ selectedEvent.points }}P)
+              </button>
+              <span v-else-if="participant.pointGranted" class="point-granted-badge">
+                지급완료
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
@@ -403,6 +478,8 @@ import {
   toggleCalendarLike,
   getCalendarComments,
   createCalendarComment,
+  getCalendarParticipants,
+  grantPointToParticipant,
 } from '@/api/manager/calendar';
 import { getCurrentPoint } from '@/api/point';
 import { getUserInfo } from '@/api/user';
@@ -433,6 +510,9 @@ export default class extends Vue {
   private eventList: any[] = [];
   private createEventModalVisible = false;
   private joinEventModalVisible = false;
+  private participantsModalVisible = false;
+  private loadingParticipants = false;
+  private participantsList: any[] = [];
   private selectedEvent: any = {};
   private joiningEvent = false;
   private currentUserPoint = 0;
@@ -797,15 +877,11 @@ export default class extends Vue {
         this.$message.success(result.message);
         this.joinEventModalVisible = false;
         
-        // Update local state
-        const event = this.eventList.find(e => e.idx === this.selectedEvent.idx);
-        if (event) {
-          event.isParticipating = true;
-          event.participantCount = (event.participantCount || 0) + 1;
-        }
-        
-        // Refresh point balance
-        await this.loadCurrentPoint();
+        // Refresh event list and point balance
+        await Promise.all([
+          this.fetchEventList(),
+          this.loadCurrentPoint()
+        ]);
       } else {
         this.$message.error(result.message);
       }
@@ -982,6 +1058,54 @@ export default class extends Vue {
     } catch (error: any) {
       console.error('Error creating comment:', error);
       this.$message.error(error.response?.data?.message || '댓글 작성에 실패했습니다.');
+    }
+  }
+
+  // 참여자 관리 모달 열기
+  private async handleViewParticipants(event: any) {
+    this.selectedEvent = event;
+    this.participantsModalVisible = true;
+    await this.loadParticipants(event.idx);
+  }
+
+  // 참여자 목록 불러오기
+  private async loadParticipants(eventIdx: number) {
+    this.loadingParticipants = true;
+    try {
+      const response = await getCalendarParticipants(eventIdx);
+      this.participantsList = response.data || [];
+    } catch (error: any) {
+      console.error('Failed to load participants:', error);
+      this.$message.error('참여자 목록을 불러오는데 실패했습니다.');
+      this.participantsList = [];
+    } finally {
+      this.loadingParticipants = false;
+    }
+  }
+
+  // 참여자에게 포인트 지급
+  private async handleGrantPoint(participant: any) {
+    try {
+      await this.$confirm(
+        `${participant.userName}님에게 ${this.selectedEvent.points}P를 지급하시겠습니까?`,
+        '포인트 지급',
+        {
+          confirmButtonText: '지급',
+          cancelButtonText: '취소',
+          type: 'warning',
+        }
+      );
+
+      await grantPointToParticipant(participant.idx);
+      this.$message.success('포인트가 지급되었습니다.');
+      
+      // Reload participants list
+      await this.loadParticipants(this.selectedEvent.idx);
+    } catch (error: any) {
+      if (error !== 'cancel') {
+        console.error('Failed to grant point:', error);
+        this.$message.error(error.response?.data?.message || '포인트 지급에 실패했습니다.');
+      }
     }
   }
 }
@@ -2498,6 +2622,145 @@ export default class extends Vue {
     &:hover {
       background-color: rgba(7, 61, 255, 0.1) !important;
     }
+  }
+}
+
+/* Participants Modal Styles */
+.participants-modal {
+  .modal-content-wrapper {
+    padding: 32px;
+  }
+
+  .modal-title {
+    font-size: 24px;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin-bottom: 8px;
+  }
+
+  .modal-subtitle {
+    font-size: 14px;
+    color: #6B7280;
+    margin-bottom: 24px;
+  }
+
+  .participants-list {
+    min-height: 200px;
+    max-height: 500px;
+    overflow-y: auto;
+  }
+
+  .empty-participants {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 200px;
+    color: #9CA3AF;
+    font-size: 14px;
+  }
+
+  .participant-items {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .participant-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px;
+    border: 1px solid #E5E7EB;
+    border-radius: 12px;
+    background-color: #F9FAFB;
+  }
+
+  .participant-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .participant-avatar {
+    flex-shrink: 0;
+  }
+
+  .participant-details {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .participant-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1F2937;
+  }
+
+  .participant-date {
+    font-size: 12px;
+    color: #9CA3AF;
+  }
+
+  .grant-point-btn {
+    padding: 8px 16px;
+    background-color: #073DFF;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    
+    &:hover {
+      background-color: #0531CC;
+    }
+    
+    &:disabled {
+      background-color: #E5E7EB;
+      color: #9CA3AF;
+      cursor: not-allowed;
+    }
+  }
+
+  .point-granted-badge {
+    padding: 6px 12px;
+    background-color: #10B981;
+    color: white;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+}
+
+/* 참여자 관리 버튼 스타일 */
+.action-buttons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.manage-participants-button {
+  padding: 12px 24px;
+  background-color: #073DFF;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    background-color: #0531CC;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(7, 61, 255, 0.3);
+  }
+  
+  &:active {
+    transform: translateY(0);
   }
 }
 </style>

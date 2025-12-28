@@ -42,10 +42,10 @@
           <p>로딩 중...</p>
         </div>
 
-        <div v-else-if="registeredSchedules.length > 0" class="schedules-list">
+        <div v-if="!loadingRegistered && registeredSchedules.length > 0" class="schedules-list">
           <div
             v-for="schedule in registeredSchedules"
-            :key="schedule.idx"
+            :key="'registered-' + schedule.idx"
             class="schedule-card registered-card"
           >
             <div class="schedule-header">
@@ -74,7 +74,7 @@
                     <circle cx="8" cy="4.89" r="3.11" fill="#999"/>
                   </g>
                 </svg>
-                참여자: {{ schedule.participantCount }} / {{ schedule.maxParticipants }}명
+                참여자: {{ schedule.participantCount }}명
               </p>
               <p v-if="schedule.eventType && schedule.eventType !== 'free'" class="schedule-points">
                 <i class="el-icon-coin"></i>
@@ -90,9 +90,9 @@
               <button class="action-btn primary" @click.stop="viewParticipants(schedule)">
                 참여자 보기
               </button>
-              <button class="action-btn secondary" @click.stop="editSchedule(schedule)">
+              <!-- <button class="action-btn secondary" @click.stop="editSchedule(schedule)">
                 수정
-              </button>
+              </button> -->
               <button class="action-btn danger" @click.stop="cancelSchedule(schedule)">
                 취소
               </button>
@@ -100,7 +100,7 @@
           </div>
         </div>
 
-        <div v-else class="empty-container">
+        <div v-if="!loadingRegistered && registeredSchedules.length === 0" class="empty-container">
           <p>등록한 일정이 없습니다</p>
         </div>
       </div>
@@ -117,10 +117,10 @@
           <p>로딩 중...</p>
         </div>
 
-        <div v-else-if="participatedSchedules.length > 0" class="schedules-list">
+        <div v-if="!loadingParticipated && participatedSchedules.length > 0" class="schedules-list">
           <div
             v-for="schedule in participatedSchedules"
-            :key="schedule.idx"
+            :key="'participated-' + schedule.idx"
             class="schedule-card participated-card"
           >
             <div class="schedule-header">
@@ -176,7 +176,7 @@
           </div>
         </div>
 
-        <div v-else class="empty-container">
+        <div v-if="!loadingParticipated && participatedSchedules.length === 0" class="empty-container">
           <p>참여한 일정이 없습니다</p>
         </div>
       </div>
@@ -188,7 +188,7 @@
           <p>로딩 중...</p>
         </div>
 
-        <div v-else-if="pointHistory.length > 0" class="point-history-list">
+        <div v-if="!loadingPointHistory && pointHistory.length > 0" class="point-history-list">
           <div class="point-summary">
             <div class="summary-card">
               <h4>총 획득 포인트</h4>
@@ -218,7 +218,7 @@
               <tbody>
                 <tr 
                   v-for="history in pointHistory" 
-                  :key="history.idx"
+                  :key="history.id || history.idx"
                   class="history-row"
                 >
                   <td>{{ formatDate(history.createdAt) }}</td>
@@ -240,7 +240,7 @@
           </div>
         </div>
 
-        <div v-else class="empty-container">
+        <div v-if="!loadingPointHistory && pointHistory.length === 0" class="empty-container">
           <p>포인트 내역이 없습니다</p>
         </div>
       </div>
@@ -273,7 +273,7 @@
           </p>
           <p class="summary-item">
             <span class="summary-label">참여자:</span>
-            <span class="summary-value">{{ selectedSchedule.participantCount }} / {{ selectedSchedule.maxParticipants }}명</span>
+            <span class="summary-value">{{ selectedSchedule.participantCount }}명</span>
           </p>
         </div>
 
@@ -307,7 +307,20 @@
                 <p class="participant-phone">{{ participant.userPhone || '-' }}</p>
               </div>
             </div>
-            <p class="participant-date">{{ formatDate(participant.createdAt) }}</p>
+            <div class="participant-actions">
+              <p class="participant-date">{{ formatDate(participant.createdAt) }}</p>
+              <!-- 획득 타입 일정일 경우 포인트 지급 버튼 표시 -->
+              <button 
+                v-if="selectedSchedule && selectedSchedule.eventType === 'earn'"
+                class="grant-btn"
+                :class="{ granted: participant.pointGranted }"
+                :disabled="participant.pointGranted"
+                @click="grantPoint(participant)"
+              >
+                <i v-if="participant.pointGranted" class="el-icon-check"></i>
+                {{ participant.pointGranted ? '지급완료' : '포인트 지급' }}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -332,9 +345,10 @@ import {
   cancelMyRegisteredSchedule,
   cancelCalendarEvent,
   getCalendarParticipants,
+  grantPointToParticipant,
   MyScheduleItem
 } from '@/api/manager/calendar';
-import { getTargetUserPointHistory } from '@/api/point';
+import { getPointHistory } from '@/api/point';
 import { getUserInfo } from '@/api/user';
 import { EventBus, EVENTS } from '@/utils/eventBus';
 
@@ -357,7 +371,8 @@ interface Schedule {
 }
 
 interface PointHistory {
-  idx: number;
+  id?: number;
+  idx?: number;
   pointType: string;
   description: string;
   pointAmount: number;
@@ -373,6 +388,7 @@ interface Participant {
   userPhone: string;
   userProfileImage: string;
   createdAt: string;
+  pointGranted?: boolean;
 }
 
 @Component({
@@ -546,19 +562,30 @@ export default class extends Vue {
     this.loadingPointHistory = true;
     try {
       // 사용자 본인의 포인트 내역 조회
-      const userUid = UserModule.userId;
-      const res = await getTargetUserPointHistory({
-        targetUserUid: userUid,
+      const res = await getPointHistory({
         channelUid: this.channelUid,
         page: 0,
         size: 100,
       });
-      this.pointHistory = (res.data?.content || []).filter((item: any) => 
-        item.pointType?.includes('SCHEDULE')
-      );
+      
+      // 일정 관련 포인트만 필터링
+      // SCHEDULE로 시작하는 모든 포인트 타입 (SCHEDULE, SCHEDULE_EARN, SCHEDULE_REFUND, SCHEDULE_CANCELLED_REFUND 등)
+      const historyData = res.data?.content || res.data?.list || [];
+      this.pointHistory = historyData.filter((item: any) => {
+        const type = item.pointType || '';
+        return type.startsWith('SCHEDULE') || 
+               type === 'SCHEDULE_PARTICIPATION' || 
+               type === 'SCHEDULE_CANCEL' ||
+               type === 'SCHEDULE_EARN' ||
+               type === 'SCHEDULE_REFUND' ||
+               type === 'SCHEDULE_CANCELLED_REFUND';
+      });
+      
+      console.log('[mySchedule] 포인트 내역 조회 완료:', this.pointHistory.length, '건');
     } catch (error: any) {
       console.error('Failed to load point history:', error);
-      // 권한이 없어도 무시 (본인 포인트 내역은 별도 API가 필요할 수 있음)
+      const message = error.response?.data?.message || '포인트 내역을 불러오는데 실패했습니다';
+      this.$message.error(message);
     } finally {
       this.loadingPointHistory = false;
     }
@@ -631,8 +658,18 @@ export default class extends Vue {
 
   // 취소 가능 여부 체크
   private checkCanCancel(schedule: Schedule): boolean {
-    // 백엔드에서 전달받은 canCancel 사용
-    return schedule.canCancel === true;
+    // 일정 시작 시간
+    const startDate = new Date(schedule.startDate);
+    const now = new Date();
+    
+    // 시작 시간까지 남은 시간(밀리초)
+    const timeUntilStart = startDate.getTime() - now.getTime();
+    
+    // 1일 = 24시간 = 24 * 60 * 60 * 1000 밀리초
+    const oneDayInMs = 24 * 60 * 60 * 1000;
+    
+    // 1일(24시간) 이상 남았으면 취소 가능
+    return timeUntilStart >= oneDayInMs;
   }
 
   // 일정 상세 열기
@@ -660,6 +697,7 @@ export default class extends Vue {
         userPhone: p.userPhone || '',
         userProfileImage: p.userProfileImage,
         createdAt: p.createdAt,
+        pointGranted: p.pointGranted || false,
       }));
       this.participantsModalVisible = true;
     } catch (error: any) {
@@ -674,6 +712,44 @@ export default class extends Vue {
     this.participantsModalVisible = false;
     this.selectedSchedule = null;
     this.participants = [];
+  }
+
+  // 포인트 지급
+  private async grantPoint(participant: Participant) {
+    try {
+      await this.$confirm(
+        `"${participant.userName}"님에게 포인트를 지급하시겠습니까?`,
+        '포인트 지급',
+        {
+          confirmButtonText: '확인',
+          cancelButtonText: '취소',
+          type: 'info',
+          customClass: 'high-z-index-confirm',
+        },
+      );
+
+      await grantPointToParticipant(participant.idx);
+      this.$message({
+        message: '포인트가 지급되었습니다',
+        type: 'success',
+        customClass: 'high-z-index-message',
+      });
+      
+      // 참여자 목록 새로고침
+      if (this.selectedSchedule) {
+        await this.viewParticipants(this.selectedSchedule);
+      }
+    } catch (error: any) {
+      if (error !== 'cancel') {
+        console.error('포인트 지급 실패:', error);
+        const message = error.response?.data?.message || '포인트 지급에 실패했습니다';
+        this.$message({
+          message: message,
+          type: 'error',
+          customClass: 'high-z-index-message',
+        });
+      }
+    }
   }
 
   // 일정 수정
@@ -836,7 +912,7 @@ export default class extends Vue {
     font-weight: 600;
     cursor: pointer;
     position: relative;
-    transition: color 0.2s;
+    // transition: color 0.2s;
 
     &:hover {
       color: #073DFF;
@@ -932,7 +1008,7 @@ export default class extends Vue {
   padding: 20px;
   padding: 40px 30px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-  transition: all 0.2s;
+  // transition: all 0.2s;
 
   &:hover {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
@@ -961,7 +1037,7 @@ export default class extends Vue {
   font-weight: 600;
   margin: 0;
   cursor: pointer;
-  transition: color 0.2s;
+  // transition: color 0.2s;
 
   &:hover {
     color: #073DFF;
@@ -1041,7 +1117,7 @@ export default class extends Vue {
   font-size: 18px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
+  // transition: all 0.2s;
 
   @media (max-width: 768px) {
     flex: none;
@@ -1167,7 +1243,7 @@ export default class extends Vue {
     tbody {
       tr {
         border-bottom: 1px solid #F0F0F0;
-        transition: background 0.2s;
+        // transition: background 0.2s;
 
         &:last-child {
           border-bottom: none;
@@ -1262,7 +1338,7 @@ export default class extends Vue {
   cursor: pointer;
   padding: 0;
   color: #666;
-  transition: color 0.2s;
+  // transition: color 0.2s;
 
   &:hover {
     color: #333;
@@ -1318,7 +1394,7 @@ export default class extends Vue {
   align-items: center;
   padding: 12px;
   border-bottom: 1px solid #F0F0F0;
-  transition: background 0.2s;
+  // transition: background 0.2s;
 
   &:last-child {
     border-bottom: none;
@@ -1367,6 +1443,47 @@ export default class extends Vue {
   font-size: 13px;
 }
 
+.participant-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.grant-btn {
+  padding: 6px 16px;
+  border: none;
+  border-radius: 6px;
+  font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  background: #073DFF;
+  color: #FFF;
+  white-space: nowrap;
+
+  &:hover:not(:disabled) {
+    background: #0535e6;
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  &.granted {
+    background: #4CAF50;
+
+    &:hover {
+      background: #4CAF50;
+    }
+  }
+
+  i {
+    margin-right: 4px;
+  }
+}
+
 .modal-actions {
   display: flex;
   justify-content: center;
@@ -1382,7 +1499,7 @@ export default class extends Vue {
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
+  // transition: all 0.2s;
 
   &.secondary {
     background: #F5F5F5;
@@ -1589,6 +1706,13 @@ export default class extends Vue {
     gap: 8px;
   }
 
+  .participant-actions {
+    width: 100%;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+
   .participant-avatar {
     width: 40px;
     height: 40px;
@@ -1606,7 +1730,11 @@ export default class extends Vue {
 
   .participant-date {
     font-size: 12px;
-    align-self: flex-end;
+  }
+
+  .grant-btn {
+    font-size: 12px;
+    padding: 5px 12px;
   }
 
   .modal-actions {
