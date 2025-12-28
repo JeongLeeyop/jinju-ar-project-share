@@ -588,7 +588,7 @@ export default class extends Vue {
 }
 
 @media screen and (max-width: 425px) {
-  .community-grid {gap: 10px;}
+  .community-grid {gap: 20px;}
   .community-card {flex: 0 1 100%;}
 }
 

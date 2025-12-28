@@ -114,9 +114,11 @@
 
     <!-- 메시지 작성 섹션 -->
     <div class="message-section">
+      
+      <!-- 발송 예상 정보 -->
       <h2 class="section-title">
         <i class="el-icon-chat-line-square"></i>
-        문자 메시지 작성
+        문자 메시지 작성 (발송 대상: {{ selectedMembers.length }}명)
       </h2>
 
       <!-- 템플릿 선택 -->
@@ -151,14 +153,6 @@
           placeholder="문자 메시지 내용을 입력하세요&#10;&#10;예시:&#10;[와로 커뮤니티]&#10;안녕하세요, 오프라인 장터 안내 드립니다.&#10;자세한 내용은 앱을 확인해주세요."
           maxlength="2000"
         />
-      </div>
-
-      <!-- 발송 예상 정보 -->
-      <div class="send-info">
-        <div class="info-item">
-          <span class="info-label">발송 대상:</span>
-          <span class="info-value">{{ selectedMembers.length }}명</span>
-        </div>
       </div>
 
       <!-- 발송 버튼 -->
@@ -542,7 +536,7 @@ export default class extends Vue {
 
 .sms-management-main {
   flex: 1;
-  margin-left: 310px;
+  margin-left: 270px;
   padding: 160px 30px 80px 30px;
 }
 
@@ -591,9 +585,11 @@ export default class extends Vue {
 
 .search-form {
   display: flex;
+  flex-wrap: wrap;
   gap: 12px;
 
   .el-input {
+    flex: 0 1 calc(100% - 103px);
     display: flex;
     align-items: center;
     gap: 8px;
@@ -617,6 +613,10 @@ export default class extends Vue {
       border: none;
     }
   }
+
+  .el-button {
+    flex: 0 1 90px;
+  }
 }
 
 // 검색 결과
@@ -630,6 +630,7 @@ export default class extends Vue {
 
 .results-header {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
@@ -729,7 +730,7 @@ export default class extends Vue {
   margin-bottom: 24px;
 
   .el-select {
-    width: 100%;
+    width: 100% !important;
 
     ::v-deep .el-input__inner {
       font-size: 16px;
@@ -760,31 +761,37 @@ export default class extends Vue {
 
 .message-input {
   margin-bottom: 24px;
+
+  ::v-deep .el-textarea__inner {
+    font-size: 16px;
+  }
 }
 
 .send-info {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   background: #f8f9fa;
   border-radius: 8px;
   padding: 20px;
   margin-bottom: 24px;
-  display: flex;
-  justify-content: center;
 }
 
 .info-item {
+  flex: 0 1 100%;
   display: flex;
-  flex-direction: column;
   gap: 4px;
   align-items: center;
 }
 
 .info-label {
-  font-size: 13px;
-  color: #666;
+  font-size: 22px;
+  font-weight: 600;
+  color: #000;
 }
 
 .info-value {
-  font-size: 16px;
+  font-size: 22px;
   font-weight: 600;
   color: #1a1a1a;
 }
@@ -898,24 +905,53 @@ export default class extends Vue {
 }
 
 // 반응형
-@media (max-width: 1024px) {
+@media screen and (max-width: 1024px) {
   .sms-management-main {
-    margin-left: 0;
-    padding: 30px 20px;
+    margin-left: 240px;
+    padding: 160px 30px 80px 30px;
   }
 }
 
-@media (max-width: 768px) {
+@media screen and (max-width: 768px) {
   .sms-management-main {
-    padding: 20px 16px;
-  }
-
-  .page-header {
-    margin-bottom: 24px;
+    margin-left: 0px;
+    padding: 140px 20px 80px 20px;
   }
 
   .page-title {
-    font-size: 20px;
+    font-size: 24px;
+  }
+
+  .page-description {
+    font-size: 18px;
+  }
+
+  .section-title {
+    font-size: 24px;
+    gap: 6px;
+  }
+
+  .results-header {
+    gap: 20px;
+  }
+
+  .results-title {
+    text-align: left;
+    flex: 0 1 100%;
+    font-size: 24px;
+  }
+
+  .results-actions {
+    flex: 0 1 100%;
+  }
+}
+
+@media screen and (max-width: 500px) {
+  .sms-management-main {
+    padding: 110px 20px 80px;
+  }
+
+  .page-title {
     margin-bottom: 6px;
   }
 
@@ -924,8 +960,7 @@ export default class extends Vue {
   }
 
   .section-title {
-    font-size: 16px;
-    margin-bottom: 16px;
+    margin-bottom: 20px;
     gap: 6px;
   }
 
@@ -934,20 +969,6 @@ export default class extends Vue {
     padding: 16px;
     margin-bottom: 16px;
     border-radius: 10px;
-  }
-
-  .search-form {
-    gap: 10px;
-
-    ::v-deep .el-input__inner {
-      height: 40px;
-      font-size: 14px;
-    }
-
-    ::v-deep .el-button {
-      padding: 10px 16px;
-      font-size: 13px;
-    }
   }
 
   // 검색 결과
@@ -960,13 +981,20 @@ export default class extends Vue {
   .results-header {
     flex-direction: column;
     align-items: flex-start;
-    gap: 10px;
+    gap: 20px;
     margin-bottom: 16px;
     padding-bottom: 12px;
   }
 
-  .results-title {
-    font-size: 14px;
+  .search-form {
+    
+    .el-input {
+      flex: 0 1 100%;
+    }
+
+    .el-button {
+      flex: 0 1 100%;
+    }
   }
 
   .results-actions {
@@ -976,7 +1004,7 @@ export default class extends Vue {
     ::v-deep .el-button {
       flex: 1;
       padding: 8px 12px;
-      font-size: 12px;
+      font-size: 16px;
     }
   }
 
@@ -985,7 +1013,7 @@ export default class extends Vue {
   }
 
   .member-item {
-    padding: 12px;
+    padding: 12px 0;
     gap: 10px;
 
     &.selected {
@@ -1000,12 +1028,11 @@ export default class extends Vue {
   }
 
   .member-name {
-    font-size: 14px;
-    margin-bottom: 2px;
+    font-size: 16px;
   }
 
   .member-contact {
-    font-size: 12px;
+    font-size: 16px;
     flex-direction: column;
     align-items: flex-start;
     gap: 2px;
@@ -1034,258 +1061,7 @@ export default class extends Vue {
   }
 
   .field-label {
-    font-size: 13px;
-    margin-bottom: 6px;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 4px;
-  }
-
-  .char-count {
-    font-size: 12px;
-  }
-
-  .message-input {
-    margin-bottom: 20px;
-
-    ::v-deep .el-textarea__inner {
-      font-size: 14px;
-      padding: 12px;
-    }
-  }
-
-  .send-info {
-    padding: 16px;
-    margin-bottom: 20px;
-  }
-
-  .info-item {
-    flex-direction: column;
-    align-items: center;
-  }
-
-  .info-label {
-    font-size: 12px;
-  }
-
-  .info-value {
-    font-size: 14px;
-  }
-
-  .send-actions {
-    gap: 10px;
-
-    ::v-deep .el-button {
-      padding: 12px 20px;
-      font-size: 14px;
-
-      &--large {
-        height: 44px;
-      }
-    }
-  }
-
-  // 발송 내역
-  .history-section {
-    padding: 16px;
-    border-radius: 10px;
-  }
-
-  .history-list {
-    max-height: 350px;
-  }
-
-  .history-item {
-    padding: 14px;
-    margin-bottom: 10px;
-    border-radius: 8px;
-  }
-
-  .history-header {
-    margin-bottom: 10px;
-  }
-
-  .history-date {
-    font-size: 12px;
-  }
-
-  .history-status {
-    padding: 3px 10px;
-    font-size: 11px;
-  }
-
-  .history-content {
-    .history-message {
-      font-size: 13px;
-      margin-bottom: 10px;
-    }
-
-    .history-info {
-      font-size: 12px;
-      gap: 12px;
-      flex-wrap: wrap;
-    }
-  }
-
-  .history-pagination {
-    padding-top: 16px;
-  }
-
-  // 빈 상태
-  .empty-state {
-    padding: 40px 16px;
-
-    i {
-      font-size: 36px;
-      margin-bottom: 12px;
-    }
-
-    p {
-      font-size: 13px;
-    }
-  }
-
-  // Element UI 체크박스 조정
-  ::v-deep .el-checkbox {
-    .el-checkbox__inner {
-      width: 16px;
-      height: 16px;
-    }
-  }
-}
-
-// 425px 이하 모바일 반응형
-@media (max-width: 425px) {
-  .sms-management-main {
-    padding: 20px 16px;
-  }
-
-  .page-header {
-    margin-bottom: 24px;
-  }
-
-  .page-title {
-    font-size: 20px;
-    margin-bottom: 6px;
-  }
-
-  .page-description {
-    font-size: 13px;
-  }
-
-  .section-title {
-    font-size: 16px;
-    margin-bottom: 16px;
-    gap: 6px;
-  }
-
-  // 검색 섹션
-  .search-section {
-    padding: 16px;
-    margin-bottom: 16px;
-    border-radius: 10px;
-  }
-
-  .search-form {
-    gap: 10px;
-
-    ::v-deep .el-input__inner {
-      height: 40px;
-      font-size: 14px;
-    }
-
-    ::v-deep .el-button {
-      padding: 10px 16px;
-      font-size: 13px;
-    }
-  }
-
-  // 검색 결과
-  .search-results {
-    padding: 16px;
-    margin-bottom: 16px;
-    border-radius: 10px;
-  }
-
-  .results-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
-    margin-bottom: 16px;
-    padding-bottom: 12px;
-  }
-
-  .results-title {
-    font-size: 14px;
-  }
-
-  .results-actions {
-    width: 100%;
-    display: flex;
-
-    ::v-deep .el-button {
-      flex: 1;
-      padding: 8px 12px;
-      font-size: 12px;
-    }
-  }
-
-  .member-list {
-    max-height: 280px;
-  }
-
-  .member-item {
-    padding: 12px;
-    gap: 10px;
-
-    &.selected {
-      border-width: 1px;
-    }
-  }
-
-  .member-avatar {
-    width: 36px;
-    height: 36px;
-    font-size: 16px;
-  }
-
-  .member-name {
-    font-size: 14px;
-    margin-bottom: 2px;
-  }
-
-  .member-contact {
-    font-size: 12px;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 2px;
-
-    .divider {
-      display: none;
-    }
-  }
-
-  // 메시지 작성 섹션
-  .message-section {
-    padding: 16px;
-    margin-bottom: 16px;
-    border-radius: 10px;
-  }
-
-  .template-selector {
-    margin-bottom: 20px;
-
-    ::v-deep .el-select {
-      .el-input__inner {
-        height: 40px;
-        font-size: 14px;
-      }
-    }
-  }
-
-  .field-label {
-    font-size: 13px;
-    margin-bottom: 6px;
+    margin-bottom: 15px;
     flex-direction: column;
     align-items: flex-start;
     gap: 4px;

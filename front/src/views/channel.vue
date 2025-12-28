@@ -688,6 +688,7 @@ export default class extends Vue {
 
   .info-stats-mobile {
     display: flex;
+    flex-wrap: wrap;
     justify-content: center;
     gap: 16px;
     padding-bottom: 16px;
@@ -697,31 +698,35 @@ export default class extends Vue {
   .stats-column {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 10px;
     flex: 1;
   }
 
   .stat-item-mobile {
     display: flex;
     align-items: center;
-    gap: 20px;
+    gap: 10px;
   }
 
   .stat-label-mobile {
     width: 56px;
     color: #222;
     font-family: Pretendard, -apple-system, sans-serif;
-    font-size: 12px;
+    font-size: 16px;
     font-weight: 700;
     line-height: 100%;
+    text-align: left;
+    flex: 0 1 80px;
   }
 
   .stat-value-mobile {
     color: #444;
     font-family: Pretendard, -apple-system, sans-serif;
-    font-size: 12px;
+    font-size: 16px;
     font-weight: 400;
     line-height: 150%;
+    flex: 0 1 calc(100% - 90px);
+    text-align: left;
   }
 
   .info-description-mobile {
@@ -792,6 +797,17 @@ export default class extends Vue {
 
   .join-button-mobile:hover {
     background: #0532CC;
+  }
+
+  @media screen and (max-width: 500px) {
+    .info-stats-mobile {
+      gap: 10px;
+    }
+
+    .stats-column {
+      flex: 0 1 100%;
+    }
+    
   }
 }
 </style>
