@@ -1311,7 +1311,8 @@ export default class extends Vue {
 }
 
 @media screen and (max-width: 1024px) {
-  .schedule-title {font-size: 24px; min-height: 50px;}
+  .schedule-title {font-size: 24px; min-height: 60px;}
+  .schedule-info p {font-size: 18px;}
 }
 
 // 425px 이하 모바일 반응형
