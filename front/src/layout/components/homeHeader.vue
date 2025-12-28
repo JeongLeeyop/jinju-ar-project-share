@@ -840,7 +840,7 @@ export default class extends Vue {
   border-radius: 20px;
   background: #F0F4FF;
   width: 100%;
-  max-width: 90px;
+  max-width: 150px;
   text-align: center;
 
   .points-label,
@@ -1269,7 +1269,7 @@ export default class extends Vue {
   }
 
   .points-display {
-    padding: 4px 6px;
+    padding: 0;
 
     .points-label {
       display: none;
