@@ -18,3 +18,6 @@ INSERT INTO sms_template (name, content, channel_uid, is_active, sort_order) VAL
 ('오프라인 장터 안내', '[와로 커뮤니티]\n오프라인 장터가 오픈되었습니다.\n다양한 상품을 확인해보세요!', NULL, TRUE, 1),
 ('신규 상품 등록 알림', '[와로 커뮤니티]\n새로운 상품이 등록되었습니다.\n지금 바로 확인해보세요!', NULL, TRUE, 2),
 ('이벤트 안내', '[와로 커뮤니티]\n특별 이벤트가 진행중입니다.\n자세한 내용은 앱을 확인해주세요.', NULL, TRUE, 3);
+
+alter table calendar
+                        add max_participants int null

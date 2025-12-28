@@ -43,6 +43,7 @@ public class Calendar implements Serializable {
     private String location; // 진행 장소
     private Integer points; // R포인트 (유료/획득)
     private String eventType; // free, paid, earn
+    private Integer maxParticipants; // 최대 참여 인원
     private String writerUid; // 작성자 UID
 
     @ManyToOne

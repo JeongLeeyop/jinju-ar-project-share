@@ -45,7 +45,7 @@
         <div v-else-if="registeredSchedules.length > 0" class="schedules-list">
           <div
             v-for="schedule in registeredSchedules"
-            :key="schedule.uid"
+            :key="schedule.idx"
             class="schedule-card registered-card"
           >
             <div class="schedule-header">
@@ -111,7 +111,7 @@
         <div v-else-if="participatedSchedules.length > 0" class="schedules-list">
           <div
             v-for="schedule in participatedSchedules"
-            :key="schedule.uid"
+            :key="schedule.idx"
             class="schedule-card participated-card"
           >
             <div class="schedule-header">
@@ -148,7 +148,7 @@
             </div>
             <div class="schedule-actions">
               <button 
-                v-if="canCancel(schedule)"
+                v-if="checkCanCancel(schedule)"
                 class="action-btn danger" 
                 @click.stop="cancelParticipation(schedule)"
               >
@@ -182,6 +182,10 @@
         <div v-else-if="pointHistory.length > 0" class="point-history-list">
           <div class="point-summary">
             <div class="summary-card">
+              <h4>총 획득 포인트</h4>
+              <p class="point-value earned">+{{ totalEarnedPoints.toLocaleString() }}</p>
+            </div>
+            <div class="summary-card">
               <h4>총 사용 포인트</h4>
               <p class="point-value spent">-{{ totalSpentPoints.toLocaleString() }}</p>
             </div>
@@ -197,7 +201,7 @@
                 <tr>
                   <th>날짜</th>
                   <th>내역</th>
-                  <th>일정명</th>
+                  <th>설명</th>
                   <th>포인트</th>
                   <th>잔액</th>
                 </tr>
@@ -205,22 +209,22 @@
               <tbody>
                 <tr 
                   v-for="history in pointHistory" 
-                  :key="history.uid"
+                  :key="history.idx"
                   class="history-row"
                 >
                   <td>{{ formatDate(history.createdAt) }}</td>
                   <td>
-                    <span class="history-type" :class="history.type">
-                      {{ getHistoryTypeLabel(history.type) }}
+                    <span class="history-type" :class="history.pointType">
+                      {{ getHistoryTypeLabel(history.pointType) }}
                     </span>
                   </td>
-                  <td>{{ history.scheduleName }}</td>
+                  <td>{{ history.description }}</td>
                   <td>
-                    <span class="point-change" :class="{ positive: history.pointChange > 0, negative: history.pointChange < 0 }">
-                      {{ history.pointChange > 0 ? '+' : '' }}{{ history.pointChange.toLocaleString() }}
+                    <span class="point-change" :class="{ positive: history.pointAmount > 0, negative: history.pointAmount < 0 }">
+                      {{ history.pointAmount > 0 ? '+' : '' }}{{ history.pointAmount.toLocaleString() }}
                     </span>
                   </td>
-                  <td>{{ history.balance.toLocaleString() }}</td>
+                  <td>{{ history.currentBalance.toLocaleString() }}</td>
                 </tr>
               </tbody>
             </table>
@@ -267,17 +271,34 @@
         <div class="participants-list">
           <div 
             v-for="participant in participants" 
-            :key="participant.uid"
+            :key="participant.idx"
             class="participant-item"
           >
             <div class="participant-info">
-              <img :src="participant.profileImage || '/img/default-avatar.png'" alt="프로필" class="participant-avatar" />
+              <img 
+                v-if="participant.userProfileImage" 
+                :src="`${apiUrl}/attached-file/${participant.userProfileImage}`" 
+                alt="프로필" 
+                class="participant-avatar" 
+              />
+              <div v-else class="participant-avatar-placeholder">
+                <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <circle cx="18" cy="18" r="18" fill="#D9D9D9"/>
+                  <mask id="mask0_participant" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="0" y="0" width="36" height="36">
+                    <circle cx="18" cy="18" r="18" fill="#D9D9D9"/>
+                  </mask>
+                  <g mask="url(#mask0_participant)">
+                    <rect x="4" y="21" width="28" height="32" rx="14" fill="#999"/>
+                    <circle cx="18" cy="11" r="7" fill="#999"/>
+                  </g>
+                </svg>
+              </div>
               <div class="participant-details">
-                <p class="participant-name">{{ participant.name }}</p>
-                <p class="participant-phone">{{ participant.phone }}</p>
+                <p class="participant-name">{{ participant.userName }}</p>
+                <p class="participant-phone">{{ participant.userPhone || '-' }}</p>
               </div>
             </div>
-            <p class="participant-date">{{ formatDate(participant.joinedAt) }}</p>
+            <p class="participant-date">{{ formatDate(participant.createdAt) }}</p>
           </div>
         </div>
 
@@ -292,11 +313,24 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
+import { Component, Vue, Watch } from 'vue-property-decorator';
 import CommunitySidebar from '@/views/components/communitySidebar.vue';
+import { ChannelModule } from '@/store/modules/channel';
+import { UserModule } from '@/store/modules/user';
+import { 
+  getMyRegisteredSchedules, 
+  getMyParticipatedSchedules, 
+  cancelMyRegisteredSchedule,
+  cancelCalendarEvent,
+  getCalendarParticipants,
+  MyScheduleItem
+} from '@/api/manager/calendar';
+import { getTargetUserPointHistory } from '@/api/point';
+import { getUserInfo } from '@/api/user';
+import { EventBus, EVENTS } from '@/utils/eventBus';
 
 interface Schedule {
-  uid: string;
+  idx: number;
   title: string;
   startDate: string;
   endDate: string;
@@ -304,26 +338,32 @@ interface Schedule {
   participantCount: number;
   maxParticipants: number;
   status: 'upcoming' | 'ongoing' | 'completed' | 'cancelled';
+  eventType?: 'free' | 'paid' | 'earn';
+  points?: number;
+  hostUid?: string;
   hostName?: string;
   participatedAt?: string;
   cancelDeadline?: string;
+  canCancel?: boolean;
 }
 
 interface PointHistory {
-  uid: string;
-  type: 'participation' | 'cancel' | 'refund';
-  scheduleName: string;
-  pointChange: number;
-  balance: number;
+  idx: number;
+  pointType: string;
+  description: string;
+  pointAmount: number;
+  currentBalance: number;
   createdAt: string;
+  referenceId?: string;
 }
 
 interface Participant {
-  uid: string;
-  name: string;
-  phone: string;
-  profileImage: string;
-  joinedAt: string;
+  idx: number;
+  userUid: string;
+  userName: string;
+  userPhone: string;
+  userProfileImage: string;
+  createdAt: string;
 }
 
 @Component({
@@ -345,167 +385,194 @@ export default class extends Vue {
 
   private participantsModalVisible = false;
   private selectedSchedule: Schedule | null = null;
+  
+  private currentChannel: any = null;
+  private currentPoints = 0;
+  private apiUrl = process.env.VUE_APP_BASE_API;
 
-  // Mock data for demonstration
-  created() {
+  async created() {
+    await this.initChannel();
+  }
+
+  /**
+   * 채널 정보 초기화 및 데이터 로드
+   */
+  private async initChannel() {
+    // domain 파라미터에서 채널 정보 로드
+    const domain = this.$route.params.domain;
+    if (!domain) {
+      this.$message.error('채널 정보를 찾을 수 없습니다');
+      return;
+    }
+
+    // ChannelModule에서 선택된 채널 가져오기
+    if (ChannelModule.selectedChannel && ChannelModule.selectedChannel.uid) {
+      this.currentChannel = ChannelModule.selectedChannel;
+    } else {
+      // 채널 정보가 없으면 domain으로 조회
+      try {
+        const { getChannelDomainDetail } = await import('@/api/channel');
+        const res = await getChannelDomainDetail(domain);
+        this.currentChannel = res.data;
+        ChannelModule.setSelectedChannel(this.currentChannel);
+      } catch (error) {
+        console.error('채널 정보 조회 실패:', error);
+        this.$message.error('채널 정보를 불러오는데 실패했습니다');
+        return;
+      }
+    }
+
+    // 현재 포인트 조회
+    await this.loadCurrentPoints();
+
+    // 데이터 로드
     this.loadRegisteredSchedules();
     this.loadParticipatedSchedules();
     this.loadPointHistory();
   }
+  
+  /**
+   * channelUid getter - domain과 혼동 방지
+   */
+  get channelUid(): string {
+    // 주의: domain이 아닌 실제 channel uid를 반환해야 함
+    const uid = this.currentChannel?.uid || ChannelModule.selectedChannel?.uid;
+    if (!uid) {
+      console.warn('[mySchedule] channelUid is empty');
+    }
+    return uid || '';
+  }
 
-  // 등록 일정 로드
+  @Watch('$route.params.domain')
+  private async onDomainChange() {
+    await this.initChannel();
+  }
+
+  /**
+   * 현재 포인트 조회
+   */
+  private async loadCurrentPoints() {
+    try {
+      const res = await getUserInfo();
+      this.currentPoints = res.data.point || 0;
+    } catch (error) {
+      console.error('포인트 조회 실패:', error);
+    }
+  }
+
+  /**
+   * 등록 일정 로드
+   */
   private async loadRegisteredSchedules() {
+    if (!this.channelUid) return;
+    
     this.loadingRegistered = true;
     try {
-      // TODO: Replace with actual API call
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      this.registeredSchedules = [
-        {
-          uid: '1',
-          title: '진주성 AR 체험 투어',
-          startDate: '2025-02-15T14:00:00',
-          endDate: '2025-02-15T16:00:00',
-          location: '진주성',
-          participantCount: 8,
-          maxParticipants: 20,
-          status: 'upcoming',
-        },
-        {
-          uid: '2',
-          title: '진주 전통시장 탐방',
-          startDate: '2025-02-20T10:00:00',
-          endDate: '2025-02-20T12:00:00',
-          location: '진주중앙시장',
-          participantCount: 15,
-          maxParticipants: 30,
-          status: 'upcoming',
-        },
-        {
-          uid: '3',
-          title: '남강 산책 모임',
-          startDate: '2025-01-28T09:00:00',
-          endDate: '2025-01-28T11:00:00',
-          location: '남강변',
-          participantCount: 12,
-          maxParticipants: 15,
-          status: 'completed',
-        },
-      ];
-    } catch (error) {
+      const res = await getMyRegisteredSchedules(this.channelUid);
+      this.registeredSchedules = (res.data || []).map((item: any) => ({
+        idx: item.idx,
+        title: item.title,
+        startDate: item.startDate,
+        endDate: item.endDate,
+        location: item.location || '장소 미정',
+        participantCount: item.participantCount || 0,
+        maxParticipants: item.maxParticipants || 0,
+        status: item.status,
+        eventType: item.eventType,
+        points: item.points,
+        hostUid: item.hostUid,
+        hostName: item.hostName,
+        canCancel: item.canCancel,
+      }));
+    } catch (error: any) {
       console.error('Failed to load registered schedules:', error);
-      this.$message.error('등록 일정을 불러오는데 실패했습니다');
+      const message = error.response?.data?.message || '등록 일정을 불러오는데 실패했습니다';
+      this.$message.error(message);
     } finally {
       this.loadingRegistered = false;
     }
   }
 
-  // 참여 일정 로드
+  /**
+   * 참여 일정 로드
+   */
   private async loadParticipatedSchedules() {
+    if (!this.channelUid) return;
+    
     this.loadingParticipated = true;
     try {
-      // TODO: Replace with actual API call
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      this.participatedSchedules = [
-        {
-          uid: '4',
-          title: '진주 AR 역사 투어',
-          startDate: '2025-02-18T13:00:00',
-          endDate: '2025-02-18T15:00:00',
-          location: '진주시 일원',
-          participantCount: 10,
-          maxParticipants: 15,
-          status: 'upcoming',
-          hostName: '정이욥',
-          participatedAt: '2025-01-25T10:30:00',
-          cancelDeadline: '2025-02-16T23:59:59',
-        },
-        {
-          uid: '5',
-          title: '촉석루 문화 체험',
-          startDate: '2025-02-22T14:00:00',
-          endDate: '2025-02-22T16:00:00',
-          location: '촉석루',
-          participantCount: 5,
-          maxParticipants: 10,
-          status: 'upcoming',
-          hostName: '오형래',
-          participatedAt: '2025-01-26T15:20:00',
-          cancelDeadline: '2025-02-20T23:59:59',
-        },
-        {
-          uid: '6',
-          title: '진주 전통 문화 축제',
-          startDate: '2025-01-20T10:00:00',
-          endDate: '2025-01-20T18:00:00',
-          location: '진주성',
-          participantCount: 50,
-          maxParticipants: 100,
-          status: 'completed',
-          hostName: '배은별',
-          participatedAt: '2025-01-10T09:00:00',
-        },
-      ];
-    } catch (error) {
+      const res = await getMyParticipatedSchedules(this.channelUid);
+      this.participatedSchedules = (res.data || []).map((item: any) => ({
+        idx: item.idx,
+        title: item.title,
+        startDate: item.startDate,
+        endDate: item.endDate,
+        location: item.location || '장소 미정',
+        participantCount: item.participantCount || 0,
+        maxParticipants: item.maxParticipants || 0,
+        status: item.status,
+        eventType: item.eventType,
+        points: item.points,
+        hostUid: item.hostUid,
+        hostName: item.hostName,
+        participatedAt: item.participatedAt,
+        cancelDeadline: item.cancelDeadline,
+        canCancel: item.canCancel,
+      }));
+    } catch (error: any) {
       console.error('Failed to load participated schedules:', error);
-      this.$message.error('참여 일정을 불러오는데 실패했습니다');
+      const message = error.response?.data?.message || '참여 일정을 불러오는데 실패했습니다';
+      this.$message.error(message);
     } finally {
       this.loadingParticipated = false;
     }
   }
 
-  // 포인트 내역 로드
+  /**
+   * 포인트 내역 로드
+   */
   private async loadPointHistory() {
+    if (!this.channelUid || !UserModule.isLogin) return;
+    
     this.loadingPointHistory = true;
     try {
-      // TODO: Replace with actual API call
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      this.pointHistory = [
-        {
-          uid: '1',
-          type: 'participation',
-          scheduleName: '진주 AR 역사 투어',
-          pointChange: -500,
-          balance: 4500,
-          createdAt: '2025-01-25T10:30:00',
-        },
-        {
-          uid: '2',
-          type: 'participation',
-          scheduleName: '촉석루 문화 체험',
-          pointChange: -300,
-          balance: 4200,
-          createdAt: '2025-01-26T15:20:00',
-        },
-        {
-          uid: '3',
-          type: 'refund',
-          scheduleName: '남강변 조깅 모임',
-          pointChange: 200,
-          balance: 4400,
-          createdAt: '2025-01-15T09:00:00',
-        },
-      ];
-    } catch (error) {
+      // 사용자 본인의 포인트 내역 조회
+      const userUid = UserModule.userId;
+      const res = await getTargetUserPointHistory({
+        targetUserUid: userUid,
+        channelUid: this.channelUid,
+        page: 0,
+        size: 100,
+      });
+      this.pointHistory = (res.data?.content || []).filter((item: any) => 
+        item.pointType?.includes('SCHEDULE')
+      );
+    } catch (error: any) {
       console.error('Failed to load point history:', error);
-      this.$message.error('포인트 내역을 불러오는데 실패했습니다');
+      // 권한이 없어도 무시 (본인 포인트 내역은 별도 API가 필요할 수 있음)
     } finally {
       this.loadingPointHistory = false;
     }
   }
 
-  // 포인트 계산
+  /**
+   * 포인트 계산 - 총 획득 포인트
+   */
+  get totalEarnedPoints(): number {
+    return this.pointHistory
+      .filter((h) => h.pointAmount > 0)
+      .reduce((sum, h) => sum + h.pointAmount, 0);
+  }
+
+  /**
+   * 포인트 계산 - 총 사용 포인트
+   */
   get totalSpentPoints(): number {
     return Math.abs(
       this.pointHistory
-        .filter((h) => h.pointChange < 0)
-        .reduce((sum, h) => sum + h.pointChange, 0),
+        .filter((h) => h.pointAmount < 0)
+        .reduce((sum, h) => sum + h.pointAmount, 0),
     );
-  }
-
-  get currentPoints(): number {
-    return this.pointHistory.length > 0
-      ? this.pointHistory[0].balance
-      : 5000;
   }
 
   // 일정 상태 레이블
@@ -543,66 +610,54 @@ export default class extends Vue {
   // 포인트 내역 타입 레이블
   private getHistoryTypeLabel(type: string): string {
     const typeMap: { [key: string]: string } = {
-      participation: '참여',
-      cancel: '취소',
-      refund: '환불',
+      SCHEDULE: '일정 참여',
+      SCHEDULE_REFUND: '참여 취소 환불',
+      SCHEDULE_CANCELLED_REFUND: '일정 취소 환불',
+      SCHEDULE_EARN: '일정 참여 획득',
+      SCHEDULE_PARTICIPATION: '일정 참여',
+      SCHEDULE_CANCEL: '일정 취소',
     };
     return typeMap[type] || type;
   }
 
-  // 취소 가능 여부 체크 (마감 기한 내)
-  private canCancel(schedule: Schedule): boolean {
-    if (schedule.status !== 'upcoming') {
-      return false;
-    }
-    // 두 번째 일정(uid: '5')은 항상 취소 가능
-    if (schedule.uid === '5') {
-      return true;
-    }
-    if (!schedule.cancelDeadline) {
-      return false;
-    }
-    const now = new Date();
-    const deadline = new Date(schedule.cancelDeadline);
-    return now < deadline;
+  // 취소 가능 여부 체크
+  private checkCanCancel(schedule: Schedule): boolean {
+    // 백엔드에서 전달받은 canCancel 사용
+    return schedule.canCancel === true;
   }
 
   // 일정 상세 열기
   private openScheduleDetail(schedule: Schedule) {
-    // TODO: Navigate to schedule detail page
-    this.$message.info(`일정 상세: ${schedule.title}`);
+    // 일정 상세 페이지로 이동
+    this.$router.push({
+      name: 'CalendarDetail',
+      params: {
+        domain: this.$route.params.domain,
+        idx: String(schedule.idx),
+      },
+    }).catch(() => {});
   }
 
   // 참여자 보기
   private async viewParticipants(schedule: Schedule) {
     this.selectedSchedule = schedule;
     
-    // TODO: Replace with actual API call
-    this.participants = [
-      {
-        uid: '1',
-        name: '이은경',
-        phone: '010-1234-5678',
-        profileImage: '',
-        joinedAt: '2025-01-25T10:00:00',
-      },
-      {
-        uid: '2',
-        name: '이주현',
-        phone: '010-2345-6789',
-        profileImage: '',
-        joinedAt: '2025-01-26T14:30:00',
-      },
-      {
-        uid: '3',
-        name: '정이욥2',
-        phone: '010-3456-7890',
-        profileImage: '',
-        joinedAt: '2025-01-27T09:15:00',
-      },
-    ];
-
-    this.participantsModalVisible = true;
+    try {
+      const res = await getCalendarParticipants(schedule.idx);
+      this.participants = (res.data || []).map((p: any) => ({
+        idx: p.idx,
+        userUid: p.userUid,
+        userName: p.userName,
+        userPhone: p.userPhone || '',
+        userProfileImage: p.userProfileImage,
+        createdAt: p.createdAt,
+      }));
+      this.participantsModalVisible = true;
+    } catch (error: any) {
+      console.error('참여자 목록 조회 실패:', error);
+      const message = error.response?.data?.message || '참여자 목록을 불러오는데 실패했습니다';
+      this.$message.error(message);
+    }
   }
 
   // 참여자 모달 닫기
@@ -614,24 +669,46 @@ export default class extends Vue {
 
   // 일정 수정
   private editSchedule(schedule: Schedule) {
-    // TODO: Navigate to schedule edit page
-    this.$message.info(`일정 수정: ${schedule.title}`);
+    // 일정 수정 페이지로 이동
+    this.$router.push({
+      name: 'CalendarEdit',
+      params: {
+        domain: this.$route.params.domain,
+        idx: String(schedule.idx),
+      },
+    }).catch(() => {
+      // 라우트가 없으면 모달 등으로 대체
+      this.$message.info(`일정 수정: ${schedule.title}`);
+    });
   }
 
-  // 일정 취소
+  // 내가 등록한 일정 취소
   private async cancelSchedule(schedule: Schedule) {
     try {
-      await this.$confirm(`"${schedule.title}" 일정을 취소하시겠습니까?`, '일정 취소', {
-        confirmButtonText: '확인',
-        cancelButtonText: '취소',
-        type: 'warning',
-      });
+      await this.$confirm(
+        `"${schedule.title}" 일정을 취소하시겠습니까?\n\n참여자가 있는 경우 포인트가 환불됩니다.`,
+        '일정 취소',
+        {
+          confirmButtonText: '확인',
+          cancelButtonText: '취소',
+          type: 'warning',
+        },
+      );
 
-      // TODO: Replace with actual API call
+      await cancelMyRegisteredSchedule(schedule.idx);
       this.$message.success('일정이 취소되었습니다');
+      
+      // 목록 새로고침
       await this.loadRegisteredSchedules();
-    } catch (error) {
-      // User cancelled
+      
+      // 헤더 포인트 갱신 (환불이 있을 수 있으므로)
+      EventBus.$emit(EVENTS.POINTS_UPDATED);
+    } catch (error: any) {
+      if (error !== 'cancel') {
+        console.error('일정 취소 실패:', error);
+        const message = error.response?.data?.message || '일정 취소에 실패했습니다';
+        this.$message.error(message);
+      }
     }
   }
 
@@ -648,12 +725,22 @@ export default class extends Vue {
         },
       );
 
-      // TODO: Replace with actual API call
+      await cancelCalendarEvent(schedule.idx);
       this.$message.success('참여가 취소되었습니다. 포인트가 환불됩니다.');
+      
+      // 목록 새로고침
       await this.loadParticipatedSchedules();
       await this.loadPointHistory();
-    } catch (error) {
-      // User cancelled
+      await this.loadCurrentPoints();
+      
+      // 헤더 포인트 갱신
+      EventBus.$emit(EVENTS.POINTS_UPDATED);
+    } catch (error: any) {
+      if (error !== 'cancel') {
+        console.error('참여 취소 실패:', error);
+        const message = error.response?.data?.message || '참여 취소에 실패했습니다';
+        this.$message.error(message);
+      }
     }
   }
 
@@ -684,32 +771,32 @@ export default class extends Vue {
 .my-schedule-main {
   flex: 1;
   margin-left: 270px;
-  padding: 160px 40px 40px;
+  padding: 140px 40px 40px;
 
   @media screen and (max-width: 1024px) {
     margin-left: 240px;
-    padding: 160px 30px 20px;
+    padding: 140px 30px 20px;
   }
   
   @media screen and (max-width: 768px) {
     margin-left: 0;
-    padding: 140px 30px 20px;
+    padding: 120px 30px 20px;
   }
 
   @media screen and (max-width: 500px) {
-    padding: 120px 20px 20px;
+    padding: 100px 20px 20px;
   }
 }
 
 .page-header {
-  margin-bottom: 32px;
+  margin-bottom: 24px;
 
   .page-title {
     color: #000;
     font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
-    font-size: 32px;
+    font-size: 28px;
     font-weight: 700;
-    line-height: 100%;
+    line-height: 1.3;
     margin: 0;
 
     @media (max-width: 768px) {
@@ -721,29 +808,29 @@ export default class extends Vue {
 // 탭 스타일
 .tabs-section {
   display: flex;
-  gap: 16px;
-  margin-bottom: 32px;
+  gap: 12px;
+  margin-bottom: 24px;
   border-bottom: 2px solid #EBEBEB;
 
   @media (max-width: 768px) {
-    gap: 10px;
+    gap: 8px;
   }
 
   .tab-btn {
-    padding: 16px 24px;
+    padding: 12px 20px;
     background: none;
     border: none;
     color: #666;
     font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
-    font-size: 18px;
+    font-size: 16px;
     font-weight: 600;
     cursor: pointer;
     position: relative;
-    // transition: color 0.2s;ㅅ
+    transition: color 0.2s;
 
     @media (max-width: 768px) {
-      padding: 12px 16px;
-      font-size: 16px;
+      padding: 10px 14px;
+      font-size: 14px;
     }
 
     &:hover {
@@ -774,24 +861,24 @@ export default class extends Vue {
 .notice-message {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 16px 20px;
-  margin-bottom: 24px;
+  gap: 8px;
+  padding: 12px 16px;
+  margin-bottom: 20px;
   background: #E8F0FF;
   border-left: 4px solid #073DFF;
   border-radius: 8px;
   color: #073DFF;
   font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 500;
 
   i {
-    font-size: 18px;
+    font-size: 16px;
   }
 
   @media (max-width: 768px) {
-    font-size: 14px;
-    padding: 14px 16px;
+    font-size: 13px;
+    padding: 10px 12px;
   }
 }
 
@@ -801,16 +888,16 @@ export default class extends Vue {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 100px 20px;
+  padding: 80px 20px;
   color: #666;
 
   i {
     font-size: 48px;
-    margin-bottom: 20px;
+    margin-bottom: 16px;
   }
 
   p {
-    font-size: 16px;
+    font-size: 14px;
     margin: 0;
   }
 }
@@ -820,31 +907,31 @@ export default class extends Vue {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 100px 20px;
+  padding: 80px 20px;
   color: #666;
-  font-size: 16px;
+  font-size: 14px;
 }
 
 // 일정 리스트
 .schedules-list {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 16px;
 }
 
 .schedule-card {
   background: #FFF;
   border-radius: 12px;
-  padding: 24px;
+  padding: 20px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-//   transition: all 0.2s;
+  transition: all 0.2s;
 
   &:hover {
-    // box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   }
 
   @media (max-width: 768px) {
-    padding: 20px 16px;
+    padding: 16px;
   }
 }
 
@@ -852,7 +939,7 @@ export default class extends Vue {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
   gap: 12px;
 
   @media (max-width: 768px) {
@@ -864,25 +951,25 @@ export default class extends Vue {
 .schedule-title {
   color: #222;
   font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 600;
   line-height: 1.4;
   margin: 0;
   cursor: pointer;
   flex: 1;
-//   transition: color 0.2s;
+  transition: color 0.2s;
 
   &:hover {
     color: #073DFF;
   }
 
   @media (max-width: 768px) {
-    font-size: 18px;
+    font-size: 16px;
   }
 }
 
 .status-badge {
-  padding: 6px 14px;
+  padding: 4px 12px;
   border-radius: 20px;
   font-size: 13px;
   font-weight: 600;
@@ -919,13 +1006,13 @@ export default class extends Vue {
     margin: 0;
     color: #666;
     font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
-    font-size: 15px;
+    font-size: 14px;
     display: flex;
     align-items: center;
     gap: 8px;
 
     i {
-      font-size: 16px;
+      font-size: 14px;
       color: #999;
     }
   }
@@ -933,7 +1020,7 @@ export default class extends Vue {
 
 .schedule-actions {
   display: flex;
-  gap: 10px;
+  gap: 8px;
   flex-wrap: wrap;
 
   @media (max-width: 768px) {
@@ -950,11 +1037,12 @@ export default class extends Vue {
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-//   transition: all 0.2s;
+  transition: all 0.2s;
 
   @media (max-width: 768px) {
     flex: none;
     width: 100%;
+    height: 40px;
   }
 
   &.primary {
@@ -1000,13 +1088,13 @@ export default class extends Vue {
 .point-history-list {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 16px;
 }
 
 .point-summary {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 20px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
 
   @media (max-width: 768px) {
     grid-template-columns: 1fr;
@@ -1015,7 +1103,7 @@ export default class extends Vue {
   .summary-card {
     background: #FFF;
     border-radius: 12px;
-    padding: 24px;
+    padding: 20px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 
     h4 {
@@ -1062,11 +1150,11 @@ export default class extends Vue {
       background: #F8F9FA;
 
       th {
-        padding: 16px;
+        padding: 12px;
         text-align: left;
         color: #666;
         font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
-        font-size: 14px;
+        font-size: 13px;
         font-weight: 600;
         border-bottom: 2px solid #EBEBEB;
       }
@@ -1075,7 +1163,7 @@ export default class extends Vue {
     tbody {
       tr {
         border-bottom: 1px solid #F0F0F0;
-        // transition: background 0.2s;
+        transition: background 0.2s;
 
         &:last-child {
           border-bottom: none;
@@ -1086,7 +1174,7 @@ export default class extends Vue {
         }
 
         td {
-          padding: 16px;
+          padding: 12px;
           color: #333;
           font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
           font-size: 14px;
@@ -1106,7 +1194,7 @@ export default class extends Vue {
 
 .history-type {
   display: inline-block;
-  padding: 4px 12px;
+  padding: 4px 10px;
   border-radius: 12px;
   font-size: 12px;
   font-weight: 600;
@@ -1148,7 +1236,7 @@ export default class extends Vue {
   }
 
   .el-dialog__body {
-    padding: 40px;
+    padding: 30px;
     position: relative;
   }
 }
@@ -1156,21 +1244,21 @@ export default class extends Vue {
 .modal-content {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 20px;
 }
 
 .modal-close-btn {
   position: absolute;
-  right: 20px;
-  top: 20px;
-  width: 32px;
-  height: 32px;
+  right: 16px;
+  top: 16px;
+  width: 28px;
+  height: 28px;
   background: none;
   border: none;
   cursor: pointer;
   padding: 0;
   color: #666;
-//   transition: color 0.2s;
+  transition: color 0.2s;
 
   &:hover {
     color: #333;
@@ -1180,7 +1268,7 @@ export default class extends Vue {
 .modal-title {
   color: #222;
   font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
-  font-size: 24px;
+  font-size: 20px;
   font-weight: 700;
   line-height: 1.3;
   margin: 0;
@@ -1189,15 +1277,15 @@ export default class extends Vue {
 
 .schedule-summary {
   background: #F8F9FA;
-  padding: 20px;
-  border-radius: 10px;
+  padding: 16px;
+  border-radius: 8px;
 
   .summary-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin: 0 0 12px 0;
-    font-size: 16px;
+    margin: 0 0 10px 0;
+    font-size: 14px;
 
     &:last-child {
       margin-bottom: 0;
@@ -1224,9 +1312,9 @@ export default class extends Vue {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px;
+  padding: 12px;
   border-bottom: 1px solid #F0F0F0;
-//   transition: background 0.2s;
+  transition: background 0.2s;
 
   &:last-child {
     border-bottom: none;
@@ -1240,12 +1328,12 @@ export default class extends Vue {
 .participant-info {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 
 .participant-avatar {
-  width: 48px;
-  height: 48px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   object-fit: cover;
   background: #E8F0FF;
@@ -1256,7 +1344,7 @@ export default class extends Vue {
     margin: 0 0 4px;
     color: #222;
     font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
-    font-size: 15px;
+    font-size: 14px;
     font-weight: 600;
   }
 
@@ -1264,7 +1352,7 @@ export default class extends Vue {
     margin: 0;
     color: #888;
     font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
-    font-size: 14px;
+    font-size: 13px;
   }
 }
 
@@ -1272,25 +1360,25 @@ export default class extends Vue {
   margin: 0;
   color: #888;
   font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .modal-actions {
   display: flex;
   justify-content: center;
-  gap: 12px;
+  gap: 8px;
 }
 
 .modal-btn {
-  height: 48px;
-  padding: 0 32px;
+  height: 40px;
+  padding: 0 24px;
   border: none;
   border-radius: 8px;
   font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-//   transition: all 0.2s;
+  transition: all 0.2s;
 
   &.secondary {
     background: #F5F5F5;

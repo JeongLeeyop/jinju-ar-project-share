@@ -65,6 +65,13 @@ public interface CalendarService {
     List<ScheduleParticipantDto.ListItem> getParticipants(Integer calendarIdx);
 
     void grantPointToParticipant(SinghaUser authUser, Integer participantIdx);
+    
+    // 내 일정 관리 메서드
+    List<CalendarDto.MyScheduleItem> getMyRegisteredSchedules(SinghaUser authUser, String channelUid);
+    
+    List<CalendarDto.MyScheduleItem> getMyParticipatedSchedules(SinghaUser authUser, String channelUid);
+    
+    void cancelMySchedule(SinghaUser authUser, Integer calendarIdx);
 }
 
 @Service
@@ -539,5 +546,170 @@ class CalendarServiceImpl implements CalendarService {
         participant.setPointGrantedAt(LocalDateTime.now());
         participant.setPointGrantedBy(authUser.getUser().getUid());
         participantRepository.save(participant);
+    }
+    
+    @Override
+    public List<CalendarDto.MyScheduleItem> getMyRegisteredSchedules(SinghaUser authUser, String channelUid) {
+        User user = userRepository.findById(authUser.getUser().getUid())
+                .orElseThrow(() -> new NotFoundException(NotFound.USER));
+        
+        // 내가 등록한 일정 조회
+        List<Calendar> calendars = calendarRepository.findByWriterUidAndChannelUidOrderByStartDateDesc(
+                user.getUid(), channelUid);
+        
+        return calendars.stream().map(calendar -> {
+            int participantCount = participantRepository.countByCalendarIdxAndStatus(
+                    calendar.getIdx(), ParticipantStatus.REGISTERED);
+            
+            String status = getScheduleStatus(calendar);
+            
+            return CalendarDto.MyScheduleItem.builder()
+                    .idx(calendar.getIdx())
+                    .title(calendar.getTitle())
+                    .startDate(calendar.getStartDate())
+                    .endDate(calendar.getEndDate())
+                    .location(calendar.getLocation())
+                    .participantCount(participantCount)
+                    .maxParticipants(calendar.getMaxParticipants())
+                    .status(status)
+                    .eventType(calendar.getEventType())
+                    .points(calendar.getPoints())
+                    .hostUid(user.getUid())
+                    .hostName(user.getActualName())
+                    .canCancel(!"completed".equals(status) && !"cancelled".equals(status))
+                    .build();
+        }).collect(Collectors.toList());
+    }
+    
+    @Override
+    public List<CalendarDto.MyScheduleItem> getMyParticipatedSchedules(SinghaUser authUser, String channelUid) {
+        User user = userRepository.findById(authUser.getUser().getUid())
+                .orElseThrow(() -> new NotFoundException(NotFound.USER));
+        
+        // 내가 참여한 일정 조회 (REGISTERED 상태)
+        List<ScheduleParticipant> participants = participantRepository.findByUserUidAndChannelUidAndStatusOrderByCreatedAtDesc(
+                user.getUid(), channelUid, ParticipantStatus.REGISTERED);
+        
+        return participants.stream().map(participant -> {
+            Calendar calendar = calendarRepository.findById(participant.getCalendarIdx()).orElse(null);
+            if (calendar == null) return null;
+            
+            User host = userRepository.findById(calendar.getWriterUid()).orElse(null);
+            String hostName = host != null ? host.getActualName() : "작성자";
+            
+            String status = getScheduleStatus(calendar);
+            
+            // 취소 가능 기한 계산 (일정 시작 24시간 전)
+            LocalDateTime cancelDeadline = calendar.getStartDate().minusHours(24);
+            boolean canCancel = LocalDateTime.now().isBefore(cancelDeadline) && "upcoming".equals(status);
+            
+            return CalendarDto.MyScheduleItem.builder()
+                    .idx(calendar.getIdx())
+                    .title(calendar.getTitle())
+                    .startDate(calendar.getStartDate())
+                    .endDate(calendar.getEndDate())
+                    .location(calendar.getLocation())
+                    .participantCount(participantRepository.countByCalendarIdxAndStatus(
+                            calendar.getIdx(), ParticipantStatus.REGISTERED))
+                    .maxParticipants(calendar.getMaxParticipants())
+                    .status(status)
+                    .eventType(calendar.getEventType())
+                    .points(calendar.getPoints())
+                    .hostUid(calendar.getWriterUid())
+                    .hostName(hostName)
+                    .participatedAt(participant.getCreatedAt())
+                    .cancelDeadline(cancelDeadline)
+                    .canCancel(canCancel)
+                    .build();
+        }).filter(item -> item != null).collect(Collectors.toList());
+    }
+    
+    @Transactional
+    @Override
+    public void cancelMySchedule(SinghaUser authUser, Integer calendarIdx) {
+        User user = userRepository.findById(authUser.getUser().getUid())
+                .orElseThrow(() -> new NotFoundException(NotFound.USER));
+        
+        Calendar calendar = calendarRepository.findById(calendarIdx)
+                .orElseThrow(() -> new RuntimeException("일정을 찾을 수 없습니다."));
+        
+        // 작성자 본인만 취소 가능
+        if (!calendar.getWriterUid().equals(user.getUid())) {
+            // 채널 관리자인지 확인
+            var channel = channelRepository.findByUid(calendar.getChannelUid())
+                    .orElseThrow(() -> new RuntimeException("채널을 찾을 수 없습니다."));
+            
+            if (!channel.getUserUid().equals(user.getUid())) {
+                throw new RuntimeException("일정 작성자 또는 채널 관리자만 취소할 수 있습니다.");
+            }
+        }
+        
+        // 이미 시작된 일정은 취소 불가
+        if (LocalDateTime.now().isAfter(calendar.getStartDate())) {
+            throw new RuntimeException("이미 시작된 일정은 취소할 수 없습니다.");
+        }
+        
+        // 참여자들에게 포인트 환불 (paid 타입인 경우)
+        if ("paid".equals(calendar.getEventType())) {
+            List<ScheduleParticipant> participants = participantRepository.findByCalendarIdxAndStatus(
+                    calendarIdx, ParticipantStatus.REGISTERED);
+            
+            for (ScheduleParticipant participant : participants) {
+                if (participant.getPointsAmount() != null && participant.getPointsAmount() > 0) {
+                    User participantUser = userRepository.findById(participant.getUserUid()).orElse(null);
+                    if (participantUser != null) {
+                        Integer currentBalance = participantUser.getPoint() != null ? participantUser.getPoint() : 0;
+                        int newBalance = currentBalance + participant.getPointsAmount();
+                        participantUser.setPoint(newBalance);
+                        userRepository.save(participantUser);
+                        
+                        // 포인트 히스토리 기록
+                        PointHistory history = PointHistory.builder()
+                                .userUid(participantUser.getUid())
+                                .channelUid(calendar.getChannelUid())
+                                .pointType("SCHEDULE_CANCELLED_REFUND")
+                                .pointAmount(participant.getPointsAmount())
+                                .currentBalance(newBalance)
+                                .description("일정 취소로 인한 환불: " + calendar.getTitle())
+                                .referenceId(String.valueOf(calendarIdx))
+                                .build();
+                        pointHistoryRepository.save(history);
+                    }
+                }
+                
+                // 참여자 상태 변경
+                participant.setStatus(ParticipantStatus.CANCELLED);
+                participant.setCancelledAt(LocalDateTime.now());
+                participantRepository.save(participant);
+            }
+        }
+        
+        // 일정 삭제 (또는 상태 변경)
+        calendarRepository.delete(calendar);
+        
+        // 활동 로그 기록
+        activityLogService.logActivity(ActivityLogDto.CreateReq.builder()
+                .userUid(user.getUid())
+                .userName(user.getActualName())
+                .channelUid(calendar.getChannelUid())
+                .activityType(ActivityLog.ActivityType.EVENT_CANCELLED)
+                .description("'" + calendar.getTitle() + "' 일정을 취소하였습니다")
+                .relatedUid(String.valueOf(calendarIdx))
+                .relatedName(calendar.getTitle())
+                .build());
+    }
+    
+    /**
+     * 일정 상태 계산
+     */
+    private String getScheduleStatus(Calendar calendar) {
+        LocalDateTime now = LocalDateTime.now();
+        if (now.isBefore(calendar.getStartDate())) {
+            return "upcoming";
+        } else if (now.isAfter(calendar.getEndDate())) {
+            return "completed";
+        } else {
+            return "ongoing";
+        }
     }
 }

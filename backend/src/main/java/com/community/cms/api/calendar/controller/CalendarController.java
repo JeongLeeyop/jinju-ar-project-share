@@ -193,4 +193,37 @@ public class CalendarController {
         commentService.deleteComment(authUser, commentIdx);
         return ResponseEntity.ok().build();
     }
+    
+    // ============ 내 일정 관리 Endpoints ============
+    
+    /**
+     * 내가 등록한 일정 목록 조회
+     */
+    @GetMapping("/my/registered")
+    public ResponseEntity<List<CalendarDto.MyScheduleItem>> getMyRegisteredSchedules(
+            @AuthenticationPrincipal SinghaUser authUser,
+            @org.springframework.web.bind.annotation.RequestParam("channelUid") String channelUid) {
+        return ResponseEntity.ok(calendarService.getMyRegisteredSchedules(authUser, channelUid));
+    }
+    
+    /**
+     * 내가 참여한 일정 목록 조회
+     */
+    @GetMapping("/my/participated")
+    public ResponseEntity<List<CalendarDto.MyScheduleItem>> getMyParticipatedSchedules(
+            @AuthenticationPrincipal SinghaUser authUser,
+            @org.springframework.web.bind.annotation.RequestParam("channelUid") String channelUid) {
+        return ResponseEntity.ok(calendarService.getMyParticipatedSchedules(authUser, channelUid));
+    }
+    
+    /**
+     * 내가 등록한 일정 취소
+     */
+    @DeleteMapping("/my/{idx}")
+    public ResponseEntity<Void> cancelMySchedule(
+            @AuthenticationPrincipal SinghaUser authUser,
+            @PathVariable("idx") Integer idx) {
+        calendarService.cancelMySchedule(authUser, idx);
+        return ResponseEntity.ok().build();
+    }
 }

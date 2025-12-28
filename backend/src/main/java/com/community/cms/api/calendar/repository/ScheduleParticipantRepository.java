@@ -57,4 +57,10 @@ public interface ScheduleParticipantRepository
      * 특정 채널에서 특정 사용자의 모든 참여 기록 조회
      */
     List<ScheduleParticipant> findByChannelUidAndUserUid(String channelUid, String userUid);
+    
+    /**
+     * 특정 채널에서 특정 사용자의 특정 상태 참여 기록 조회 (최신순)
+     */
+    List<ScheduleParticipant> findByUserUidAndChannelUidAndStatusOrderByCreatedAtDesc(
+            String userUid, String channelUid, ParticipantStatus status);
 }
