@@ -27,8 +27,10 @@ public class MarketplaceProductDto {
     private String description;
     private Integer price;
     private Integer stockQuantity;
+    private String location;  // 거래 장소
     private String sellerUid;
     private String sellerName;
+    private String iconFileUid;  // 판매자 프로필 이미지
     private String status;
     private Integer viewCount;
     private LocalDateTime createdAt;
@@ -42,6 +44,14 @@ public class MarketplaceProductDto {
     
     @JsonProperty("isMine")
     private boolean isMine;
+    
+    @JsonProperty("isTrading")
+    private boolean isTrading;  // 거래중 여부
+    
+    // 현재 거래 중인 구매자 정보 (판매자가 조회시)
+    private String currentBuyerUid;
+    private String currentBuyerName;
+    private String currentPurchaseUid;
 
     /**
      * 상품 등록 요청 DTO

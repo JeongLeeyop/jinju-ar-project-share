@@ -20,6 +20,8 @@ public class MarketplacePurchaseDto {
     private String productUid;
     private String productTitle;
     private String productCategory;
+    private String offlineMarketplaceUid;
+    private String offlineMarketplaceName;
     private String buyerUid;
     private String buyerName;
     private String buyerContact;
@@ -38,6 +40,19 @@ public class MarketplacePurchaseDto {
     private LocalDateTime cancelledAt;
     
     private String thumbnailUid;  // 상품 썸네일
+    
+    // 상품 가격/장소 정보
+    private Integer productPrice;
+    private String productLocation;
+    
+    // 판매자 추가 정보
+    private String sellerIconFileUid;  // 판매자 프로필 이미지
+    
+    // 구매자 추가 정보  
+    private String buyerIconFileUid;  // 구매자 프로필 이미지
+    
+    @JsonProperty("isInProgress")
+    private boolean isInProgress;  // 거래 진행중 여부 (포인트 미지급 상태)
 
     /**
      * 판매자의 오프라인 구매 처리 요청 DTO
@@ -53,5 +68,69 @@ public class MarketplacePurchaseDto {
         
         @NotNull(message = "차감할 포인트를 입력해주세요")
         private Integer pointAmount;
+    }
+
+    /**
+     * 오프라인 상품 포인트 차감 요청 DTO (회원번호로 처리)
+     */
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class OfflineDeductRequest {
+        
+        @NotNull(message = "구매자 이름을 입력해주세요")
+        private String buyerName;
+        
+        @NotNull(message = "구매자 연락처를 입력해주세요")
+        private String buyerContact;
+        
+        @NotNull(message = "차감할 포인트를 입력해주세요")
+        private Integer deductPoints;
+    }
+
+    /**
+     * 구매자의 즉시 구매 요청 DTO (오프라인 장터)
+     */
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class InstantPurchaseRequest {
+        
+        @NotNull(message = "구매 수량을 입력해주세요")
+        private Integer quantity;
+        
+        private String buyerContact;
+    }
+
+    /**
+     * 거래 시작 요청 DTO (구매자가 거래 시작)
+     * 포인트는 거래 완료 시 차감됨
+     */
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class StartTradeRequest {
+        
+        @NotNull(message = "구매 수량을 입력해주세요")
+        private Integer quantity;
+        
+        private String buyerContact;
+    }
+
+    /**
+     * REQUEST 상품 지원 요청 DTO
+     */
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class ApplyForRequestRequest {
+        
+        private String message;  // 지원 메시지
+        
+        private String contact;  // 연락처
     }
 }

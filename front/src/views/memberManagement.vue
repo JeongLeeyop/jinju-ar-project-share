@@ -42,6 +42,13 @@
         >
           권한 관리
         </button>
+        <button 
+          class="tab-btn" 
+          :class="{ active: activeTab === 'points' }"
+          @click="activeTab = 'points'; loadMembersWithPoints();"
+        >
+          포인트 관리
+        </button>
       </div>
 
       <!-- 회원 목록 -->
@@ -354,7 +361,235 @@
           <p>회원이 없습니다</p>
         </div>
       </div>
+
+      <!-- 포인트 관리 -->
+      <div v-if="activeTab === 'points'" class="tab-content">
+        <!-- 검색 -->
+        <div class="filter-bar">
+          <div class="search-box">
+            <i class="el-icon-search"></i>
+            <input 
+              v-model="pointSearchKeyword" 
+              type="text" 
+              placeholder="회원 이름 또는 이메일로 검색"
+              class="search-input"
+            />
+          </div>
+        </div>
+
+        <div v-if="loadingPoints" class="loading-container">
+          <i class="el-icon-loading"></i>
+          <p>로딩 중...</p>
+        </div>
+
+        <div v-else-if="filteredPointMembers.length > 0" class="points-list">
+          <div 
+            v-for="member in filteredPointMembers" 
+            :key="member.userUid"
+            class="point-card"
+          >
+            <div class="point-header">
+              <div class="member-info">
+                <div class="member-avatar-placeholder">
+                  <img v-if="member.iconFileUid" :src="`${apiUrl}/attached-file/${member.iconFileUid}`" alt="프로필 이미지" class="member-avatar-img">
+                  <svg v-else width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="18" cy="18" r="18" fill="#D9D9D9"/>
+                    <mask id="mask0_user" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="0" y="0" width="36" height="36">
+                      <circle cx="18" cy="18" r="18" fill="#D9D9D9"/>
+                    </mask>
+                    <g mask="url(#mask0_user)">
+                      <rect x="4" y="21" width="28" height="32" rx="14" fill="#F5F5F5"/>
+                      <circle cx="18" cy="11" r="7" fill="#F5F5F5"/>
+                    </g>
+                  </svg>
+                </div>
+                <div class="member-details">
+                  <h3 class="member-name">{{ member.actualName || '-' }}</h3>
+                  <p class="member-email">{{ member.email || member.userId || '-' }}</p>
+                </div>
+              </div>
+              <div class="point-info">
+                <span class="point-balance">{{ member.currentPoint?.toLocaleString() || 0 }} P</span>
+              </div>
+            </div>
+
+            <div class="point-actions">
+              <button 
+                class="action-btn primary-outline" 
+                @click="openPointHistoryModal(member)"
+              >
+                <i class="el-icon-document"></i>
+                포인트 내역
+              </button>
+              <button 
+                class="action-btn primary" 
+                @click="openPointAdjustModal(member, 'add')"
+              >
+                <i class="el-icon-plus"></i>
+                지급
+              </button>
+              <button 
+                class="action-btn danger-outline" 
+                @click="openPointAdjustModal(member, 'deduct')"
+              >
+                <i class="el-icon-minus"></i>
+                차감
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div v-else class="empty-container">
+          <p>회원이 없습니다</p>
+        </div>
+      </div>
     </div>
+
+    <!-- 포인트 지급/차감 모달 -->
+    <el-dialog
+      :visible.sync="pointAdjustModalVisible"
+      width="500px"
+      center
+      :show-close="false"
+      :append-to-body="true"
+      :modal-append-to-body="true"
+      :close-on-click-modal="false"
+      custom-class="point-adjust-modal"
+    >
+      <div class="modal-content">
+        <button class="modal-close-btn" @click="closePointAdjustModal">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+
+        <h3 class="modal-title">{{ pointAdjustType === 'add' ? '포인트 지급' : '포인트 차감' }}</h3>
+
+        <div v-if="selectedPointMember" class="point-member-info">
+          <div class="member-avatar-placeholder">
+            <img v-if="selectedPointMember.iconFileUid" :src="`${apiUrl}/attached-file/${selectedPointMember.iconFileUid}`" alt="프로필 이미지" class="member-avatar-img">
+            <svg v-else width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="18" cy="18" r="18" fill="#D9D9D9"/>
+              <mask id="mask0_user" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="0" y="0" width="36" height="36">
+                <circle cx="18" cy="18" r="18" fill="#D9D9D9"/>
+              </mask>
+              <g mask="url(#mask0_user)">
+                <rect x="4" y="21" width="28" height="32" rx="14" fill="#F5F5F5"/>
+                <circle cx="18" cy="11" r="7" fill="#F5F5F5"/>
+              </g>
+            </svg>
+          </div>
+          <div class="member-details">
+            <h3 class="member-name">{{ selectedPointMember.actualName || '-' }}</h3>
+            <p class="member-current-point">현재 보유: {{ selectedPointMember.currentPoint?.toLocaleString() || 0 }} P</p>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <div class="form-group">
+            <label class="form-label">{{ pointAdjustType === 'add' ? '지급할 포인트' : '차감할 포인트' }}</label>
+            <input 
+              v-model.number="pointAdjustForm.amount" 
+              type="number" 
+              min="1"
+              :placeholder="pointAdjustType === 'add' ? '지급할 포인트 입력' : '차감할 포인트 입력'"
+              class="form-input"
+            />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">사유</label>
+            <textarea 
+              v-model="pointAdjustForm.description" 
+              placeholder="포인트 지급/차감 사유를 입력해주세요"
+              class="form-textarea"
+              rows="3"
+            ></textarea>
+          </div>
+
+          <div v-if="pointAdjustForm.amount > 0" class="point-preview">
+            <div class="preview-row">
+              <span>현재 포인트</span>
+              <span>{{ selectedPointMember?.currentPoint?.toLocaleString() || 0 }} P</span>
+            </div>
+            <div class="preview-row" :class="pointAdjustType === 'add' ? 'add' : 'deduct'">
+              <span>{{ pointAdjustType === 'add' ? '지급' : '차감' }}</span>
+              <span>{{ pointAdjustType === 'add' ? '+' : '-' }}{{ pointAdjustForm.amount?.toLocaleString() || 0 }} P</span>
+            </div>
+            <div class="preview-row result">
+              <span>예상 잔액</span>
+              <span>{{ expectedBalance.toLocaleString() }} P</span>
+            </div>
+          </div>
+        </div>
+
+        <button 
+          class="submit-btn" 
+          :class="{ 'deduct': pointAdjustType === 'deduct' }"
+          @click="submitPointAdjust"
+          :disabled="!pointAdjustForm.amount || !pointAdjustForm.description || submittingPoint"
+        >
+          {{ submittingPoint ? '처리 중...' : (pointAdjustType === 'add' ? '포인트 지급' : '포인트 차감') }}
+        </button>
+      </div>
+    </el-dialog>
+
+    <!-- 포인트 내역 모달 -->
+    <el-dialog
+      :visible.sync="pointHistoryModalVisible"
+      width="700px"
+      center
+      :show-close="false"
+      :append-to-body="true"
+      :modal-append-to-body="true"
+      :close-on-click-modal="false"
+      custom-class="point-history-modal"
+    >
+      <div class="modal-content">
+        <button class="modal-close-btn" @click="closePointHistoryModal">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+
+        <h3 class="modal-title">포인트 내역</h3>
+
+        <div v-if="selectedPointMember" class="point-member-info">
+          <div class="member-avatar-placeholder">
+            <img v-if="selectedPointMember.iconFileUid" :src="`${apiUrl}/attached-file/${selectedPointMember.iconFileUid}`" alt="프로필 이미지" class="member-avatar-img">
+          </div>
+          <div class="member-details">
+            <h3 class="member-name">{{ selectedPointMember.actualName || '-' }}</h3>
+            <p class="member-current-point">현재 보유: {{ pointHistoryCurrentPoint?.toLocaleString() || 0 }} P</p>
+          </div>
+        </div>
+
+        <div v-if="loadingPointHistory" class="loading-container">
+          <i class="el-icon-loading"></i>
+          <p>로딩 중...</p>
+        </div>
+
+        <div v-else-if="pointHistoryList.length > 0" class="point-history-list">
+          <div 
+            v-for="history in pointHistoryList" 
+            :key="history.id"
+            class="history-item"
+          >
+            <div class="history-info">
+              <p class="history-description">{{ history.description }}</p>
+              <p class="history-date">{{ formatDateTime(history.createdAt) }}</p>
+            </div>
+            <div class="history-amount" :class="history.pointAmount >= 0 ? 'add' : 'deduct'">
+              {{ history.pointAmount >= 0 ? '+' : '' }}{{ history.pointAmount?.toLocaleString() }} P
+            </div>
+          </div>
+        </div>
+
+        <div v-else class="empty-container">
+          <p>포인트 내역이 없습니다</p>
+        </div>
+      </div>
+    </el-dialog>
 
     <!-- 회원 초대 모달 -->
     <el-dialog
@@ -586,6 +821,7 @@ import { getChannelDomainDetail } from '@/api/channel';
 import { getUserInfo } from '@/api/user';
 import { UserModule } from '@/store/modules/user';
 import { getTokenDecode } from '@/utils/cookies';
+import { getChannelMembersWithPoints, adminAdjustPoint, getTargetUserPointHistory, MemberWithPoint, PointHistory } from '@/api/point';
 
 // API 응답에 맞는 인터페이스
 interface Member {
@@ -645,13 +881,32 @@ interface Channel {
   },
 })
 export default class extends Vue {
-  private activeTab: 'members' | 'pending' | 'permissions' = 'members';
+  private activeTab: 'members' | 'pending' | 'permissions' | 'banned' | 'points' = 'members';
   private loadingMembers = false;
   private loadingPending = false;
   private loadingPermissions = false;
   private searchKeyword = '';
   private permissionSearchKeyword = '';
   private bannedSearchKeyword = '';
+  private pointSearchKeyword = '';
+
+  // 포인트 관리 관련
+  private loadingPoints = false;
+  private membersWithPoints: MemberWithPoint[] = [];
+  private selectedPointMember: MemberWithPoint | null = null;
+  private pointAdjustModalVisible = false;
+  private pointAdjustType: 'add' | 'deduct' = 'add';
+  private submittingPoint = false;
+  private pointAdjustForm = {
+    amount: 0,
+    description: '',
+  };
+
+  // 포인트 내역 관련
+  private pointHistoryModalVisible = false;
+  private loadingPointHistory = false;
+  private pointHistoryList: PointHistory[] = [];
+  private pointHistoryCurrentPoint = 0;
 
   get apiUrl() {
     return process.env.VUE_APP_COMMON_API || '/api';
@@ -741,6 +996,27 @@ export default class extends Vue {
       (member.user?.actualName || '').toLowerCase().includes(keyword) || 
       (member.user?.email || '').toLowerCase().includes(keyword)
     ).filter(m => m.banned);
+  }
+
+  get filteredPointMembers() {
+    if (!this.pointSearchKeyword) return this.membersWithPoints;
+    const keyword = this.pointSearchKeyword.toLowerCase();
+    return this.membersWithPoints.filter(member => 
+      (member.actualName || '').toLowerCase().includes(keyword) || 
+      (member.email || '').toLowerCase().includes(keyword) ||
+      (member.userId || '').toLowerCase().includes(keyword)
+    );
+  }
+
+  get expectedBalance() {
+    if (!this.selectedPointMember) return 0;
+    const currentPoint = this.selectedPointMember.currentPoint || 0;
+    const amount = this.pointAdjustForm.amount || 0;
+    if (this.pointAdjustType === 'add') {
+      return currentPoint + amount;
+    } else {
+      return Math.max(0, currentPoint - amount);
+    }
   }
 
   get bannedMembersCount() {
@@ -1279,6 +1555,188 @@ export default class extends Vue {
     } finally {
       this.submittingPermission = false;
     }
+  }
+
+  // ========== 포인트 관리 관련 메서드 ==========
+
+  /**
+   * 포인트가 있는 회원 목록 조회
+   */
+  private async loadMembersWithPoints() {
+    if (!this.channelUid) return;
+
+    // 채널 관리자가 아닌 경우 경고
+    if (!this.isChannelAdmin) {
+      this.$message.warning('포인트 관리는 채널 관리자만 이용할 수 있습니다.');
+      this.activeTab = 'members';
+      return;
+    }
+
+    try {
+      this.loadingPoints = true;
+      
+      const response = await getChannelMembersWithPoints({
+        channelUid: this.channelUid,
+        page: 0,
+        size: 100,
+      });
+
+      if (response.data && response.data.content) {
+        this.membersWithPoints = response.data.content;
+      }
+    } catch (error: any) {
+      console.error('포인트 회원 목록 조회 실패:', error);
+      const message = error.response?.data?.message || '포인트 회원 목록을 불러오지 못했습니다';
+      this.$message.error(message);
+    } finally {
+      this.loadingPoints = false;
+    }
+  }
+
+  /**
+   * 포인트 지급/차감 모달 열기
+   */
+  private openPointAdjustModal(member: MemberWithPoint, type: 'add' | 'deduct') {
+    // 채널 관리자가 아닌 경우 경고
+    if (!this.isChannelAdmin) {
+      this.$message.warning('포인트 지급/차감은 채널 관리자만 가능합니다.');
+      return;
+    }
+
+    this.selectedPointMember = member;
+    this.pointAdjustType = type;
+    this.pointAdjustForm = {
+      amount: 0,
+      description: '',
+    };
+    this.pointAdjustModalVisible = true;
+  }
+
+  /**
+   * 포인트 지급/차감 모달 닫기
+   */
+  private closePointAdjustModal() {
+    this.pointAdjustModalVisible = false;
+    this.selectedPointMember = null;
+    this.pointAdjustForm = {
+      amount: 0,
+      description: '',
+    };
+  }
+
+  /**
+   * 포인트 지급/차감 처리
+   */
+  private async submitPointAdjust() {
+    if (!this.selectedPointMember || !this.pointAdjustForm.amount || !this.pointAdjustForm.description) {
+      return;
+    }
+
+    // 차감 시 현재 포인트보다 많이 차감하려는 경우 경고
+    if (this.pointAdjustType === 'deduct') {
+      const currentPoint = this.selectedPointMember.currentPoint || 0;
+      if (this.pointAdjustForm.amount > currentPoint) {
+        this.$message.warning('현재 포인트보다 많은 포인트를 차감할 수 없습니다.');
+        return;
+      }
+    }
+
+    try {
+      this.submittingPoint = true;
+
+      // 포인트 금액 계산 (차감 시 음수)
+      const pointAmount = this.pointAdjustType === 'add' 
+        ? this.pointAdjustForm.amount 
+        : -this.pointAdjustForm.amount;
+
+      await adminAdjustPoint({
+        channelUid: this.channelUid,
+        targetUserUid: this.selectedPointMember.userUid,
+        pointAmount: pointAmount,
+        description: this.pointAdjustForm.description,
+      });
+
+      const memberName = this.selectedPointMember.actualName || '회원';
+      const actionText = this.pointAdjustType === 'add' ? '지급' : '차감';
+      this.$message.success(`${memberName}님에게 ${this.pointAdjustForm.amount.toLocaleString()}P를 ${actionText}했습니다.`);
+
+      // 목록 새로고침
+      await this.loadMembersWithPoints();
+
+      this.closePointAdjustModal();
+    } catch (error: any) {
+      console.error('포인트 지급/차감 실패:', error);
+      const message = error.response?.data?.message || '포인트 처리에 실패했습니다';
+      this.$message.error(message);
+    } finally {
+      this.submittingPoint = false;
+    }
+  }
+
+  /**
+   * 포인트 내역 모달 열기
+   */
+  private async openPointHistoryModal(member: MemberWithPoint) {
+    // 채널 관리자가 아닌 경우 경고
+    if (!this.isChannelAdmin) {
+      this.$message.warning('포인트 내역 조회는 채널 관리자만 가능합니다.');
+      return;
+    }
+
+    this.selectedPointMember = member;
+    this.pointHistoryCurrentPoint = member.currentPoint || 0;
+    this.pointHistoryModalVisible = true;
+    
+    await this.loadPointHistory(member.userUid);
+  }
+
+  /**
+   * 포인트 내역 로드
+   */
+  private async loadPointHistory(targetUserUid: string) {
+    try {
+      this.loadingPointHistory = true;
+      
+      const response = await getTargetUserPointHistory({
+        targetUserUid: targetUserUid,
+        channelUid: this.channelUid,
+        page: 0,
+        size: 50,
+      });
+
+      if (response.data && response.data.content) {
+        this.pointHistoryList = response.data.content;
+        // 현재 포인트도 업데이트
+        if (response.data.currentPoint !== undefined) {
+          this.pointHistoryCurrentPoint = response.data.currentPoint;
+        }
+      }
+    } catch (error: any) {
+      console.error('포인트 내역 조회 실패:', error);
+      const message = error.response?.data?.message || '포인트 내역을 불러오지 못했습니다';
+      this.$message.error(message);
+    } finally {
+      this.loadingPointHistory = false;
+    }
+  }
+
+  /**
+   * 포인트 내역 모달 닫기
+   */
+  private closePointHistoryModal() {
+    this.pointHistoryModalVisible = false;
+    this.selectedPointMember = null;
+    this.pointHistoryList = [];
+    this.pointHistoryCurrentPoint = 0;
+  }
+
+  /**
+   * 날짜+시간 포맷팅
+   */
+  private formatDateTime(dateString?: string): string {
+    if (!dateString) return '-';
+    const date = new Date(dateString);
+    return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
   }
 }
 </script>
@@ -2140,6 +2598,218 @@ export default class extends Vue {
   }
 }
 
+// 포인트 관리 스타일
+.points-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.point-card {
+  background: #FFF;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.point-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+
+  .member-details {
+    .member-name {
+      text-align: left;
+      font-size: 18px;
+      margin: 0 0 4px 0;
+    }
+
+    .member-email {
+      color: #888;
+      font-size: 14px;
+      margin: 0;
+      text-align: left;
+    }
+  }
+}
+
+.point-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.point-balance {
+  font-size: 24px;
+  font-weight: 700;
+  color: #073DFF;
+}
+
+.point-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+
+  .action-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    
+    i {
+      font-size: 14px;
+    }
+  }
+}
+
+// 포인트 지급/차감 모달
+::v-deep .point-adjust-modal {
+  border-radius: 12px;
+
+  .el-dialog__header {
+    display: none;
+  }
+
+  .el-dialog__body {
+    padding: 40px;
+    position: relative;
+  }
+}
+
+.point-member-info {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px;
+  background: #F8F9FA;
+  border-radius: 12px;
+  margin-bottom: 24px;
+
+  .member-details {
+    .member-name {
+      font-size: 18px;
+      font-weight: 600;
+      color: #222;
+      margin: 0 0 4px 0;
+      text-align: left;
+    }
+
+    .member-current-point {
+      font-size: 14px;
+      color: #073DFF;
+      font-weight: 600;
+      margin: 0;
+      text-align: left;
+    }
+  }
+}
+
+.point-preview {
+  background: #F8F9FA;
+  border-radius: 12px;
+  padding: 20px;
+  margin-top: 20px;
+}
+
+.preview-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  font-size: 15px;
+  color: #666;
+
+  &.add {
+    color: #073DFF;
+  }
+
+  &.deduct {
+    color: #FF5858;
+  }
+
+  &.result {
+    border-top: 1px solid #E0E0E0;
+    margin-top: 8px;
+    padding-top: 16px;
+    font-weight: 700;
+    font-size: 18px;
+    color: #222;
+  }
+}
+
+.submit-btn.deduct {
+  background: #FF5858;
+
+  &:hover:not(:disabled) {
+    background: #E04848;
+    box-shadow: 0 4px 12px rgba(255, 88, 88, 0.3);
+  }
+}
+
+// 포인트 내역 모달
+::v-deep .point-history-modal {
+  border-radius: 12px;
+
+  .el-dialog__header {
+    display: none;
+  }
+
+  .el-dialog__body {
+    padding: 40px;
+    position: relative;
+  }
+}
+
+.point-history-list {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.history-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  border-bottom: 1px solid #F0F0F0;
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.history-info {
+  flex: 1;
+
+  .history-description {
+    font-size: 15px;
+    color: #222;
+    margin: 0 0 4px 0;
+    text-align: left;
+  }
+
+  .history-date {
+    font-size: 13px;
+    color: #888;
+    margin: 0;
+    text-align: left;
+  }
+}
+
+.history-amount {
+  font-size: 16px;
+  font-weight: 700;
+  min-width: 100px;
+  text-align: right;
+
+  &.add {
+    color: #073DFF;
+  }
+
+  &.deduct {
+    color: #FF5858;
+  }
+}
+
 @media screen and (max-width: 1024px) {
   .member-management-main {
     margin-left: 0;
@@ -2221,6 +2891,25 @@ export default class extends Vue {
         width: 100%;
       }
     }
+  }
+
+  // 포인트 관리 반응형
+  .point-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .point-actions {
+    width: 100%;
+
+    .action-btn {
+      flex: 1;
+    }
+  }
+
+  .point-balance {
+    font-size: 20px;
   }
 }
 

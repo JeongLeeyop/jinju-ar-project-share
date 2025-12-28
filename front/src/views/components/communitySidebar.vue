@@ -372,11 +372,11 @@ export default class extends Vue {
   }
 
   get isMarketplacePage() {
-    return this.$route.name === 'Marketplace';
+    return this.$route.name === 'Marketplace' || this.$route.name === 'OfflineMarketplace';
   }
 
   get showWriteButton() {
-    return this.$route.name === 'Marketplace' || this.$route.name === 'CommunitySpace' || this.$route.name === 'Lession' || this.$route.name === 'Video' || this.$route.name === 'Calendar';
+    return this.$route.name === 'Marketplace' || this.$route.name === 'OfflineMarketplace' || this.$route.name === 'CommunitySpace' || this.$route.name === 'Lession' || this.$route.name === 'Video' || this.$route.name === 'Calendar';
   }
 
   private openWriteModal() {

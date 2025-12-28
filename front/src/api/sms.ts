@@ -47,6 +47,18 @@ export interface SmsRemain {
   MMS_CNT: number; // 그림문자 발송가능 건수
 }
 
+// SMS 템플릿 인터페이스
+export interface SmsTemplate {
+  id: number;
+  name: string;
+  content: string;
+  channelUid: string | null;
+  isActive: boolean;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 /**
  * 문자 발송
  */
@@ -76,4 +88,13 @@ export const getSmsHistory = (params?: {
 export const getRemainCount = () => request({
   url: `${SMS_PATH}/remain`,
   method: 'get',
+});
+
+/**
+ * SMS 템플릿 목록 조회
+ */
+export const getSmsTemplates = (channelUid?: string) => request({
+  url: '/sms/templates',
+  method: 'get',
+  params: channelUid ? { channelUid } : {},
 });

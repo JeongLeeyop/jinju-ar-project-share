@@ -1,16 +1,21 @@
 package com.community.cms.api.marketplace.service;
 
+import com.community.cms.api.activity_log.dto.ActivityLogDto;
+import com.community.cms.api.activity_log.service.ActivityLogService;
 import com.community.cms.api.channel.repository.ChannelMemberPermissionRepository;
 import com.community.cms.api.channel.repository.ChannelMemberRepository;
+import com.community.cms.api.channel.repository.ChannelRepository;
 import com.community.cms.api.marketplace.dto.MarketplaceProductDto;
 import com.community.cms.api.marketplace.dto.MarketplacePurchaseDto;
 import com.community.cms.api.marketplace.repository.MarketplaceProductImageRepository;
 import com.community.cms.api.marketplace.repository.MarketplaceProductRepository;
 import com.community.cms.api.marketplace.repository.MarketplacePurchaseRepository;
+import com.community.cms.api.marketplace.repository.OfflineMarketplaceRepository;
 import com.community.cms.api.point.repository.PointHistoryRepository;
 import com.community.cms.api.user.repository.UserRepository;
 import com.community.cms.common.code.ChannelMemberPermissionType;
 import com.community.cms.entity.*;
+import com.community.cms.entity2.Channel;
 import com.community.cms.entity2.ChannelMember;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -33,10 +38,13 @@ public class MarketplacePurchaseService {
     private final MarketplacePurchaseRepository purchaseRepository;
     private final MarketplaceProductRepository productRepository;
     private final MarketplaceProductImageRepository imageRepository;
+    private final OfflineMarketplaceRepository offlineMarketplaceRepository;
+    private final ChannelRepository channelRepository;
     private final PointHistoryRepository pointHistoryRepository;
     private final UserRepository userRepository;
     private final ChannelMemberRepository channelMemberRepository;
     private final ChannelMemberPermissionRepository permissionRepository;
+    private final ActivityLogService activityLogService;
 
     /**
      * 상품 구매 (메인 장터 - 포인트 결제)
@@ -151,6 +159,133 @@ public class MarketplacePurchaseService {
     }
 
     /**
+     * 오프라인 장터 즉시 구매 (구매자가 직접 구매)
+     */
+    @Transactional
+    public MarketplacePurchaseDto instantOfflinePurchase(
+            String productUid,
+            MarketplacePurchaseDto.InstantPurchaseRequest request,
+            String buyerUid,
+            String buyerName) {
+
+        MarketplaceProduct product = productRepository.findByUid(productUid)
+                .orElseThrow(() -> new RuntimeException("상품을 찾을 수 없습니다"));
+
+        // 자기 자신의 상품 구매 방지
+        if (product.getSellerUid().equals(buyerUid)) {
+            throw new RuntimeException("자신의 상품은 구매할 수 없습니다");
+        }
+
+        // 오프라인 장터 상품이 아니면 에러
+        if (product.getOfflineMarketplaceUid() == null) {
+            throw new RuntimeException("오프라인 장터 상품이 아닙니다");
+        }
+
+        // 장터 이용 권한 체크
+        checkMarketplaceUsePermission(product.getChannelUid(), buyerUid);
+
+        // 재고 확인
+        if (product.getStockQuantity() < request.getQuantity()) {
+            throw new RuntimeException("재고가 부족합니다");
+        }
+
+        // 총 가격 계산 (나눔 상품은 0원)
+        int totalPrice = "SHARE".equals(product.getCategory()) ? 0 : product.getPrice() * request.getQuantity();
+
+        // 포인트 차감 (나눔 상품이 아닐 경우만)
+        if (totalPrice > 0) {
+            deductPoints(buyerUid, product.getChannelUid(), totalPrice, productUid);
+        }
+
+        // 재고 감소
+        product.setStockQuantity(product.getStockQuantity() - request.getQuantity());
+        if (product.getStockQuantity() == 0) {
+            product.setStatus("SOLD_OUT");
+        }
+        productRepository.save(product);
+
+        // 구매 내역 생성
+        MarketplacePurchase purchase = MarketplacePurchase.builder()
+                .uid(UUID.randomUUID().toString())
+                .productUid(productUid)
+                .buyerUid(buyerUid)
+                .buyerName(buyerName)
+                .buyerContact(request.getBuyerContact())
+                .sellerUid(product.getSellerUid())
+                .quantity(request.getQuantity())
+                .totalPrice(totalPrice)
+                .status("COMPLETED")
+                .paymentMethod(totalPrice > 0 ? "POINT" : "FREE")
+                .isOffline(true)
+                .completedAt(LocalDateTime.now())
+                .build();
+
+        MarketplacePurchase saved = purchaseRepository.save(purchase);
+
+        log.info("Offline product purchased: {} by {} ({}P)", productUid, buyerUid, totalPrice);
+
+        return toDto(saved, product);
+    }
+
+    /**
+     * 오프라인 상품 직접 포인트 차감 (판매자가 회원번호로 처리)
+     */
+    @Transactional
+    public void deductPointForOfflineProduct(
+            String productUid,
+            MarketplacePurchaseDto.OfflineDeductRequest request,
+            String sellerUid,
+            String sellerName) {
+
+        MarketplaceProduct product = productRepository.findByUid(productUid)
+                .orElseThrow(() -> new RuntimeException("상품을 찾을 수 없습니다"));
+
+        // 판매자 확인
+        if (!product.getSellerUid().equals(sellerUid)) {
+            throw new RuntimeException("상품 판매자만 포인트 차감을 할 수 있습니다");
+        }
+
+        // 오프라인 장터 상품인지 확인
+        if (product.getOfflineMarketplaceUid() == null) {
+            throw new RuntimeException("온라인 장터 상품은 직접 구매해야 합니다");
+        }
+
+        // 구매자 조회 (이름으로 검색 - 실제로는 회원번호나 UID로 검색하는 것이 더 정확)
+        // TODO: 실제 구현시에는 회원번호 필드를 추가하고 정확히 검색
+        User buyer = userRepository.findAll().stream()
+                .filter(u -> u.getActualName() != null && u.getActualName().equals(request.getBuyerName()))
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("해당 이름의 회원을 찾을 수 없습니다"));
+
+
+        // 포인트 차감 (나눔 상품이 아닐 경우만)
+        if (request.getDeductPoints() > 0) {
+            deductPoints(buyer.getUid(), product.getChannelUid(), request.getDeductPoints(), productUid);
+        }
+
+        // 구매 내역 생성
+        MarketplacePurchase purchase = MarketplacePurchase.builder()
+                .uid(UUID.randomUUID().toString())
+                .productUid(productUid)
+                .buyerUid(buyer.getUid())
+                .buyerName(buyer.getActualName())
+                .buyerContact(request.getBuyerContact())
+                .sellerUid(sellerUid)
+                .quantity(1)
+                .totalPrice(request.getDeductPoints())
+                .status("COMPLETED")
+                .paymentMethod(request.getDeductPoints() > 0 ? "POINT" : "FREE")
+                .isOffline(true)
+                .completedAt(LocalDateTime.now())
+                .build();
+
+        purchaseRepository.save(purchase);
+
+        log.info("Offline point deducted: {} for buyer {} by seller {} ({}P)", 
+                 productUid, buyer.getUid(), sellerUid, request.getDeductPoints());
+    }
+
+    /**
      * 내 구매 내역 조회
      */
     @Transactional(readOnly = true)
@@ -158,6 +293,44 @@ public class MarketplacePurchaseService {
         Page<MarketplacePurchase> purchases = purchaseRepository
                 .findByBuyerUidOrderByPurchasedAtDesc(buyerUid, pageable);
 
+        return purchases.map(p -> {
+            MarketplaceProduct product = productRepository.findByUid(p.getProductUid())
+                    .orElse(null);
+            return toDto(p, product);
+        });
+    }
+
+    /**
+     * 내 구매 내역 조회 (특정 채널, 온라인/오프라인 필터)
+     */
+    @Transactional(readOnly = true)
+    public Page<MarketplacePurchaseDto> getMyPurchasedProducts(
+            String channelDomain,
+            String marketplaceType,  // "online", "offline", null(전체)
+            String buyerUid,
+            Pageable pageable) {
+        
+        // domain → channelUid 변환
+        Channel channel = channelRepository.findByDomain(channelDomain)
+                .orElseThrow(() -> new RuntimeException("채널을 찾을 수 없습니다"));
+        String channelUid = channel.getUid();
+        
+        Page<MarketplacePurchase> purchases;
+        
+        if ("online".equalsIgnoreCase(marketplaceType)) {
+            // 온라인 상품만
+            purchases = purchaseRepository
+                    .findByBuyerUidAndChannelUidAndOnline(buyerUid, channelUid, pageable);
+        } else if ("offline".equalsIgnoreCase(marketplaceType)) {
+            // 오프라인 상품만
+            purchases = purchaseRepository
+                    .findByBuyerUidAndChannelUidAndOffline(buyerUid, channelUid, pageable);
+        } else {
+            // 전체 (온라인 + 오프라인)
+            purchases = purchaseRepository
+                    .findByBuyerUidAndChannelUid(buyerUid, channelUid, pageable);
+        }
+        
         return purchases.map(p -> {
             MarketplaceProduct product = productRepository.findByUid(p.getProductUid())
                     .orElse(null);
@@ -185,6 +358,285 @@ public class MarketplacePurchaseService {
         // TODO: Page로 변환 필요 (현재는 List 반환)
         // 임시로 전체 조회
         return Page.empty(pageable);
+    }
+
+    /**
+     * 거래 시작 (구매자가 거래 시작 - 상태만 변경, 포인트는 확정 시 차감)
+     */
+    @Transactional
+    public MarketplacePurchaseDto startTrade(
+            String productUid,
+            MarketplacePurchaseDto.StartTradeRequest request,
+            String buyerUid,
+            String buyerName) {
+
+        MarketplaceProduct product = productRepository.findByUid(productUid)
+                .orElseThrow(() -> new RuntimeException("상품을 찾을 수 없습니다"));
+
+        // 자기 자신의 상품 구매 방지
+        if (product.getSellerUid().equals(buyerUid)) {
+            throw new RuntimeException("자신의 상품은 구매할 수 없습니다");
+        }
+
+        // 이미 거래 중인지 확인
+        if ("TRADING".equals(product.getStatus())) {
+            throw new RuntimeException("이미 거래중인 상품입니다");
+        }
+
+        // 상품이 활성 상태인지 확인
+        if (!"ACTIVE".equals(product.getStatus())) {
+            throw new RuntimeException("현재 구매할 수 없는 상품입니다");
+        }
+
+        // 장터 이용 권한 체크
+        checkMarketplaceUsePermission(product.getChannelUid(), buyerUid);
+
+        // 재고 확인
+        if (product.getStockQuantity() < request.getQuantity()) {
+            throw new RuntimeException("재고가 부족합니다");
+        }
+
+        // 총 가격 계산 (나눔 상품은 0원)
+        int totalPrice = "SHARE".equals(product.getCategory()) ? 0 : product.getPrice() * request.getQuantity();
+
+        // 포인트 확인만 (차감은 확정 시)
+        if (totalPrice > 0) {
+            checkPointBalance(buyerUid, product.getChannelUid(), totalPrice);
+        }
+
+        // 상품 상태를 거래중으로 변경
+        product.setStatus("TRADING");
+        productRepository.save(product);
+
+        // 구매 내역 생성 (IN_PROGRESS 상태)
+        MarketplacePurchase purchase = MarketplacePurchase.builder()
+                .uid(UUID.randomUUID().toString())
+                .productUid(productUid)
+                .buyerUid(buyerUid)
+                .buyerName(buyerName)
+                .buyerContact(request.getBuyerContact())
+                .sellerUid(product.getSellerUid())
+                .sellerName(product.getSellerName())
+                .quantity(request.getQuantity())
+                .totalPrice(totalPrice)
+                .status("IN_PROGRESS")  // 거래 진행중 (포인트 미차감)
+                .paymentMethod(totalPrice > 0 ? "POINT" : "FREE")
+                .isOffline(product.getOfflineMarketplaceUid() != null)
+                .build();
+
+        MarketplacePurchase saved = purchaseRepository.save(purchase);
+
+        // 활동 로그 기록
+        logActivity(
+                buyerUid,
+                buyerName,
+                product.getChannelUid(),
+                ActivityLog.ActivityType.TRADE_STARTED,
+                String.format("장터 거래 시작: %s (%d P)", product.getTitle(), totalPrice),
+                productUid,
+                product.getTitle(),
+                product.getSellerUid(),
+                product.getSellerName()
+        );
+
+        log.info("Trade started: product={} buyer={} price={}P", productUid, buyerUid, totalPrice);
+
+        return toDto(saved, product);
+    }
+
+    /**
+     * 거래 완료 (구매자가 포인트 지급 확정)
+     */
+    @Transactional
+    public MarketplacePurchaseDto completeTrade(
+            String purchaseUid,
+            String buyerUid) {
+
+        MarketplacePurchase purchase = purchaseRepository.findByUid(purchaseUid)
+                .orElseThrow(() -> new RuntimeException("구매 내역을 찾을 수 없습니다"));
+
+        // 구매자 확인
+        if (!purchase.getBuyerUid().equals(buyerUid)) {
+            throw new RuntimeException("구매자만 거래를 완료할 수 있습니다");
+        }
+
+        // 진행중인 거래인지 확인
+        if (!"IN_PROGRESS".equals(purchase.getStatus())) {
+            throw new RuntimeException("진행중인 거래가 아닙니다");
+        }
+
+        MarketplaceProduct product = productRepository.findByUid(purchase.getProductUid())
+                .orElseThrow(() -> new RuntimeException("상품을 찾을 수 없습니다"));
+
+        // 포인트 차감 (나눔 상품이 아닐 경우)
+        if (purchase.getTotalPrice() > 0) {
+            deductPoints(buyerUid, product.getChannelUid(), purchase.getTotalPrice(), purchase.getProductUid());
+        }
+
+        // 재고 감소
+        product.setStockQuantity(product.getStockQuantity() - purchase.getQuantity());
+        if (product.getStockQuantity() == 0) {
+            product.setStatus("SOLD_OUT");
+        } else {
+            product.setStatus("ACTIVE");  // 거래 완료 후 다시 활성화
+        }
+        productRepository.save(product);
+
+        // 구매 상태 업데이트
+        purchase.setStatus("COMPLETED");
+        purchase.setCompletedAt(LocalDateTime.now());
+
+        MarketplacePurchase saved = purchaseRepository.save(purchase);
+
+        // 활동 로그 기록
+        logActivity(
+                buyerUid,
+                purchase.getBuyerName(),
+                product.getChannelUid(),
+                ActivityLog.ActivityType.TRADE_COMPLETED,
+                String.format("장터 거래 완료: %s (%d P)", product.getTitle(), purchase.getTotalPrice()),
+                purchase.getProductUid(),
+                product.getTitle(),
+                product.getSellerUid(),
+                product.getSellerName()
+        );
+
+        log.info("Trade completed: purchase={} buyer={} price={}P", purchaseUid, buyerUid, purchase.getTotalPrice());
+
+        return toDto(saved, product);
+    }
+
+    /**
+     * 거래 취소 (구매자 또는 판매자가 취소)
+     */
+    @Transactional
+    public void cancelTrade(String purchaseUid, String userUid) {
+
+        MarketplacePurchase purchase = purchaseRepository.findByUid(purchaseUid)
+                .orElseThrow(() -> new RuntimeException("구매 내역을 찾을 수 없습니다"));
+
+        // 구매자 또는 판매자인지 확인
+        if (!purchase.getBuyerUid().equals(userUid) && !purchase.getSellerUid().equals(userUid)) {
+            throw new RuntimeException("거래 당사자만 취소할 수 있습니다");
+        }
+
+        // 진행중인 거래인지 확인
+        if (!"IN_PROGRESS".equals(purchase.getStatus())) {
+            throw new RuntimeException("진행중인 거래가 아닙니다");
+        }
+
+        MarketplaceProduct product = productRepository.findByUid(purchase.getProductUid())
+                .orElse(null);
+
+        if (product != null && "TRADING".equals(product.getStatus())) {
+            product.setStatus("ACTIVE");  // 상품 다시 활성화
+            productRepository.save(product);
+        }
+
+        // 구매 상태 업데이트
+        purchase.setStatus("CANCELLED");
+        purchase.setCancelledAt(LocalDateTime.now());
+        purchaseRepository.save(purchase);
+
+        // 활동 로그 기록
+        User user = userRepository.findById(userUid).orElse(null);
+        String userName = user != null ? user.getActualName() : "";
+        String channelUid = product != null ? product.getChannelUid() : "";
+        String productTitle = product != null ? product.getTitle() : "";
+        
+        if (!channelUid.isEmpty()) {
+            logActivity(
+                    userUid,
+                    userName,
+                    channelUid,
+                    ActivityLog.ActivityType.TRADE_CANCELLED,
+                    String.format("장터 거래 취소: %s", productTitle),
+                    purchase.getProductUid(),
+                    productTitle,
+                    purchase.getBuyerUid().equals(userUid) ? purchase.getSellerUid() : purchase.getBuyerUid(),
+                    purchase.getBuyerUid().equals(userUid) ? purchase.getSellerName() : purchase.getBuyerName()
+            );
+        }
+
+        log.info("Trade cancelled: purchase={} by user={}", purchaseUid, userUid);
+    }
+
+    /**
+     * REQUEST 상품 지원 (지원자가 판매자에게 연락처 제공)
+     */
+    @Transactional
+    public MarketplacePurchaseDto applyForRequest(
+            String productUid,
+            MarketplacePurchaseDto.ApplyForRequestRequest request,
+            String applicantUid,
+            String applicantName) {
+
+        MarketplaceProduct product = productRepository.findByUid(productUid)
+                .orElseThrow(() -> new RuntimeException("상품을 찾을 수 없습니다"));
+
+        // REQUEST 타입 상품인지 확인
+        if (!"REQUEST".equals(product.getCategory())) {
+            throw new RuntimeException("요청 상품만 지원할 수 있습니다");
+        }
+
+        // 자기 자신에게 지원 방지
+        if (product.getSellerUid().equals(applicantUid)) {
+            throw new RuntimeException("자신의 요청에 지원할 수 없습니다");
+        }
+
+        // 이미 지원했는지 확인
+        purchaseRepository.findByProductUidAndBuyerUidAndStatus(productUid, applicantUid, "IN_PROGRESS")
+                .ifPresent(p -> {
+                    throw new RuntimeException("이미 지원한 요청입니다");
+                });
+
+        // 지원 내역 생성 (REQUEST는 구매자=지원자, 판매자=요청자)
+        MarketplacePurchase application = MarketplacePurchase.builder()
+                .uid(UUID.randomUUID().toString())
+                .productUid(productUid)
+                .buyerUid(applicantUid)  // 지원자
+                .buyerName(applicantName)
+                .buyerContact(request.getContact())
+                .sellerUid(product.getSellerUid())  // 요청자
+                .sellerName(product.getSellerName())
+                .quantity(1)
+                .totalPrice(product.getPrice())  // 요청자가 제시한 가격
+                .status("IN_PROGRESS")  // 지원 상태
+                .paymentMethod("POINT")
+                .isOffline(product.getOfflineMarketplaceUid() != null)
+                .build();
+
+        MarketplacePurchase saved = purchaseRepository.save(application);
+
+        // 활동 로그 기록
+        logActivity(
+                applicantUid,
+                applicantName,
+                product.getChannelUid(),
+                ActivityLog.ActivityType.REQUEST_APPLIED,
+                String.format("요청 상품 지원: %s", product.getTitle()),
+                productUid,
+                product.getTitle(),
+                product.getSellerUid(),
+                product.getSellerName()
+        );
+
+        log.info("Applied for request: product={} applicant={}", productUid, applicantUid);
+
+        return toDto(saved, product);
+    }
+
+    /**
+     * 포인트 잔액 확인
+     */
+    private void checkPointBalance(String userUid, String channelUid, int amount) {
+        Integer currentBalance = pointHistoryRepository
+                .findCurrentBalance(userUid, channelUid)
+                .orElse(0);
+
+        if (currentBalance < amount) {
+            throw new RuntimeException("포인트가 부족합니다 (보유: " + currentBalance + "P, 필요: " + amount + "P)");
+        }
     }
 
     /**
@@ -255,36 +707,107 @@ public class MarketplacePurchaseService {
         String thumbnailUid = null;
         String productTitle = "삭제된 상품";
         String productCategory = "";
+        String offlineMarketplaceUid = null;
+        String offlineMarketplaceName = null;
+        Integer productPrice = 0;
+        String productLocation = null;
+        String sellerIconFileUid = null;
+        String buyerIconFileUid = null;
 
         if (product != null) {
             productTitle = product.getTitle();
             productCategory = product.getCategory();
+            offlineMarketplaceUid = product.getOfflineMarketplaceUid();
+            productPrice = product.getPrice();
+            productLocation = product.getLocation();
             
             thumbnailUid = imageRepository
                     .findByProductUidAndIsThumbnailTrue(product.getUid())
                     .map(MarketplaceProductImage::getFileUid)
                     .orElse(null);
+            
+            // 오프라인 장터 이름 조회
+            if (offlineMarketplaceUid != null) {
+                offlineMarketplaceName = offlineMarketplaceRepository
+                        .findByUid(offlineMarketplaceUid)
+                        .map(OfflineMarketplace::getName)
+                        .orElse(null);
+            }
+            
+            // 판매자 프로필 이미지 조회
+            userRepository.findById(entity.getSellerUid()).ifPresent(seller -> {
+                // iconFileUid가 있으면 설정 (없으면 null)
+            });
         }
+        
+        // 구매자 프로필 이미지 조회
+        userRepository.findById(entity.getBuyerUid()).ifPresent(buyer -> {
+            // iconFileUid가 있으면 설정 (없으면 null)
+        });
 
         return MarketplacePurchaseDto.builder()
                 .uid(entity.getUid())
                 .productUid(entity.getProductUid())
                 .productTitle(productTitle)
                 .productCategory(productCategory)
+                .offlineMarketplaceUid(offlineMarketplaceUid)
+                .offlineMarketplaceName(offlineMarketplaceName)
+                .productPrice(productPrice)
+                .productLocation(productLocation)
                 .buyerUid(entity.getBuyerUid())
                 .buyerName(entity.getBuyerName())
                 .buyerContact(entity.getBuyerContact())
+                .buyerIconFileUid(buyerIconFileUid)
                 .sellerUid(entity.getSellerUid())
-                .sellerName(product != null ? product.getSellerName() : "")
+                .sellerName(entity.getSellerName() != null ? entity.getSellerName() : (product != null ? product.getSellerName() : ""))
+                .sellerIconFileUid(sellerIconFileUid)
                 .quantity(entity.getQuantity())
                 .totalPrice(entity.getTotalPrice())
                 .status(entity.getStatus())
                 .paymentMethod(entity.getPaymentMethod())
                 .isOffline(entity.isOffline())
+                .isInProgress("IN_PROGRESS".equals(entity.getStatus()))
                 .purchasedAt(entity.getPurchasedAt())
                 .completedAt(entity.getCompletedAt())
                 .cancelledAt(entity.getCancelledAt())
                 .thumbnailUid(thumbnailUid)
                 .build();
+    }
+
+    /**
+     * 활동 로그 기록 헬퍼 메서드
+     */
+    private void logActivity(
+            String userUid,
+            String userName,
+            String channelUid,
+            ActivityLog.ActivityType activityType,
+            String description,
+            String relatedUid,
+            String relatedName,
+            String targetUserUid,
+            String targetUserName) {
+        try {
+            String channelName = channelRepository.findByUid(channelUid)
+                    .map(Channel::getName)
+                    .orElse("");
+
+            ActivityLogDto.CreateReq createReq = ActivityLogDto.CreateReq.builder()
+                    .userUid(userUid)
+                    .userName(userName)
+                    .channelUid(channelUid)
+                    .channelName(channelName)
+                    .activityType(activityType)
+                    .description(description)
+                    .relatedUid(relatedUid)
+                    .relatedName(relatedName)
+                    .targetUserUid(targetUserUid)
+                    .targetUserName(targetUserName)
+                    .build();
+
+            activityLogService.logActivity(createReq);
+        } catch (Exception e) {
+            log.error("Failed to log activity: {}", e.getMessage());
+        }
     }
 }

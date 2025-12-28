@@ -235,7 +235,7 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import CommunitySidebar from './components/communitySidebar.vue';
-import { sendSms, getSmsHistory, getRemainCount, SmsHistory, SmsRemain } from '@/api/sms';
+import { sendSms, getSmsHistory, getRemainCount, getSmsTemplates, SmsHistory, SmsRemain, SmsTemplate } from '@/api/sms';
 import { getChannelMemberList } from '@/api/channelMember';
 
 interface Member {
@@ -243,12 +243,6 @@ interface Member {
   name: string;
   phone: string;
   email: string;
-}
-
-interface MessageTemplate {
-  id: string;
-  name: string;
-  content: string;
 }
 
 @Component({
@@ -261,7 +255,7 @@ export default class extends Vue {
   private searchQuery = '';
   private selectedMembers: Member[] = [];
   private messageContent = '';
-  private selectedTemplate = '';
+  private selectedTemplate: number | string = ''; // 템플릿 ID (number)
   private sending = false;
   private loading = false;
   private channelUid = '';
@@ -281,23 +275,8 @@ export default class extends Vue {
   private historyPageSize = 10;
   private historyTotal = 0;
 
-  private messageTemplates: MessageTemplate[] = [
-    {
-      id: '1',
-      name: '오프라인 장터 안내',
-      content: '[와로 커뮤니티]\n오프라인 장터가 오픈되었습니다.\n다양한 상품을 확인해보세요!',
-    },
-    {
-      id: '2',
-      name: '신규 상품 등록 알림',
-      content: '[와로 커뮤니티]\n새로운 상품이 등록되었습니다.\n지금 바로 확인해보세요!',
-    },
-    {
-      id: '3',
-      name: '이벤트 안내',
-      content: '[와로 커뮤니티]\n특별 이벤트가 진행중입니다.\n자세한 내용은 앱을 확인해주세요.',
-    },
-  ];
+  // SMS 템플릿 목록 (DB에서 로드)
+  private messageTemplates: SmsTemplate[] = [];
 
   async mounted() {
     this.channelUid = this.$route.params.domain || '';
@@ -305,6 +284,7 @@ export default class extends Vue {
       await this.loadMembers();
       await this.loadSmsHistory();
       await this.loadRemainCount();
+      await this.loadSmsTemplates(); // 템플릿 로드 추가
     }
   }
 
@@ -402,6 +382,28 @@ export default class extends Vue {
       this.remainCount = response.data;
     } catch (error: any) {
       console.error('발송 가능 건수 조회 실패:', error);
+    }
+  }
+
+  /**
+   * SMS 템플릿 목록 로드
+   */
+  private async loadSmsTemplates() {
+    try {
+      const response = await getSmsTemplates(this.channelUid);
+      
+      // API 응답 구조 확인
+      if (response.data && response.data.templates) {
+        this.messageTemplates = response.data.templates;
+      } else if (Array.isArray(response.data)) {
+        this.messageTemplates = response.data;
+      }
+      
+      console.log('Loaded SMS templates:', this.messageTemplates);
+    } catch (error: any) {
+      console.error('SMS 템플릿 로딩 실패:', error);
+      // 템플릿 로딩 실패 시 빈 배열 유지
+      this.messageTemplates = [];
     }
   }
 

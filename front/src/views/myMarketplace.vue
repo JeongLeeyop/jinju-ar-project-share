@@ -15,16 +15,41 @@
         <button 
           class="tab-btn" 
           :class="{ active: activeTab === 'registered' }"
-          @click="activeTab = 'registered'"
+          @click="activeTab = 'registered'; onTabChange();"
         >
           내 등록 상품
         </button>
         <button 
           class="tab-btn" 
           :class="{ active: activeTab === 'purchased' }"
-          @click="activeTab = 'purchased'"
+          @click="activeTab = 'purchased'; onTabChange();"
         >
           내 구매 상품
+        </button>
+      </div>
+
+      <!-- 온라인/오프라인 필터 -->
+      <div class="filter-section">
+        <button 
+          class="filter-btn" 
+          :class="{ active: marketplaceFilter === 'all' }"
+          @click="marketplaceFilter = 'all'; onFilterChange();"
+        >
+          전체
+        </button>
+        <button 
+          class="filter-btn" 
+          :class="{ active: marketplaceFilter === 'online' }"
+          @click="marketplaceFilter = 'online'; onFilterChange();"
+        >
+          온라인 장터
+        </button>
+        <button 
+          class="filter-btn" 
+          :class="{ active: marketplaceFilter === 'offline' }"
+          @click="marketplaceFilter = 'offline'; onFilterChange();"
+        >
+          오프라인 장터
         </button>
       </div>
 
@@ -41,21 +66,30 @@
             :key="product.uid"
             class="product-card registered-card"
           >
-            <div class="product-image-wrapper" :class="{ 'has-status': getStatusBadge(product) }">
+            <div class="product-image-wrapper" :class="{ 'has-status': getRegisteredStatusBadge(product) }">
               <img :src="getProductImage(product)" :alt="product.title" class="product-image" />
-              <div v-if="getStatusBadge(product)" class="status-overlay"></div>
-              <div v-if="getStatusBadge(product)" class="status-badge">{{ getStatusBadge(product) }}</div>
+              <div v-if="getRegisteredStatusBadge(product)" class="status-overlay"></div>
+              <div v-if="getRegisteredStatusBadge(product)" class="status-badge" :class="getStatusBadgeClass(product)">{{ getRegisteredStatusBadge(product) }}</div>
             </div>
             <div class="product-info">
               <h3 class="product-title" @click="openProductDetail(product)">{{ product.title }}</h3>
-              <p class="product-type-badge">{{ getProductTypeLabel(product.productType) }}</p>
+              <p class="product-type-badge">{{ getProductTypeLabel(product.category || product.productType) }}</p>
+              <p v-if="product.offlineMarketplaceName" class="product-marketplace-name">
+                <i class="el-icon-office-building"></i> {{ product.offlineMarketplaceName }}
+              </p>
               <p class="product-location">{{ product.location }}</p>
               <p class="product-price">{{ formatPrice(product) }}</p>
               
+              <!-- 거래중인 경우 구매자 정보 표시 -->
+              <div v-if="product.status === 'TRADING' && product.currentBuyerName" class="buyer-info">
+                <div class="info-title"><i class="el-icon-user"></i> 구매자 정보</div>
+                <p class="buyer-name">{{ product.currentBuyerName }}</p>
+              </div>
+              
               <!-- 오프라인 상품인 경우 회원번호 입력 버튼 -->
-              <div v-if="product.isOffline" class="action-buttons">
+              <div v-if="product.isOffline || product.offlineMarketplaceUid" class="action-buttons">
                 <button class="action-btn primary" @click.stop="openPointDeductModal(product)">
-                  회원번호 입력
+                  이름/연락처 입력
                 </button>
               </div>
             </div>
@@ -80,19 +114,63 @@
             :key="product.uid"
             class="product-card purchased-card"
           >
-            <div class="product-image-wrapper">
-              <img :src="getProductImage(product)" :alt="product.title" class="product-image" />
+            <div class="product-image-wrapper" :class="{ 'has-status': getPurchaseStatusBadge(product) }">
+              <img :src="getProductImage(product)" :alt="product.productTitle" class="product-image" />
+              <div v-if="getPurchaseStatusBadge(product)" class="status-overlay"></div>
+              <div v-if="getPurchaseStatusBadge(product)" class="status-badge" :class="getPurchaseStatusClass(product)">{{ getPurchaseStatusBadge(product) }}</div>
             </div>
             <div class="product-info">
-              <h3 class="product-title">{{ product.title }}</h3>
-              <p class="product-type-badge">{{ getProductTypeLabel(product.productType) }}</p>
-              <p class="product-location">{{ product.location }}</p>
+              <h3 class="product-title" @click="openPurchaseDetail(product)">{{ product.productTitle }}</h3>
+              <p class="product-type-badge">{{ getProductTypeLabel(product.productCategory) }}</p>
+              <p v-if="product.offlineMarketplaceName" class="product-marketplace-name">
+                <i class="el-icon-office-building"></i> {{ product.offlineMarketplaceName }}
+              </p>
               <p class="product-price">{{ formatPrice(product) }}</p>
               <p class="purchase-date">구매일: {{ formatDate(product.purchasedAt) }}</p>
               
-              <!-- 환불 요청 버튼 -->
+              <!-- 판매자 정보 -->
+              <div class="seller-info">
+                <div class="info-title"><i class="el-icon-goods"></i> 판매자 정보</div>
+                <div class="seller-profile">
+                  <img 
+                    v-if="product.sellerIconFileUid" 
+                    :src="`/api/attached-file/${product.sellerIconFileUid}`" 
+                    alt="seller" 
+                    class="seller-avatar"
+                  />
+                  <i v-else class="el-icon-user seller-avatar-icon"></i>
+                  <span class="seller-name">{{ product.sellerName }}</span>
+                </div>
+              </div>
+              
+              <!-- 거래 진행 버튼들 -->
               <div class="action-buttons">
-                <button class="action-btn secondary" @click.stop="requestRefund(product)">
+                <!-- 거래중 상태일 때 지급완료하기 버튼 -->
+                <button 
+                  v-if="product.status === 'IN_PROGRESS'" 
+                  class="action-btn primary"
+                  @click.stop="completeTransaction(product)"
+                  :disabled="completingPurchase === product.uid"
+                >
+                  {{ completingPurchase === product.uid ? '처리 중...' : '지급완료하기' }}
+                </button>
+                
+                <!-- 거래중 상태일 때 취소 버튼 -->
+                <button 
+                  v-if="product.status === 'IN_PROGRESS'" 
+                  class="action-btn secondary"
+                  @click.stop="cancelTransaction(product)"
+                  :disabled="cancellingPurchase === product.uid"
+                >
+                  {{ cancellingPurchase === product.uid ? '취소 중...' : '거래 취소' }}
+                </button>
+                
+                <!-- 환불 요청 버튼 (완료된 거래) -->
+                <button 
+                  v-if="product.status === 'COMPLETED'" 
+                  class="action-btn secondary" 
+                  @click.stop="requestRefund(product)"
+                >
                   환불 요청
                 </button>
               </div>
@@ -139,11 +217,21 @@
 
         <div class="form-section">
           <div class="form-group">
-            <label class="form-label">회원번호</label>
+            <label class="form-label">구매자 이름</label>
             <input 
-              v-model="deductForm.memberNumber" 
+              v-model="deductForm.buyerName" 
               type="text" 
-              placeholder="회원번호를 입력해주세요"
+              placeholder="구매자 이름을 입력해주세요"
+              class="form-input"
+            />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">구매자 연락처</label>
+            <input 
+              v-model="deductForm.buyerContact" 
+              type="text" 
+              placeholder="연락처를 입력해주세요 (예: 010-1234-5678)"
               class="form-input"
             />
           </div>
@@ -163,7 +251,7 @@
         <button 
           class="submit-btn" 
           @click="submitPointDeduct"
-          :disabled="!deductForm.memberNumber || !deductForm.deductPoints || submittingDeduct"
+          :disabled="!deductForm.buyerName || !deductForm.buyerContact || !deductForm.deductPoints || submittingDeduct"
         >
           {{ submittingDeduct ? '처리 중...' : '포인트 차감하기' }}
         </button>
@@ -175,21 +263,7 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import CommunitySidebar from './components/communitySidebar.vue';
-
-// 임시 인터페이스 (실제 API 연동시 @/api/marketplace에서 가져오기)
-interface MarketplaceProduct {
-  uid: string;
-  title: string;
-  description: string;
-  productType: 'SALE' | 'SHARE' | 'REQUEST';
-  price: number;
-  location: string;
-  stock: number;
-  status: 'AVAILABLE' | 'RESERVED' | 'SOLD_OUT';
-  imageUrls: string[];
-  isOffline: boolean;
-  purchasedAt?: string;
-}
+import { getMyRegisteredProducts, getMyPurchasedProducts, MarketplaceProduct, MarketplacePurchase, deductPointForOfflineProduct, completeTrade, cancelTrade } from '@/api/marketplace';
 
 @Component({
   name: 'MyMarketplace',
@@ -199,146 +273,104 @@ interface MarketplaceProduct {
 })
 export default class extends Vue {
   private activeTab: 'registered' | 'purchased' = 'registered';
+  private marketplaceFilter: 'all' | 'online' | 'offline' = 'all';
   private loadingRegistered = false;
   private loadingPurchased = false;
   
-  // 내 등록 상품 (덤프 데이터)
-  private registeredProducts: MarketplaceProduct[] = [
-    {
-      uid: 'reg-1',
-      title: '유기농 토마토 (1kg)',
-      description: '신선한 유기농 토마토입니다',
-      productType: 'SALE',
-      price: 5000,
-      location: '진주시',
-      stock: 10,
-      status: 'AVAILABLE',
-      imageUrls: ['https://images.unsplash.com/photo-1546470427-227a94f7a8f4?w=300&h=300&fit=crop'],
-      isOffline: true,
-    },
-    {
-      uid: 'reg-2',
-      title: '직접 만든 수제 쨈',
-      description: '딸기로 만든 수제 쨈입니다',
-      productType: 'SALE',
-      price: 8000,
-      location: '진주시',
-      stock: 5,
-      status: 'AVAILABLE',
-      imageUrls: ['https://images.unsplash.com/photo-1506368249639-73a05d6f6488?w=300&h=300&fit=crop'],
-      isOffline: true,
-    },
-    {
-      uid: 'reg-3',
-      title: '책 나눔합니다',
-      description: '깨끗한 상태의 책',
-      productType: 'SHARE',
-      price: 0,
-      location: '진주시',
-      stock: 1,
-      status: 'AVAILABLE',
-      imageUrls: ['https://images.unsplash.com/photo-1512820790803-83ca734da794?w=300&h=300&fit=crop'],
-      isOffline: false,
-    },
-    {
-      uid: 'reg-4',
-      title: '친환경 세제 구합니다',
-      description: '친환경 세제 필요합니다',
-      productType: 'REQUEST',
-      price: 3000,
-      location: '진주시',
-      stock: 1,
-      status: 'AVAILABLE',
-      imageUrls: ['https://images.unsplash.com/photo-1563453392212-326f5e854473?w=300&h=300&fit=crop'],
-      isOffline: false,
-    },
-    {
-      uid: 'reg-5',
-      title: '유기농 감자 (2kg)',
-      description: '신선한 감자입니다',
-      productType: 'SALE',
-      price: 6000,
-      location: '진주시',
-      stock: 0,
-      status: 'SOLD_OUT',
-      imageUrls: ['https://images.unsplash.com/photo-1518977676601-b53f82aba655?w=300&h=300&fit=crop'],
-      isOffline: true,
-    },
-  ];
-
-  // 내 구매 상품 (덤프 데이터)
-  private purchasedProducts: MarketplaceProduct[] = [
-    {
-      uid: 'pur-1',
-      title: '유기농 사과 (5kg)',
-      description: '달콤한 사과입니다',
-      productType: 'SALE',
-      price: 15000,
-      location: '진주시',
-      stock: 1,
-      status: 'SOLD_OUT',
-      imageUrls: ['https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?w=300&h=300&fit=crop'],
-      isOffline: true,
-      purchasedAt: '2025-12-20T10:30:00',
-    },
-    {
-      uid: 'pur-2',
-      title: '수제 두부',
-      description: '콩으로 만든 두부',
-      productType: 'SALE',
-      price: 4000,
-      location: '진주시',
-      stock: 1,
-      status: 'SOLD_OUT',
-      imageUrls: ['https://images.unsplash.com/photo-1515543237350-b3eea1ec8082?w=300&h=300&fit=crop'],
-      isOffline: true,
-      purchasedAt: '2025-12-22T14:20:00',
-    },
-    {
-      uid: 'pur-3',
-      title: '친환경 샴푸',
-      description: '무첨가 샴푸',
-      productType: 'SALE',
-      price: 12000,
-      location: '진주시',
-      stock: 1,
-      status: 'SOLD_OUT',
-      imageUrls: ['https://images.unsplash.com/photo-1535585209827-a15fcdbc4c2d?w=300&h=300&fit=crop'],
-      isOffline: false,
-      purchasedAt: '2025-12-25T09:15:00',
-    },
-  ];
+  // 내 등록 상품
+  private registeredProducts: MarketplaceProduct[] = [];
+  
+  // 내 구매 상품
+  private purchasedProducts: MarketplacePurchase[] = [];
 
   // 포인트 차감 모달
   private pointDeductModalVisible = false;
   private selectedProduct: MarketplaceProduct | null = null;
   private submittingDeduct = false;
   private deductForm = {
-    memberNumber: '',
+    buyerName: '',
+    buyerContact: '',
     deductPoints: 0,
   };
+  
+  // 거래 완료/취소 로딩 상태
+  private completingPurchase: string | null = null;
+  private cancellingPurchase: string | null = null;
 
   mounted() {
-    // 실제 API 연동시 데이터 로드
-    // this.loadRegisteredProducts();
-    // this.loadPurchasedProducts();
+    this.loadRegisteredProducts();
+  }
+
+  private get channelDomain(): string {
+    return this.$route.params.domain || '';
+  }
+
+  private async loadRegisteredProducts() {
+    try {
+      this.loadingRegistered = true;
+      const marketplaceType = this.marketplaceFilter === 'all' ? undefined : this.marketplaceFilter;
+      const response = await getMyRegisteredProducts(this.channelDomain, marketplaceType);
+      this.registeredProducts = response.data.content || [];
+    } catch (error: any) {
+      const message = error.response?.data?.message || '등록 상품 조회에 실패했습니다';
+      this.$message.error(message);
+    } finally {
+      this.loadingRegistered = false;
+    }
+  }
+
+  private async loadPurchasedProducts() {
+    try {
+      this.loadingPurchased = true;
+      const marketplaceType = this.marketplaceFilter === 'all' ? undefined : this.marketplaceFilter;
+      const response = await getMyPurchasedProducts(this.channelDomain, marketplaceType);
+      this.purchasedProducts = response.data.content || [];
+    } catch (error: any) {
+      const message = error.response?.data?.message || '구매 상품 조회에 실패했습니다';
+      this.$message.error(message);
+    } finally {
+      this.loadingPurchased = false;
+    }
   }
 
   private handleSpaceSelect(spaceId: string) {
     console.log('Space selected:', spaceId);
   }
 
-  private getProductImage(product: MarketplaceProduct): string {
-    if (product.imageUrls && product.imageUrls.length > 0 && product.imageUrls[0]) {
-      return product.imageUrls[0];
+  private onTabChange() {
+    this.marketplaceFilter = 'all';
+    if (this.activeTab === 'registered') {
+      this.loadRegisteredProducts();
+    } else {
+      this.loadPurchasedProducts();
     }
-    // 기본 이미지 (더 안정적인 소스)
+  }
+
+  private onFilterChange() {
+    if (this.activeTab === 'registered') {
+      this.loadRegisteredProducts();
+    } else {
+      this.loadPurchasedProducts();
+    }
+  }
+
+  private getProductImage(product: MarketplaceProduct | MarketplacePurchase): string {
+    // MarketplacePurchase의 경우 thumbnailUid 사용
+    if ('thumbnailUid' in product && product.thumbnailUid) {
+      return `/api/attached-file/${product.thumbnailUid}`;
+    }
+    
+    // MarketplaceProduct의 경우 imageUids 사용
+    if ('imageUids' in product && product.imageUids && product.imageUids.length > 0) {
+      return `/api/attached-file/${product.imageUids[0]}`;
+    }
+    
     return 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=300&h=300&fit=crop';
   }
 
   private getStatusBadge(product: MarketplaceProduct): string {
     if (product.status === 'SOLD_OUT') return '품절';
-    if (product.status === 'RESERVED') return '예약중';
+    if (product.status === 'HIDDEN') return '비공개';
     return '';
   }
 
@@ -351,11 +383,39 @@ export default class extends Vue {
     return labels[type] || type;
   }
 
-  private formatPrice(product: MarketplaceProduct): string {
-    if (product.productType === 'SHARE') {
+  private formatPrice(product: MarketplaceProduct | MarketplacePurchase): string {
+    // MarketplaceProduct - 나눔 상품
+    if ('productType' in product && product.productType === 'SHARE') {
       return '나눔';
     }
-    return `${product.price.toLocaleString()} R포인트`;
+    
+    // MarketplaceProduct - category가 SHARE인 경우
+    if ('category' in product && product.category === 'SHARE') {
+      return '나눔';
+    }
+    
+    // MarketplacePurchase - productCategory가 SHARE인 경우
+    if ('productCategory' in product && product.productCategory === 'SHARE') {
+      return '나눔';
+    }
+    
+    // MarketplacePurchase - totalPrice
+    if ('totalPrice' in product) {
+      if (product.totalPrice === 0) {
+        return '나눔';
+      }
+      return `${product.totalPrice.toLocaleString()} R포인트`;
+    }
+    
+    // MarketplaceProduct - price
+    if ('price' in product) {
+      if (product.price === 0) {
+        return '나눔';
+      }
+      return `${product.price.toLocaleString()} R포인트`;
+    }
+    
+    return '나눔';
   }
 
   private formatDate(dateString?: string): string {
@@ -365,11 +425,10 @@ export default class extends Vue {
   }
 
   private openProductDetail(product: MarketplaceProduct) {
-    // 상품 상세 페이지로 이동
     this.$router.push({
       name: 'MarketplaceDetail',
       params: {
-        domain: this.$route.params.domain || 'default',
+        domain: this.channelDomain,
         productId: product.uid,
       },
     });
@@ -379,7 +438,8 @@ export default class extends Vue {
   private openPointDeductModal(product: MarketplaceProduct) {
     this.selectedProduct = product;
     this.deductForm = {
-      memberNumber: '',
+      buyerName: '',
+      buyerContact: '',
       deductPoints: product.price,
     };
     this.pointDeductModalVisible = true;
@@ -390,7 +450,8 @@ export default class extends Vue {
     this.pointDeductModalVisible = false;
     this.selectedProduct = null;
     this.deductForm = {
-      memberNumber: '',
+      buyerName: '',
+      buyerContact: '',
       deductPoints: 0,
     };
   }
@@ -402,18 +463,16 @@ export default class extends Vue {
     try {
       this.submittingDeduct = true;
       
-      // TODO: 실제 API 호출
-      // await deductPointForOfflineProduct({
-      //   productUid: this.selectedProduct.uid,
-      //   memberNumber: this.deductForm.memberNumber,
-      //   deductPoints: this.deductForm.deductPoints,
-      // });
-
-      // 임시 딜레이
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await deductPointForOfflineProduct(this.selectedProduct.uid, {
+        buyerName: this.deductForm.buyerName,
+        buyerContact: this.deductForm.buyerContact,
+        deductPoints: this.deductForm.deductPoints,
+      });
 
       this.$message.success('포인트가 차감되었습니다');
       this.closePointDeductModal();
+      // 목록 새로고침
+      this.loadRegisteredProducts();
     } catch (error: any) {
       const message = error.response?.data?.message || '포인트 차감에 실패했습니다';
       this.$message.error(message);
@@ -423,9 +482,111 @@ export default class extends Vue {
   }
 
   // 환불 요청
-  private async requestRefund(product: MarketplaceProduct) {
-    // 환불 안내 메시지만 표시
+  private async requestRefund(product: MarketplacePurchase) {
     this.$message.warning('환불을 원하시면 관리자에게 요청하세요');
+  }
+
+  // 등록 상품 상태 배지 (판매자 관점)
+  private getRegisteredStatusBadge(product: MarketplaceProduct): string {
+    if (product.status === 'SOLD_OUT') return '품절';
+    if (product.status === 'HIDDEN') return '비공개';
+    if (product.status === 'TRADING') return '거래중';
+    return '';
+  }
+  
+  // 등록 상품 상태 배지 클래스
+  private getStatusBadgeClass(product: MarketplaceProduct): string {
+    if (product.status === 'TRADING') return 'status-trading';
+    if (product.status === 'SOLD_OUT') return 'status-soldout';
+    if (product.status === 'HIDDEN') return 'status-hidden';
+    return '';
+  }
+  
+  // 구매 상품 상태 배지 (구매자 관점)
+  private getPurchaseStatusBadge(product: MarketplacePurchase): string {
+    if (product.status === 'IN_PROGRESS') return '거래중';
+    if (product.status === 'COMPLETED') return '거래완료';
+    if (product.status === 'CANCELLED') return '취소됨';
+    if (product.status === 'REFUNDED') return '환불됨';
+    return '';
+  }
+  
+  // 구매 상품 상태 배지 클래스
+  private getPurchaseStatusClass(product: MarketplacePurchase): string {
+    if (product.status === 'IN_PROGRESS') return 'status-trading';
+    if (product.status === 'COMPLETED') return 'status-completed';
+    if (product.status === 'CANCELLED') return 'status-cancelled';
+    if (product.status === 'REFUNDED') return 'status-refunded';
+    return '';
+  }
+  
+  // 구매 상품 상세로 이동
+  private openPurchaseDetail(product: MarketplacePurchase) {
+    this.$router.push({
+      name: 'MarketplaceDetail',
+      params: {
+        domain: this.channelDomain,
+        productId: product.productUid,
+      },
+    });
+  }
+  
+  // 거래 완료 (포인트 지급)
+  private async completeTransaction(product: MarketplacePurchase) {
+    try {
+      await this.$confirm(
+        `판매자에게 ${product.totalPrice.toLocaleString()} R포인트를 지급하시겠습니까?`,
+        '지급 확인',
+        {
+          confirmButtonText: '지급하기',
+          cancelButtonText: '취소',
+          type: 'warning',
+        }
+      );
+      
+      this.completingPurchase = product.uid;
+      
+      await completeTrade(product.uid);
+      
+      this.$message.success('포인트가 지급되었습니다');
+      // 목록 새로고침
+      this.loadPurchasedProducts();
+    } catch (error: any) {
+      if (error === 'cancel') return;
+      const message = error.response?.data?.message || '지급에 실패했습니다';
+      this.$message.error(message);
+    } finally {
+      this.completingPurchase = null;
+    }
+  }
+  
+  // 거래 취소
+  private async cancelTransaction(product: MarketplacePurchase) {
+    try {
+      await this.$confirm(
+        '거래를 취소하시겠습니까?',
+        '거래 취소',
+        {
+          confirmButtonText: '취소하기',
+          cancelButtonText: '돌아가기',
+          type: 'warning',
+        }
+      );
+      
+      this.cancellingPurchase = product.uid;
+      
+      await cancelTrade(product.uid);
+      
+      this.$message.success('거래가 취소되었습니다');
+      // 목록 새로고침
+      this.loadPurchasedProducts();
+    } catch (error: any) {
+      if (error === 'cancel') return;
+      const message = error.response?.data?.message || '거래 취소에 실패했습니다';
+      this.$message.error(message);
+    } finally {
+      this.cancellingPurchase = null;
+    }
   }
 }
 </script>
@@ -460,7 +621,7 @@ export default class extends Vue {
 .tabs-section {
   display: flex;
   gap: 20px;
-  margin-bottom: 40px;
+  margin-bottom: 24px;
   border-bottom: 2px solid #EBEBEB;
 }
 
@@ -473,12 +634,7 @@ export default class extends Vue {
   font-size: 18px;
   font-weight: 600;
   cursor: pointer;
-//   transition: all 0.2s;
   position: relative;
-
-  &:hover {
-    color: #073DFF;
-  }
 
   &.active {
     color: #073DFF;
@@ -492,6 +648,31 @@ export default class extends Vue {
       height: 3px;
       background: #073DFF;
     }
+  }
+}
+
+// 필터 섹션
+.filter-section {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 40px;
+}
+
+.filter-btn {
+  padding: 10px 20px;
+  background: #F5F5F5;
+  border: 1px solid #EBEBEB;
+  border-radius: 8px;
+  color: #666;
+  font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+
+  &.active {
+    background: #073DFF;
+    color: #FFF;
+    border-color: #073DFF;
   }
 }
 
@@ -532,21 +713,10 @@ export default class extends Vue {
   border-radius: 12px;
   overflow: hidden;
   cursor: pointer;
-//   transition: all 0.3s;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-
-  &:hover {
-    // transform: translateY(-4px);
-    // box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
-  }
 
   &.purchased-card {
     cursor: default;
-
-    &:hover {
-    //   transform: none;
-    //   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-    }
   }
 }
 
@@ -603,6 +773,36 @@ export default class extends Vue {
   font-size: 18px;
   font-weight: 700;
   z-index: 1;
+  
+  &.status-trading {
+    background: #FFF3E0;
+    color: #E65100;
+  }
+  
+  &.status-completed {
+    background: #E8F5E9;
+    color: #2E7D32;
+  }
+  
+  &.status-cancelled {
+    background: #FFEBEE;
+    color: #C62828;
+  }
+  
+  &.status-refunded {
+    background: #FCE4EC;
+    color: #AD1457;
+  }
+  
+  &.status-soldout {
+    background: #F5F5F5;
+    color: #666;
+  }
+  
+  &.status-hidden {
+    background: #ECEFF1;
+    color: #546E7A;
+  }
 }
 
 .product-info {
@@ -635,6 +835,21 @@ export default class extends Vue {
   margin-bottom: 8px;
 }
 
+.product-marketplace-name {
+  color: #666;
+  font-size: 14px;
+  font-weight: 500;
+  margin: 0 0 8px 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+
+  i {
+    font-size: 14px;
+  }
+}
+
 .product-location {
   color: #888;
   font-size: 14px;
@@ -660,6 +875,69 @@ export default class extends Vue {
   margin: 8px 0 16px 0;
 }
 
+// 구매자/판매자 정보 스타일
+.buyer-info, .seller-info {
+  margin: 12px 0;
+  padding: 12px;
+  background: #F8F9FA;
+  border-radius: 8px;
+  border: 1px solid #EBEBEB;
+}
+
+.info-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #666;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  
+  i {
+    font-size: 14px;
+    color: #073DFF;
+  }
+}
+
+.buyer-name {
+  font-size: 15px;
+  font-weight: 500;
+  color: #333;
+  margin: 0;
+}
+
+.seller-profile {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.seller-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #E0E0E0;
+}
+
+.seller-avatar-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #E0E0E0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  color: #666;
+}
+
+.seller-name {
+  font-size: 15px;
+  font-weight: 500;
+  color: #333;
+}
+
 // 액션 버튼
 .action-buttons {
   display: flex;
@@ -678,11 +956,16 @@ export default class extends Vue {
   cursor: pointer;
 //   transition: all 0.2s;
 
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
   &.primary {
     background: #073DFF;
     color: #FFF;
 
-    &:hover {
+    &:hover:not(:disabled) {
       background: #0535e6;
     }
   }
@@ -692,7 +975,7 @@ export default class extends Vue {
     color: #666;
     border: 1px solid #CECECE;
 
-    &:hover {
+    &:hover:not(:disabled) {
       background: #E0E0E0;
     }
   }
@@ -859,16 +1142,10 @@ export default class extends Vue {
   font-size: 18px;
   font-weight: 700;
   cursor: pointer;
-//   transition: all 0.2s;
 
   &:hover:not(:disabled) {
     background: #0535e6;
-    // transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(7, 61, 255, 0.3);
-  }
-
-  &:active:not(:disabled) {
-    // transform: translateY(0);
   }
 
   &:disabled {

@@ -39,6 +39,26 @@ public interface MarketplaceProductRepository extends JpaRepository<MarketplaceP
     // 판매자의 상품 목록
     Page<MarketplaceProduct> findBySellerUidOrderByCreatedAtDesc(String sellerUid, Pageable pageable);
     
+    // 판매자의 온라인 상품 목록 (offlineMarketplaceUid가 NULL)
+    Page<MarketplaceProduct> findBySellerUidAndOfflineMarketplaceUidIsNullOrderByCreatedAtDesc(
+            String sellerUid, Pageable pageable);
+    
+    // 판매자의 오프라인 상품 목록 (offlineMarketplaceUid가 NOT NULL)
+    Page<MarketplaceProduct> findBySellerUidAndOfflineMarketplaceUidIsNotNullOrderByCreatedAtDesc(
+            String sellerUid, Pageable pageable);
+    
+    // 판매자의 특정 채널 상품 목록
+    Page<MarketplaceProduct> findBySellerUidAndChannelUidOrderByCreatedAtDesc(
+            String sellerUid, String channelUid, Pageable pageable);
+    
+    // 판매자의 특정 채널 온라인 상품 목록
+    Page<MarketplaceProduct> findBySellerUidAndChannelUidAndOfflineMarketplaceUidIsNullOrderByCreatedAtDesc(
+            String sellerUid, String channelUid, Pageable pageable);
+    
+    // 판매자의 특정 채널 오프라인 상품 목록
+    Page<MarketplaceProduct> findBySellerUidAndChannelUidAndOfflineMarketplaceUidIsNotNullOrderByCreatedAtDesc(
+            String sellerUid, String channelUid, Pageable pageable);
+    
     // 채널의 모든 상품 (메인 + 오프라인)
     Page<MarketplaceProduct> findByChannelUidOrderByCreatedAtDesc(String channelUid, Pageable pageable);
     

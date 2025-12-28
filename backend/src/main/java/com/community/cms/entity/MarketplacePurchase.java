@@ -55,7 +55,7 @@ public class MarketplacePurchase {
 
     @Builder.Default
     @Column(nullable = false, length = 20)
-    private String status = "PENDING";  // PENDING, COMPLETED, CANCELLED, REFUNDED
+    private String status = "PENDING";  // PENDING, IN_PROGRESS, COMPLETED, CANCELLED, REFUNDED
 
     @Builder.Default
     @Column(name = "payment_method", nullable = false, length = 20)
@@ -74,4 +74,7 @@ public class MarketplacePurchase {
 
     @Column(name = "cancelled_at")
     private LocalDateTime cancelledAt;
+
+    @Column(name = "seller_name", length = 100)
+    private String sellerName;
 }

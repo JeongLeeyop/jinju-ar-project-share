@@ -3,6 +3,8 @@ package com.community.cms.api.channel.repository;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.querydsl.QuerydslPredicateExecutor;
 
@@ -58,4 +60,14 @@ public interface ChannelMemberRepository extends JpaRepository<ChannelMember, In
      * @return 승인되고 추방되지 않은 멤버 수
      */
     long countByChannelUidAndApprovalStatusAndBanned(String channelUid, boolean approvalStatus, boolean banned);
+    
+    /**
+     * 채널의 승인되고 추방되지 않은 멤버 목록 조회 (페이징)
+     * @param channelUid 채널 UID
+     * @param approvalStatus 승인 상태
+     * @param banned 추방 상태
+     * @param pageable 페이징 정보
+     * @return 승인되고 추방되지 않은 멤버 페이지
+     */
+    Page<ChannelMember> findByChannelUidAndApprovalStatusAndBanned(String channelUid, boolean approvalStatus, boolean banned, Pageable pageable);
 }

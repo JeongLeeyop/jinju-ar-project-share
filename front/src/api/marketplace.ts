@@ -94,7 +94,8 @@ export interface MarketplaceProduct {
   location: string;
   sellerUid: string;
   sellerName: string;
-  status: 'ACTIVE' | 'SOLD_OUT' | 'HIDDEN';
+  iconFileUid?: string; // 판매자 프로필 이미지
+  status: 'ACTIVE' | 'TRADING' | 'SOLD_OUT' | 'HIDDEN';
   viewCount: number;
   createdAt: string;
   updatedAt: string;
@@ -103,6 +104,11 @@ export interface MarketplaceProduct {
   thumbnailUid?: string | null;
   isOffline: boolean;
   isMine: boolean;
+  isTrading: boolean;
+  // 거래중인 구매자 정보
+  currentBuyerUid?: string;
+  currentBuyerName?: string;
+  currentPurchaseUid?: string;
 }
 
 export interface MarketplaceProductImage {
@@ -180,6 +186,14 @@ export const getMyProducts = (page = 0, size = 20) =>
     params: { page, size },
   });
 
+// 내 등록 상품 목록 (특정 채널, 온라인/오프라인 필터)
+export const getMyRegisteredProducts = (channelDomain: string, marketplaceType?: string, page = 0, size = 20) =>
+  request({
+    url: `${PRODUCTS_PATH}/my/${channelDomain}`,
+    method: 'get',
+    params: { marketplaceType, page, size },
+  });
+
 // 상품 상세 조회
 export const getProduct = (uid: string) =>
   request({
@@ -209,16 +223,23 @@ export interface MarketplacePurchase {
   productUid: string;
   productTitle: string;
   productCategory: string;
+  offlineMarketplaceUid: string | null;
+  offlineMarketplaceName: string | null;
+  productPrice: number;
+  productLocation: string | null;
   buyerUid: string;
   buyerName: string;
   buyerContact: string | null;
+  buyerIconFileUid: string | null;
   sellerUid: string;
   sellerName: string;
+  sellerIconFileUid: string | null;
   quantity: number;
   totalPrice: number;
-  status: 'PENDING' | 'COMPLETED' | 'CANCELLED' | 'REFUNDED';
-  paymentMethod: 'POINT' | 'OFFLINE';
+  status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'REFUNDED';
+  paymentMethod: 'POINT' | 'OFFLINE' | 'FREE';
   isOffline: boolean;
+  isInProgress: boolean;
   purchasedAt: string;
   completedAt: string | null;
   cancelledAt: string | null;
@@ -230,10 +251,31 @@ export interface OfflineProcessRequest {
   pointAmount: number;
 }
 
+// 오프라인 상품 포인트 차감 요청
+export interface OfflineDeductRequest {
+  buyerName: string;
+  buyerContact: string;
+  deductPoints: number;
+}
+
+// 오프라인 장터 즉시 구매 요청 (구매자가 직접 구매)
+export interface InstantPurchaseRequest {
+  quantity: number;
+  buyerContact?: string;
+}
+
 // 상품 구매 (메인 장터 - 포인트 결제)
 export const purchaseProduct = (productUid: string, data: PurchaseRequest) =>
   request({
     url: `${PURCHASES_PATH}/${productUid}`,
+    method: 'post',
+    data,
+  });
+
+// 오프라인 장터 즉시 구매 (구매자가 직접 구매)
+export const instantOfflinePurchase = (productUid: string, data: InstantPurchaseRequest) =>
+  request({
+    url: `${PURCHASES_PATH}/${productUid}/offline/instant`,
     method: 'post',
     data,
   });
@@ -246,6 +288,14 @@ export const processOfflinePurchase = (productUid: string, purchaseUid: string, 
     data,
   });
 
+// 오프라인 상품 직접 포인트 차감 (판매자가 회원번호로 처리)
+export const deductPointForOfflineProduct = (productUid: string, data: OfflineDeductRequest) =>
+  request({
+    url: `${PURCHASES_PATH}/${productUid}/deduct-point`,
+    method: 'post',
+    data,
+  });
+
 // 내 구매 내역 조회
 export const getMyPurchases = (page = 0, size = 20) =>
   request({
@@ -254,10 +304,52 @@ export const getMyPurchases = (page = 0, size = 20) =>
     params: { page, size },
   });
 
-// 상품별 구매 내역 조회 (판매자용)
-export const getProductPurchases = (productUid: string, page = 0, size = 20) =>
+// 내 구매 내역 조회 (특정 채널, 온라인/오프라인 필터)
+export const getMyPurchasedProducts = (channelDomain: string, marketplaceType?: string, page = 0, size = 20) =>
   request({
-    url: `${PURCHASES_PATH}/product/${productUid}`,
+    url: `${PURCHASES_PATH}/my/${channelDomain}`,
     method: 'get',
-    params: { page, size },
+    params: { marketplaceType, page, size },
+  });
+
+// ==================== 거래 시작/완료/취소 API ====================
+
+export interface StartTradeRequest {
+  quantity: number;
+  buyerContact?: string;
+}
+
+export interface ApplyForRequestRequest {
+  message?: string;
+  contact?: string;
+}
+
+// 거래 시작 (구매자 - 포인트는 확정 시 차감)
+export const startTrade = (productUid: string, data: StartTradeRequest) =>
+  request({
+    url: `${PURCHASES_PATH}/${productUid}/start-trade`,
+    method: 'post',
+    data,
+  });
+
+// 거래 완료 (구매자가 포인트 지급 확정)
+export const completeTrade = (purchaseUid: string) =>
+  request({
+    url: `${PURCHASES_PATH}/${purchaseUid}/complete`,
+    method: 'post',
+  });
+
+// 거래 취소
+export const cancelTrade = (purchaseUid: string) =>
+  request({
+    url: `${PURCHASES_PATH}/${purchaseUid}/cancel`,
+    method: 'post',
+  });
+
+// REQUEST 상품 지원
+export const applyForRequest = (productUid: string, data: ApplyForRequestRequest) =>
+  request({
+    url: `${PURCHASES_PATH}/${productUid}/apply`,
+    method: 'post',
+    data,
   });
