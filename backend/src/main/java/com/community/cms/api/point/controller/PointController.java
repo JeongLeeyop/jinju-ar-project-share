@@ -311,12 +311,12 @@ public class PointController {
             validateChannelAdmin(channelUid, currentUser.getUid());
             
             // 대상 사용자 확인
-            User targetUser = userRepository.findById(targetUserUid)
-                    .orElseThrow(() -> new RuntimeException("대상 사용자를 찾을 수 없습니다"));
+            // User targetUser = userRepository.findById(targetUserUid)
+                    // .orElseThrow(() -> new RuntimeException("대상 사용자를 찾을 수 없습니다"));
             
-            Map<String, Object> result = pointService.getPointHistory(targetUserUid, channelUid, page, size);
-            result.put("targetUserUid", targetUserUid);
-            result.put("targetUserName", targetUser.getActualName());
+            Map<String, Object> result = pointService.getPointHistory(currentUser.getUid(), channelUid, page, size);
+            result.put("targetUserUid", currentUser.getUid());
+            result.put("targetUserName", currentUser.getActualName());
             
             return ResponseEntity.ok(result);
         } catch (RuntimeException e) {

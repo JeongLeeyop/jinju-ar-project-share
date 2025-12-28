@@ -76,10 +76,19 @@
                 </svg>
                 참여자: {{ schedule.participantCount }} / {{ schedule.maxParticipants }}명
               </p>
+              <p v-if="schedule.eventType && schedule.eventType !== 'free'" class="schedule-points">
+                <i class="el-icon-coin"></i>
+                <span v-if="schedule.eventType === 'paid'" class="point-paid">
+                  {{ schedule.points }}P 소모
+                </span>
+                <span v-else-if="schedule.eventType === 'earn'" class="point-earn">
+                  {{ schedule.points }}P 획득
+                </span>
+              </p>
             </div>
             <div class="schedule-actions">
               <button class="action-btn primary" @click.stop="viewParticipants(schedule)">
-                참여자
+                참여자 보기
               </button>
               <button class="action-btn secondary" @click.stop="editSchedule(schedule)">
                 수정
@@ -669,16 +678,17 @@ export default class extends Vue {
 
   // 일정 수정
   private editSchedule(schedule: Schedule) {
-    // 일정 수정 페이지로 이동
+    // Calendar 페이지로 이동하면서 수정 모드로 열기
     this.$router.push({
-      name: 'CalendarEdit',
+      name: 'Calendar',
       params: {
         domain: this.$route.params.domain,
-        idx: String(schedule.idx),
+      },
+      query: {
+        edit: String(schedule.idx),
       },
     }).catch(() => {
-      // 라우트가 없으면 모달 등으로 대체
-      this.$message.info(`일정 수정: ${schedule.title}`);
+      this.$message.error('일정 페이지로 이동할 수 없습니다');
     });
   }
 
