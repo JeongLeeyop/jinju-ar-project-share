@@ -85,7 +85,6 @@ class CalendarServiceImpl implements CalendarService {
     private final ChannelRepository channelRepository;
     private final com.community.cms.api.calendar.repository.CalendarLikeRepository calendarLikeRepository;
     private final com.community.cms.api.calendar.repository.CalendarCommentRepository calendarCommentRepository;
-    private final com.community.cms.api.channel.repository.ChannelRepository channelRepository;
 
     @Autowired
     PushAlarmService pushAlarmService;
@@ -232,15 +231,7 @@ class CalendarServiceImpl implements CalendarService {
             if (memberOpt.isEmpty() || !memberOpt.get().isApprovalStatus()) {
                 throw new RuntimeException("채널 멤버가 아니거나 승인되지 않았습니다.");
             }
-
-        // Check if user is channel admin (community admin has all permissions)
-        var channel = channelRepository.findByUid(addDto.getChannelUid())
-                .orElseThrow(() -> new RuntimeException("채널을 찾을 수 없습니다."));
-        
-        boolean isChannelAdmin = channel.getUserUid().equals(user.getUid());
-        
-        // If not admin, check SCHEDULE_CREATE permission
-        if (!isChannelAdmin) {
+            
             try {
                 var permissionCheck = permissionService.checkPermission(memberOpt.get().getIdx(),
                         ChannelMemberPermissionType.SCHEDULE_CREATE);
