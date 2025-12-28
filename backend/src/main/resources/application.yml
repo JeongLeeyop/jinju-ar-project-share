@@ -85,7 +85,8 @@ security:
 
 attached-file:
     # 집
-    upload-directory: D:\jinju\jinju-ar-community
+    upload-directory: D:\VSCode\attached-file\jinju-ar-community
+    # upload-directory: D:\jinju\jinju-ar-community
     # 회사
     # upload-directory: D:\VSCode\PersonalProject\attached-file\jinju-ar-community
     # 서버
@@ -111,12 +112,12 @@ spring:
         driver-class-name: com.mysql.cj.jdbc.Driver
         jdbc-url: jdbc:mysql://localhost:3306/jinju_ar_community?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
         username: jinju_ar_community
-        password: jinjuar1!
+        password: gamepark
       oauth:
         driver-class-name: com.mysql.cj.jdbc.Driver
         jdbc-url: jdbc:mysql://localhost:3306/jinju_ar_community?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
         username: jinju_ar_community
-        password: jinjuar1!
+        password: gamepark
 ---   
 server:
   port: 8080
