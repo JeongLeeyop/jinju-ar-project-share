@@ -67,7 +67,7 @@ public class MarketplaceProduct {
 
     @Builder.Default
     @Column(nullable = false, length = 20)
-    private String status = "ACTIVE";  // ACTIVE, SOLD_OUT, HIDDEN
+    private String status = "ACTIVE";  // ACTIVE, TRADING, SOLD_OUT, HIDDEN
 
     @Builder.Default
     @Column(name = "view_count", nullable = false)

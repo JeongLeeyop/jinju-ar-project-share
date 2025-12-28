@@ -66,10 +66,10 @@
             :key="product.uid"
             class="product-card registered-card"
           >
-            <div class="product-image-wrapper" :class="{ 'has-status': getStatusBadge(product) }">
+            <div class="product-image-wrapper" :class="{ 'has-status': getRegisteredStatusBadge(product) }">
               <img :src="getProductImage(product)" :alt="product.title" class="product-image" />
-              <div v-if="getStatusBadge(product)" class="status-overlay"></div>
-              <div v-if="getStatusBadge(product)" class="status-badge">{{ getStatusBadge(product) }}</div>
+              <div v-if="getRegisteredStatusBadge(product)" class="status-overlay"></div>
+              <div v-if="getRegisteredStatusBadge(product)" class="status-badge" :class="getStatusBadgeClass(product)">{{ getRegisteredStatusBadge(product) }}</div>
             </div>
             <div class="product-info">
               <h3 class="product-title" @click="openProductDetail(product)">{{ product.title }}</h3>
@@ -79,6 +79,12 @@
               </p>
               <p class="product-location">{{ product.location }}</p>
               <p class="product-price">{{ formatPrice(product) }}</p>
+              
+              <!-- 거래중인 경우 구매자 정보 표시 -->
+              <div v-if="product.status === 'TRADING' && product.currentBuyerName" class="buyer-info">
+                <div class="info-title"><i class="el-icon-user"></i> 구매자 정보</div>
+                <p class="buyer-name">{{ product.currentBuyerName }}</p>
+              </div>
               
               <!-- 오프라인 상품인 경우 회원번호 입력 버튼 -->
               <div v-if="product.isOffline || product.offlineMarketplaceUid" class="action-buttons">
@@ -108,11 +114,13 @@
             :key="product.uid"
             class="product-card purchased-card"
           >
-            <div class="product-image-wrapper">
-              <img :src="getProductImage(product)" :alt="product.title" class="product-image" />
+            <div class="product-image-wrapper" :class="{ 'has-status': getPurchaseStatusBadge(product) }">
+              <img :src="getProductImage(product)" :alt="product.productTitle" class="product-image" />
+              <div v-if="getPurchaseStatusBadge(product)" class="status-overlay"></div>
+              <div v-if="getPurchaseStatusBadge(product)" class="status-badge" :class="getPurchaseStatusClass(product)">{{ getPurchaseStatusBadge(product) }}</div>
             </div>
             <div class="product-info">
-              <h3 class="product-title">{{ product.productTitle }}</h3>
+              <h3 class="product-title" @click="openPurchaseDetail(product)">{{ product.productTitle }}</h3>
               <p class="product-type-badge">{{ getProductTypeLabel(product.productCategory) }}</p>
               <p v-if="product.offlineMarketplaceName" class="product-marketplace-name">
                 <i class="el-icon-office-building"></i> {{ product.offlineMarketplaceName }}
@@ -120,9 +128,49 @@
               <p class="product-price">{{ formatPrice(product) }}</p>
               <p class="purchase-date">구매일: {{ formatDate(product.purchasedAt) }}</p>
               
-              <!-- 환불 요청 버튼 -->
+              <!-- 판매자 정보 -->
+              <div class="seller-info">
+                <div class="info-title"><i class="el-icon-goods"></i> 판매자 정보</div>
+                <div class="seller-profile">
+                  <img 
+                    v-if="product.sellerIconFileUid" 
+                    :src="`/api/attached-file/${product.sellerIconFileUid}`" 
+                    alt="seller" 
+                    class="seller-avatar"
+                  />
+                  <i v-else class="el-icon-user seller-avatar-icon"></i>
+                  <span class="seller-name">{{ product.sellerName }}</span>
+                </div>
+              </div>
+              
+              <!-- 거래 진행 버튼들 -->
               <div class="action-buttons">
-                <button class="action-btn secondary" @click.stop="requestRefund(product)">
+                <!-- 거래중 상태일 때 지급완료하기 버튼 -->
+                <button 
+                  v-if="product.status === 'IN_PROGRESS'" 
+                  class="action-btn primary"
+                  @click.stop="completeTransaction(product)"
+                  :disabled="completingPurchase === product.uid"
+                >
+                  {{ completingPurchase === product.uid ? '처리 중...' : '지급완료하기' }}
+                </button>
+                
+                <!-- 거래중 상태일 때 취소 버튼 -->
+                <button 
+                  v-if="product.status === 'IN_PROGRESS'" 
+                  class="action-btn secondary"
+                  @click.stop="cancelTransaction(product)"
+                  :disabled="cancellingPurchase === product.uid"
+                >
+                  {{ cancellingPurchase === product.uid ? '취소 중...' : '거래 취소' }}
+                </button>
+                
+                <!-- 환불 요청 버튼 (완료된 거래) -->
+                <button 
+                  v-if="product.status === 'COMPLETED'" 
+                  class="action-btn secondary" 
+                  @click.stop="requestRefund(product)"
+                >
                   환불 요청
                 </button>
               </div>
@@ -215,7 +263,7 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import CommunitySidebar from './components/communitySidebar.vue';
-import { getMyRegisteredProducts, getMyPurchasedProducts, MarketplaceProduct, MarketplacePurchase, deductPointForOfflineProduct } from '@/api/marketplace';
+import { getMyRegisteredProducts, getMyPurchasedProducts, MarketplaceProduct, MarketplacePurchase, deductPointForOfflineProduct, completeTrade, cancelTrade } from '@/api/marketplace';
 
 @Component({
   name: 'MyMarketplace',
@@ -244,6 +292,10 @@ export default class extends Vue {
     buyerContact: '',
     deductPoints: 0,
   };
+  
+  // 거래 완료/취소 로딩 상태
+  private completingPurchase: string | null = null;
+  private cancellingPurchase: string | null = null;
 
   mounted() {
     this.loadRegisteredProducts();
@@ -433,6 +485,109 @@ export default class extends Vue {
   private async requestRefund(product: MarketplacePurchase) {
     this.$message.warning('환불을 원하시면 관리자에게 요청하세요');
   }
+
+  // 등록 상품 상태 배지 (판매자 관점)
+  private getRegisteredStatusBadge(product: MarketplaceProduct): string {
+    if (product.status === 'SOLD_OUT') return '품절';
+    if (product.status === 'HIDDEN') return '비공개';
+    if (product.status === 'TRADING') return '거래중';
+    return '';
+  }
+  
+  // 등록 상품 상태 배지 클래스
+  private getStatusBadgeClass(product: MarketplaceProduct): string {
+    if (product.status === 'TRADING') return 'status-trading';
+    if (product.status === 'SOLD_OUT') return 'status-soldout';
+    if (product.status === 'HIDDEN') return 'status-hidden';
+    return '';
+  }
+  
+  // 구매 상품 상태 배지 (구매자 관점)
+  private getPurchaseStatusBadge(product: MarketplacePurchase): string {
+    if (product.status === 'IN_PROGRESS') return '거래중';
+    if (product.status === 'COMPLETED') return '거래완료';
+    if (product.status === 'CANCELLED') return '취소됨';
+    if (product.status === 'REFUNDED') return '환불됨';
+    return '';
+  }
+  
+  // 구매 상품 상태 배지 클래스
+  private getPurchaseStatusClass(product: MarketplacePurchase): string {
+    if (product.status === 'IN_PROGRESS') return 'status-trading';
+    if (product.status === 'COMPLETED') return 'status-completed';
+    if (product.status === 'CANCELLED') return 'status-cancelled';
+    if (product.status === 'REFUNDED') return 'status-refunded';
+    return '';
+  }
+  
+  // 구매 상품 상세로 이동
+  private openPurchaseDetail(product: MarketplacePurchase) {
+    this.$router.push({
+      name: 'MarketplaceDetail',
+      params: {
+        domain: this.channelDomain,
+        productId: product.productUid,
+      },
+    });
+  }
+  
+  // 거래 완료 (포인트 지급)
+  private async completeTransaction(product: MarketplacePurchase) {
+    try {
+      await this.$confirm(
+        `판매자에게 ${product.totalPrice.toLocaleString()} R포인트를 지급하시겠습니까?`,
+        '지급 확인',
+        {
+          confirmButtonText: '지급하기',
+          cancelButtonText: '취소',
+          type: 'warning',
+        }
+      );
+      
+      this.completingPurchase = product.uid;
+      
+      await completeTrade(product.uid);
+      
+      this.$message.success('포인트가 지급되었습니다');
+      // 목록 새로고침
+      this.loadPurchasedProducts();
+    } catch (error: any) {
+      if (error === 'cancel') return;
+      const message = error.response?.data?.message || '지급에 실패했습니다';
+      this.$message.error(message);
+    } finally {
+      this.completingPurchase = null;
+    }
+  }
+  
+  // 거래 취소
+  private async cancelTransaction(product: MarketplacePurchase) {
+    try {
+      await this.$confirm(
+        '거래를 취소하시겠습니까?',
+        '거래 취소',
+        {
+          confirmButtonText: '취소하기',
+          cancelButtonText: '돌아가기',
+          type: 'warning',
+        }
+      );
+      
+      this.cancellingPurchase = product.uid;
+      
+      await cancelTrade(product.uid);
+      
+      this.$message.success('거래가 취소되었습니다');
+      // 목록 새로고침
+      this.loadPurchasedProducts();
+    } catch (error: any) {
+      if (error === 'cancel') return;
+      const message = error.response?.data?.message || '거래 취소에 실패했습니다';
+      this.$message.error(message);
+    } finally {
+      this.cancellingPurchase = null;
+    }
+  }
 }
 </script>
 
@@ -618,6 +773,36 @@ export default class extends Vue {
   font-size: 18px;
   font-weight: 700;
   z-index: 1;
+  
+  &.status-trading {
+    background: #FFF3E0;
+    color: #E65100;
+  }
+  
+  &.status-completed {
+    background: #E8F5E9;
+    color: #2E7D32;
+  }
+  
+  &.status-cancelled {
+    background: #FFEBEE;
+    color: #C62828;
+  }
+  
+  &.status-refunded {
+    background: #FCE4EC;
+    color: #AD1457;
+  }
+  
+  &.status-soldout {
+    background: #F5F5F5;
+    color: #666;
+  }
+  
+  &.status-hidden {
+    background: #ECEFF1;
+    color: #546E7A;
+  }
 }
 
 .product-info {
@@ -690,6 +875,69 @@ export default class extends Vue {
   margin: 8px 0 16px 0;
 }
 
+// 구매자/판매자 정보 스타일
+.buyer-info, .seller-info {
+  margin: 12px 0;
+  padding: 12px;
+  background: #F8F9FA;
+  border-radius: 8px;
+  border: 1px solid #EBEBEB;
+}
+
+.info-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #666;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  
+  i {
+    font-size: 14px;
+    color: #073DFF;
+  }
+}
+
+.buyer-name {
+  font-size: 15px;
+  font-weight: 500;
+  color: #333;
+  margin: 0;
+}
+
+.seller-profile {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.seller-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #E0E0E0;
+}
+
+.seller-avatar-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #E0E0E0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  color: #666;
+}
+
+.seller-name {
+  font-size: 15px;
+  font-weight: 500;
+  color: #333;
+}
+
 // 액션 버튼
 .action-buttons {
   display: flex;
@@ -708,11 +956,16 @@ export default class extends Vue {
   cursor: pointer;
 //   transition: all 0.2s;
 
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
   &.primary {
     background: #073DFF;
     color: #FFF;
 
-    &:hover {
+    &:hover:not(:disabled) {
       background: #0535e6;
     }
   }
@@ -722,7 +975,7 @@ export default class extends Vue {
     color: #666;
     border: 1px solid #CECECE;
 
-    &:hover {
+    &:hover:not(:disabled) {
       background: #E0E0E0;
     }
   }

@@ -3,6 +3,16 @@
     <CommunitySidebar :selectedSpaceId="'marketplace'" @space-select="handleSpaceSelect" />
 
     <div class="detail-main">
+      <!-- 뒤로가기 버튼 -->
+      <div class="back-button-wrapper">
+        <button class="back-btn" @click="goBack">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M15 18L9 12L15 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span>뒤로가기</span>
+        </button>
+      </div>
+
       <div v-if="product" class="detail-content">
         <div class="detail-layout">
           <div class="detail-left">
@@ -53,7 +63,23 @@
                 <h2 class="detail-title">{{ product.title }}</h2>
                 <p class="detail-location">{{ locationText }}</p>
               </div>
-              <button class="trade-btn" @click="handleTrade">거래하기</button>
+              <!-- REQUEST 상품은 지원하기, 그 외는 거래하기 -->
+              <button 
+                v-if="!product.isMine && product.status !== 'TRADING' && product.status !== 'SOLD_OUT'" 
+                class="trade-btn" 
+                :class="{ 'apply-btn': isRequestType }"
+                @click="handleTrade"
+              >
+                {{ isRequestType ? '지원하기' : '거래하기' }}
+              </button>
+              <!-- 거래중 상태 표시 -->
+              <div v-else-if="product.status === 'TRADING'" class="status-badge trading">
+                거래중
+              </div>
+              <!-- 품절 상태 표시 -->
+              <div v-else-if="product.status === 'SOLD_OUT'" class="status-badge sold-out">
+                거래완료
+              </div>
             </div>
 
             <div class="detail-price">{{ formattedPrice }}</div>
@@ -70,7 +96,7 @@
       </div>
     </div>
 
-    <!-- Trade Confirmation Modal -->
+    <!-- Trade Confirmation Modal (거래하기 - SALE/SHARE) -->
     <el-dialog
       :visible.sync="tradeModalVisible"
       width="540px"
@@ -91,6 +117,11 @@
         <h3 class="trade-modal-title">{{ product.title }}</h3>
         <div class="trade-modal-price">{{ formattedPrice }}</div>
 
+        <div class="trade-info-message">
+          <i class="el-icon-info"></i>
+          <span>거래가 시작되면 상품이 '거래중' 상태로 변경됩니다.<br/>판매자와 거래 완료 후 '지급완료하기'를 눌러 포인트를 지급해주세요.</span>
+        </div>
+
         <div class="points-breakdown">
           <div class="breakdown-header">
             <h4>{{ currentUserName }}님의 R 포인트</h4>
@@ -101,11 +132,11 @@
               <span class="item-value">{{ currentPoints.toLocaleString() }}</span>
             </div>
             <div class="breakdown-item">
-              <span class="item-label">차감 R 포인트</span>
+              <span class="item-label">예정 차감 R 포인트</span>
               <span class="item-value">{{ deductPoints }}</span>
             </div>
             <div class="breakdown-item">
-              <span class="item-label">잔액 R 포인트</span>
+              <span class="item-label">예상 잔액 R 포인트</span>
               <span class="item-value primary">{{ remainingPoints.toLocaleString() }}</span>
             </div>
           </div>
@@ -113,10 +144,67 @@
 
         <button 
           class="confirm-trade-btn" 
-          @click="confirmTrade"
-          :disabled="purchasing || (product.productType !== 'SHARE' && currentPoints < product.price)"
+          @click="confirmStartTrade"
+          :disabled="purchasing || (product.productType !== 'SHARE' && product.category !== 'SHARE' && currentPoints < product.price)"
         >
-          {{ purchasing ? '처리 중...' : (product.productType === 'SHARE' ? '나눔 받기' : 'R 포인트 지급하기') }}
+          {{ purchasing ? '처리 중...' : (isShareType ? '나눔 받기' : '거래 시작하기') }}
+        </button>
+      </div>
+    </el-dialog>
+
+    <!-- Apply Modal (지원하기 - REQUEST) -->
+    <el-dialog
+      :visible.sync="applyModalVisible"
+      width="540px"
+      center
+      :show-close="false"
+      :append-to-body="true"
+      :modal-append-to-body="true"
+      :close-on-click-modal="true"
+      custom-class="trade-modal"
+    >
+      <div v-if="product" class="trade-modal-content">
+        <button class="modal-close-btn" @click="applyModalVisible = false">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+
+        <h3 class="trade-modal-title">{{ product.title }}</h3>
+        <div class="trade-modal-price request">요청 상품</div>
+
+        <div class="trade-info-message">
+          <i class="el-icon-info"></i>
+          <span>요청자가 제시한 가격: <strong>R {{ product.price?.toLocaleString() || 0 }}</strong><br/>지원 시 요청자에게 연락처가 전달됩니다.</span>
+        </div>
+
+        <div class="form-section">
+          <div class="form-group">
+            <label class="form-label">연락처</label>
+            <input 
+              v-model="applyForm.contact" 
+              type="text" 
+              placeholder="연락받을 연락처를 입력해주세요"
+              class="form-input"
+            />
+          </div>
+          <div class="form-group">
+            <label class="form-label">메시지 (선택)</label>
+            <textarea 
+              v-model="applyForm.message" 
+              placeholder="요청자에게 전달할 메시지를 입력해주세요"
+              class="form-textarea"
+              rows="3"
+            ></textarea>
+          </div>
+        </div>
+
+        <button 
+          class="confirm-trade-btn apply" 
+          @click="confirmApply"
+          :disabled="applying || !applyForm.contact"
+        >
+          {{ applying ? '처리 중...' : '지원하기' }}
         </button>
       </div>
     </el-dialog>
@@ -126,7 +214,7 @@
 <script lang="ts">
 import { Component, Vue, Watch } from 'vue-property-decorator';
 import CommunitySidebar from './components/communitySidebar.vue';
-import { getProduct, MarketplaceProduct, instantOfflinePurchase } from '@/api/marketplace';
+import { getProduct, MarketplaceProduct, startTrade, applyForRequest } from '@/api/marketplace';
 import { getCurrentPoint } from '@/api/point';
 import { UserModule } from '@/store/modules/user';
 
@@ -140,16 +228,37 @@ export default class extends Vue {
   private product: MarketplaceProduct | null = null;
   private currentImageIndex = 0;
   private tradeModalVisible = false;
+  private applyModalVisible = false;
   private loading = false;
   private purchasing = false;
+  private applying = false;
 
   // 포인트 관련
   private currentPoints = 0;
   private loadingPoints = false;
 
-  // ✅ apiUrl을 computed getter로 변경하여 템플릿에서 접근 가능하도록 수정
+  // 지원 폼
+  private applyForm = {
+    contact: '',
+    message: '',
+  };
+
   get apiUrl() {
     return process.env.VUE_APP_COMMON_API || '/api';
+  }
+
+  // REQUEST 타입인지 확인
+  get isRequestType(): boolean {
+    if (!this.product) return false;
+    const type = this.product.productType || (this.product as any).category;
+    return type === 'REQUEST';
+  }
+
+  // SHARE 타입인지 확인
+  get isShareType(): boolean {
+    if (!this.product) return false;
+    const type = this.product.productType || (this.product as any).category;
+    return type === 'SHARE';
   }
 
   async mounted() {
@@ -161,6 +270,11 @@ export default class extends Vue {
   async onProductIdChange() {
     await this.loadProduct();
     await this.loadCurrentPoints();
+  }
+
+  // 뒤로가기
+  private goBack() {
+    this.$router.go(-1);
   }
 
   private async loadCurrentPoints() {
@@ -214,14 +328,23 @@ export default class extends Vue {
   }
 
   private handleTrade() {
-    this.tradeModalVisible = true;
+    if (this.isRequestType) {
+      // REQUEST 상품은 지원 모달 열기
+      this.applyForm = { contact: '', message: '' };
+      this.applyModalVisible = true;
+    } else {
+      // SALE/SHARE 상품은 거래 모달 열기
+      this.tradeModalVisible = true;
+    }
   }
 
-  private async confirmTrade() {
+  // 거래 시작 (SALE/SHARE)
+  private async confirmStartTrade() {
     if (!this.product) return;
 
     // 나눔 상품이 아닌 경우 포인트 체크
-    const totalPrice = this.product.productType === 'SHARE' ? 0 : this.product.price;
+    const type = this.product.productType || (this.product as any).category;
+    const totalPrice = type === 'SHARE' ? 0 : this.product.price;
     if (totalPrice > 0 && this.currentPoints < totalPrice) {
       this.$message.error('포인트가 부족합니다');
       return;
@@ -229,29 +352,55 @@ export default class extends Vue {
 
     try {
       this.purchasing = true;
-      await instantOfflinePurchase(this.product.uid, {
+      await startTrade(this.product.uid, {
         quantity: 1,
       });
       
-      this.$message.success('거래가 완료되었습니다!');
+      this.$message.success('거래가 시작되었습니다! 판매자와 거래 완료 후 내 장터에서 지급완료하기를 눌러주세요.');
       this.tradeModalVisible = false;
       
-      // 포인트 갱신
-      await this.loadCurrentPoints();
+      // 상품 정보 새로고침
+      await this.loadProduct();
       
-      // 목록으로 이동
+      // 내 장터로 이동
       this.$router.push({ 
-        name: 'OfflineMarketplace',
-        params: { 
-          domain: this.$route.params.domain || 'default',
-          marketplaceUid: this.product.offlineMarketplaceUid || '',
-        },
+        name: 'MyMarketplace',
+        params: { domain: this.$route.params.domain || 'default' }
       });
     } catch (error: any) {
-      const message = error.response?.data?.message || '거래 처리에 실패했습니다';
+      const message = error.response?.data?.message || '거래 시작에 실패했습니다';
       this.$message.error(message);
     } finally {
       this.purchasing = false;
+    }
+  }
+
+  // REQUEST 상품 지원
+  private async confirmApply() {
+    if (!this.product) return;
+
+    if (!this.applyForm.contact) {
+      this.$message.warning('연락처를 입력해주세요');
+      return;
+    }
+
+    try {
+      this.applying = true;
+      await applyForRequest(this.product.uid, {
+        contact: this.applyForm.contact,
+        message: this.applyForm.message,
+      });
+      
+      this.$message.success('지원이 완료되었습니다! 요청자에게 연락처가 전달되었습니다.');
+      this.applyModalVisible = false;
+      
+      // 상품 정보 새로고침
+      await this.loadProduct();
+    } catch (error: any) {
+      const message = error.response?.data?.message || '지원에 실패했습니다';
+      this.$message.error(message);
+    } finally {
+      this.applying = false;
     }
   }
 
@@ -278,6 +427,9 @@ export default class extends Vue {
     if (type === 'SHARE') {
       return '나눔';
     }
+    if (type === 'REQUEST') {
+      return `R ${(this.product.price || 0).toLocaleString()} (요청)`;
+    }
     
     const price = this.product.price || 0;
     return `R ${price.toLocaleString()}`;
@@ -301,14 +453,16 @@ export default class extends Vue {
   // 차감 포인트 (나눔은 0)
   get deductPoints(): string {
     if (!this.product) return '0';
-    const amount = this.product.productType === 'SHARE' ? 0 : this.product.price;
+    const type = this.product.productType || (this.product as any).category;
+    const amount = type === 'SHARE' ? 0 : this.product.price;
     return `-${amount.toLocaleString()}`;
   }
 
   // 잔액 포인트
   get remainingPoints(): number {
     if (!this.product) return this.currentPoints;
-    const deduct = this.product.productType === 'SHARE' ? 0 : this.product.price;
+    const type = this.product.productType || (this.product as any).category;
+    const deduct = type === 'SHARE' ? 0 : this.product.price;
     return Math.max(0, this.currentPoints - deduct);
   }
 }
@@ -328,6 +482,36 @@ export default class extends Vue {
   position: relative;
   max-width: calc(100vw - 270px);
   box-sizing: border-box;
+}
+
+// 뒤로가기 버튼
+.back-button-wrapper {
+  margin-bottom: 24px;
+}
+
+.back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: #F5F5F5;
+  border: 1px solid #E0E0E0;
+  border-radius: 8px;
+  color: #333;
+  font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    background: #E8E8E8;
+  }
+
+  svg {
+    width: 20px;
+    height: 20px;
+  }
 }
 
 .detail-content {
@@ -532,6 +716,42 @@ export default class extends Vue {
   &:active {
     background: #042099;
   }
+
+  &.apply-btn {
+    background: #FF9800;
+
+    &:hover {
+      background: #F57C00;
+    }
+
+    &:active {
+      background: #E65100;
+    }
+  }
+}
+
+// 상태 배지
+.status-badge {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 12px 24px;
+  border-radius: 10px;
+  font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+
+  &.trading {
+    background: #FFF3E0;
+    color: #FF9800;
+    border: 2px solid #FF9800;
+  }
+
+  &.sold-out {
+    background: #F5F5F5;
+    color: #888;
+    border: 2px solid #CCC;
+  }
 }
 
 .detail-price {
@@ -673,6 +893,97 @@ export default class extends Vue {
   font-size: 16px;
   font-weight: 700;
   line-height: 100%;
+
+  &.request {
+    background: rgba(255, 152, 0, 0.10);
+    color: #FF9800;
+  }
+}
+
+// 거래 안내 메시지
+.trade-info-message {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  background: #E3F2FD;
+  border-radius: 10px;
+  width: 100%;
+
+  i {
+    color: #1976D2;
+    font-size: 20px;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  span {
+    color: #1565C0;
+    font-size: 14px;
+    line-height: 1.6;
+
+    strong {
+      color: #073DFF;
+    }
+  }
+}
+
+// 폼 스타일
+.form-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-label {
+  color: #222;
+  font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.form-input {
+  padding: 12px 16px;
+  border: 1px solid #CECECE;
+  border-radius: 8px;
+  font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 15px;
+  outline: none;
+  transition: border-color 0.2s;
+
+  &:focus {
+    border-color: #073DFF;
+  }
+
+  &::placeholder {
+    color: #AAA;
+  }
+}
+
+.form-textarea {
+  padding: 12px 16px;
+  border: 1px solid #CECECE;
+  border-radius: 8px;
+  font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 15px;
+  outline: none;
+  resize: vertical;
+  transition: border-color 0.2s;
+
+  &:focus {
+    border-color: #073DFF;
+  }
+
+  &::placeholder {
+    color: #AAA;
+  }
 }
 
 .points-breakdown {

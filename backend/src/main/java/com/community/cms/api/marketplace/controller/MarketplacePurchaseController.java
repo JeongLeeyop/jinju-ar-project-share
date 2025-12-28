@@ -189,4 +189,84 @@ public class MarketplacePurchaseController {
             return ResponseEntity.badRequest().body(errorResponse);
         }
     }
+
+    /**
+     * 거래 시작 (구매자가 거래 시작 - 포인트는 확정 시 차감)
+     */
+    @PostMapping("/{productUid}/start-trade")
+    public ResponseEntity<?> startTrade(
+            @PathVariable String productUid,
+            @Valid @RequestBody MarketplacePurchaseDto.StartTradeRequest request,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        try {
+            User user = validateAndGetCurrentUser(userDetails);
+            MarketplacePurchaseDto result = purchaseService.startTrade(
+                    productUid, request, user.getUid(), user.getActualName());
+            return ResponseEntity.ok(result);
+        } catch (RuntimeException e) {
+            log.error("Failed to start trade: {}", e.getMessage());
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+    }
+
+    /**
+     * 거래 완료 (구매자가 포인트 지급 확정)
+     */
+    @PostMapping("/{purchaseUid}/complete")
+    public ResponseEntity<?> completeTrade(
+            @PathVariable String purchaseUid,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        try {
+            User user = validateAndGetCurrentUser(userDetails);
+            MarketplacePurchaseDto result = purchaseService.completeTrade(purchaseUid, user.getUid());
+            return ResponseEntity.ok(result);
+        } catch (RuntimeException e) {
+            log.error("Failed to complete trade: {}", e.getMessage());
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+    }
+
+    /**
+     * 거래 취소 (구매자 또는 판매자가 취소)
+     */
+    @PostMapping("/{purchaseUid}/cancel")
+    public ResponseEntity<?> cancelTrade(
+            @PathVariable String purchaseUid,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        try {
+            User user = validateAndGetCurrentUser(userDetails);
+            purchaseService.cancelTrade(purchaseUid, user.getUid());
+            return ResponseEntity.ok(Map.of("message", "거래가 취소되었습니다"));
+        } catch (RuntimeException e) {
+            log.error("Failed to cancel trade: {}", e.getMessage());
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+    }
+
+    /**
+     * REQUEST 상품 지원
+     */
+    @PostMapping("/{productUid}/apply")
+    public ResponseEntity<?> applyForRequest(
+            @PathVariable String productUid,
+            @Valid @RequestBody MarketplacePurchaseDto.ApplyForRequestRequest request,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        try {
+            User user = validateAndGetCurrentUser(userDetails);
+            MarketplacePurchaseDto result = purchaseService.applyForRequest(
+                    productUid, request, user.getUid(), user.getActualName());
+            return ResponseEntity.ok(result);
+        } catch (RuntimeException e) {
+            log.error("Failed to apply for request: {}", e.getMessage());
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+    }
 }

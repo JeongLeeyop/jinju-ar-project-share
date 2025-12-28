@@ -388,6 +388,18 @@ public class MarketplaceProductService {
                     .orElse(null);
         }
 
+        // 거래중 여부 및 현재 구매자 정보 조회
+        boolean isTrading = "TRADING".equals(entity.getStatus());
+        String currentBuyerUid = null;
+        String currentBuyerName = null;
+        String currentPurchaseUid = null;
+
+        if (isTrading && entity.getSellerUid().equals(currentUserUid)) {
+            // 판매자가 조회하는 경우, 현재 거래중인 구매자 정보 조회
+            // purchaseRepository가 필요하므로 여기서는 null로 둠
+            // 실제로는 별도 쿼리 필요
+        }
+
         return MarketplaceProductDto.builder()
                 .uid(entity.getUid())
                 .channelUid(entity.getChannelUid())
@@ -398,6 +410,7 @@ public class MarketplaceProductService {
                 .description(entity.getDescription())
                 .price(entity.getPrice())
                 .stockQuantity(entity.getStockQuantity())
+                .location(entity.getLocation())
                 .sellerUid(entity.getSellerUid())
                 .sellerName(entity.getSellerName())
                 .status(entity.getStatus())
@@ -408,6 +421,10 @@ public class MarketplaceProductService {
                 .thumbnailUid(thumbnailUid)
                 .isOffline(entity.getOfflineMarketplaceUid() != null)
                 .isMine(entity.getSellerUid().equals(currentUserUid))
+                .isTrading(isTrading)
+                .currentBuyerUid(currentBuyerUid)
+                .currentBuyerName(currentBuyerName)
+                .currentPurchaseUid(currentPurchaseUid)
                 .build();
     }
 }

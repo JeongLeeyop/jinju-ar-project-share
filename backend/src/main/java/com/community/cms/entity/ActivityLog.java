@@ -96,6 +96,10 @@ public class ActivityLog {
         // 장터 관련
         PRODUCT_CREATED("상품을 등록하였습니다"),
         PRODUCT_PURCHASED("상품을 구매하였습니다"),
+        TRADE_STARTED("거래를 시작하였습니다"),
+        TRADE_COMPLETED("거래를 완료하였습니다"),
+        TRADE_CANCELLED("거래를 취소하였습니다"),
+        REQUEST_APPLIED("요청에 지원하였습니다"),
         
         // 강의 관련
         LESSON_CREATED("강의를 생성하였습니다"),
