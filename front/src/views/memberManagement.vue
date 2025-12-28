@@ -820,6 +820,7 @@ import { getMemberPermissions, bulkUpdatePermissions, getAllPermissionTypes } fr
 import { getChannelDomainDetail } from '@/api/channel';
 import { getUserInfo } from '@/api/user';
 import { UserModule } from '@/store/modules/user';
+import { ChannelModule } from '@/store/modules/channel';
 import { getTokenDecode } from '@/utils/cookies';
 import { getChannelMembersWithPoints, adminAdjustPoint, getTargetUserPointHistory, MemberWithPoint, PointHistory } from '@/api/point';
 
@@ -1024,12 +1025,29 @@ export default class extends Vue {
   }
 
   get channelUid() {
+    // ChannelModule에서 실제 channelUid를 가져옴 (domain이 아닌 uid)
+    // fallback: currentChannel.uid (checkChannelAdminStatus에서 설정됨)
+    return ChannelModule.selectedChannel?.uid || this.currentChannel?.uid || '';
+  }
+
+  get channelDomain() {
     return this.$route.params.domain || '';
   }
 
   async mounted() {
     await this.loadCurrentUser(); // 현재 사용자 정보 먼저 로드 (완료될 때까지 대기)
-    this.checkChannelAdminStatus();
+    await this.checkChannelAdminStatus(); // 채널 정보 로드 완료 대기 (channelUid 설정)
+    
+    // ChannelModule에 selectedChannel이 설정되어 있지 않으면 명시적으로 설정
+    if (!ChannelModule.selectedChannel?.uid && this.currentChannel) {
+      console.log('⚠️ ChannelModule.selectedChannel이 없어서 수동 설정');
+      ChannelModule.setSelectedChannel({
+        uid: this.currentChannel.uid,
+        name: this.currentChannel.name,
+        domain: this.currentChannel.domain,
+      });
+    }
+    
     this.loadMembers();
     this.loadPendingMembers();
   }
@@ -1037,7 +1055,18 @@ export default class extends Vue {
   @Watch('$route.params.domain')
   private async onDomainChange() {
     await this.loadCurrentUser(); // 도메인 변경 시에도 사용자 정보 재로드
-    this.checkChannelAdminStatus();
+    await this.checkChannelAdminStatus(); // 채널 정보 로드 완료 대기
+    
+    // ChannelModule에 selectedChannel이 설정되어 있지 않으면 명시적으로 설정
+    if (!ChannelModule.selectedChannel?.uid && this.currentChannel) {
+      console.log('⚠️ ChannelModule.selectedChannel이 없어서 수동 설정 (onDomainChange)');
+      ChannelModule.setSelectedChannel({
+        uid: this.currentChannel.uid,
+        name: this.currentChannel.name,
+        domain: this.currentChannel.domain,
+      });
+    }
+    
     this.loadMembers();
     this.loadPendingMembers();
   }
@@ -1063,13 +1092,13 @@ export default class extends Vue {
    * 채널 관리자 여부 확인
    */
   private async checkChannelAdminStatus() {
-    if (!this.channelUid) return;
+    if (!this.channelDomain) return;
 
     try {
       this.checkingAdminStatus = true;
 
-      // 채널 정보 조회
-      const channelResponse = await getChannelDomainDetail(this.channelUid);
+      // 채널 정보 조회 (domain으로 조회)
+      const channelResponse = await getChannelDomainDetail(this.channelDomain);
       this.currentChannel = channelResponse.data;
 
       console.log('=== 채널 관리자 체크 ===');
@@ -1563,7 +1592,28 @@ export default class extends Vue {
    * 포인트가 있는 회원 목록 조회
    */
   private async loadMembersWithPoints() {
-    if (!this.channelUid) return;
+    console.log('=== 포인트 회원 조회 ===');
+    console.log('channelUid:', this.channelUid);
+    console.log('channelDomain:', this.channelDomain);
+    console.log('ChannelModule.selectedChannel:', ChannelModule.selectedChannel);
+    console.log('currentChannel:', this.currentChannel);
+    
+    // channelUid가 domain인지 확인
+    const channelUid = this.channelUid;
+    if (!channelUid) {
+      console.error('❌ channelUid가 없습니다!');
+      this.$message.error('채널 정보를 불러오지 못했습니다. 페이지를 새로고침해주세요.');
+      return;
+    }
+    
+    // channelUid가 실제 UUID 형식인지 간단히 체크 (domain이 아닌지)
+    if (channelUid === this.channelDomain) {
+      console.error('❌ channelUid가 domain과 같습니다! (UUID가 아님)');
+      console.error('channelUid:', channelUid);
+      console.error('channelDomain:', this.channelDomain);
+      this.$message.error('채널 UID를 가져올 수 없습니다. 페이지를 새로고침해주세요.');
+      return;
+    }
 
     // 채널 관리자가 아닌 경우 경고
     if (!this.isChannelAdmin) {
@@ -1575,8 +1625,9 @@ export default class extends Vue {
     try {
       this.loadingPoints = true;
       
+      console.log('✅ 포인트 API 호출 - channelUid:', channelUid);
       const response = await getChannelMembersWithPoints({
-        channelUid: this.channelUid,
+        channelUid: channelUid,
         page: 0,
         size: 100,
       });
