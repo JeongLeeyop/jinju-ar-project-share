@@ -1203,12 +1203,13 @@ export default class extends Vue {
 
 /* Comments Section */
 .comments-section {
-  margin-top: 20px;
+  width: calc(100% + -50px);
+  margin: -50px 0px 20px 50px;
   padding: 24px;
   background: #F9FAFB;
   border-radius: 10px;
   border: 1px solid #E5E7EB;
-  animation: slideDown 0.3s ease-out;
+  animation: slideDown-15226a58 0.3s ease-out;
 }
 
 @keyframes slideDown {
@@ -1848,6 +1849,15 @@ export default class extends Vue {
 }
 
 @media screen and (max-width: 768px) {
+  .comments-section {
+    width: calc(100% + -50px);
+    margin: -50px 0px 20px 50px;
+    padding: 24px;
+    background: #F9FAFB;
+    border-radius: 10px;
+    border: 1px solid #E5E7EB;
+    animation: slideDown-15226a58 0.3s ease-out;
+  }
   .calendar-main {
     margin: 100px 0 0 0;
     padding: 32px 24px;

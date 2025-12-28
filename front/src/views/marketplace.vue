@@ -577,7 +577,7 @@ export default class extends Vue {
 }
 
 .product-card {
-  flex: 0 1 calc(100% / 4 - 30px);
+  flex: 0 1 calc(100% / 4 - 37px);
   display: flex;
   flex-direction: column;
   gap: 20px;
