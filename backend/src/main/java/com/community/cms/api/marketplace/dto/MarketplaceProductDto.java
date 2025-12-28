@@ -51,6 +51,7 @@ public class MarketplaceProductDto {
     // 현재 거래 중인 구매자 정보 (판매자가 조회시)
     private String currentBuyerUid;
     private String currentBuyerName;
+    private String currentBuyerIconFileUid;
     private String currentPurchaseUid;
 
     /**

@@ -80,10 +80,19 @@
               <p class="product-location">{{ product.location }}</p>
               <p class="product-price">{{ formatPrice(product) }}</p>
               
-              <!-- 거래중인 경우 구매자 정보 표시 -->
-              <div v-if="product.status === 'TRADING' && product.currentBuyerName" class="buyer-info">
+              <!-- 구매자 정보 표시 (거래중 또는 거래완료 상태) -->
+              <div v-if="(product.status === 'TRADING' || product.status === 'SOLD_OUT') && product.currentBuyerName" class="buyer-info">
                 <div class="info-title"><i class="el-icon-user"></i> 구매자 정보</div>
-                <p class="buyer-name">{{ product.currentBuyerName }}</p>
+                <div class="buyer-profile">
+                  <img 
+                    v-if="product.currentBuyerIconFileUid" 
+                    :src="`/api/attached-file/${product.currentBuyerIconFileUid}`" 
+                    alt="buyer" 
+                    class="buyer-avatar"
+                  />
+                  <i v-else class="el-icon-user buyer-avatar-icon"></i>
+                  <span class="buyer-name">{{ product.currentBuyerName }}</span>
+                </div>
               </div>
               
               <!-- 오프라인 상품인 경우 회원번호 입력 버튼 -->
@@ -904,6 +913,32 @@ export default class extends Vue {
   font-weight: 500;
   color: #333;
   margin: 0;
+}
+
+.buyer-profile {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.buyer-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #E0E0E0;
+}
+
+.buyer-avatar-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #E0E0E0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  color: #666;
 }
 
 .seller-profile {
