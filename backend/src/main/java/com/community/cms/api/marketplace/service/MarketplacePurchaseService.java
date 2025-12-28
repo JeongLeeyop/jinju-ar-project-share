@@ -507,6 +507,69 @@ public class MarketplacePurchaseService {
     }
 
     /**
+     * 판매자 확정 (판매자가 거래 완료 확정 - 포인트 지급)
+     * 나눔/요청 상품도 이 메서드로 확정 처리
+     */
+    @Transactional
+    public MarketplacePurchaseDto sellerConfirmTrade(
+            String purchaseUid,
+            String sellerUid) {
+
+        MarketplacePurchase purchase = purchaseRepository.findByUid(purchaseUid)
+                .orElseThrow(() -> new RuntimeException("구매 내역을 찾을 수 없습니다"));
+
+        // 판매자 확인
+        if (!purchase.getSellerUid().equals(sellerUid)) {
+            throw new RuntimeException("판매자만 거래를 확정할 수 있습니다");
+        }
+
+        // 진행중인 거래인지 확인
+        if (!"IN_PROGRESS".equals(purchase.getStatus())) {
+            throw new RuntimeException("진행중인 거래가 아닙니다");
+        }
+
+        MarketplaceProduct product = productRepository.findByUid(purchase.getProductUid())
+                .orElseThrow(() -> new RuntimeException("상품을 찾을 수 없습니다"));
+
+        // 포인트 차감 (나눔 상품이 아닐 경우)
+        if (purchase.getTotalPrice() > 0) {
+            deductPoints(purchase.getBuyerUid(), product.getChannelUid(), purchase.getTotalPrice(), purchase.getProductUid());
+        }
+
+        // 재고 감소
+        product.setStockQuantity(product.getStockQuantity() - purchase.getQuantity());
+        if (product.getStockQuantity() == 0) {
+            product.setStatus("SOLD_OUT");
+        } else {
+            product.setStatus("ACTIVE");  // 거래 완료 후 다시 활성화
+        }
+        productRepository.save(product);
+
+        // 구매 상태 업데이트
+        purchase.setStatus("COMPLETED");
+        purchase.setCompletedAt(LocalDateTime.now());
+
+        MarketplacePurchase saved = purchaseRepository.save(purchase);
+
+        // 활동 로그 기록
+        logActivity(
+                sellerUid,
+                product.getSellerName(),
+                product.getChannelUid(),
+                ActivityLog.ActivityType.TRADE_COMPLETED,
+                String.format("장터 거래 확정 완료: %s (%d P)", product.getTitle(), purchase.getTotalPrice()),
+                purchase.getProductUid(),
+                product.getTitle(),
+                purchase.getBuyerUid(),
+                purchase.getBuyerName()
+        );
+
+        log.info("Trade confirmed by seller: purchase={} seller={} price={}P", purchaseUid, sellerUid, purchase.getTotalPrice());
+
+        return toDto(saved, product);
+    }
+
+    /**
      * 거래 취소 (구매자 또는 판매자가 취소)
      */
     @Transactional
@@ -643,6 +706,13 @@ public class MarketplacePurchaseService {
      * 장터 이용 권한 체크
      */
     private void checkMarketplaceUsePermission(String channelUid, String userUid) {
+        // 커뮤니티 관리자인 경우 권한 체크 생략
+        Channel channel = channelRepository.findByUid(channelUid).orElse(null);
+        if (channel != null && channel.getUserUid() != null && channel.getUserUid().equals(userUid)) {
+            log.info("✅ 커뮤니티 관리자로 장터 이용 권한 자동 승인: userUid={}", userUid);
+            return;
+        }
+
         ChannelMember member = channelMemberRepository.findByUserUidAndChannelUid(userUid, channelUid)
                 .orElseThrow(() -> new RuntimeException("채널 멤버가 아닙니다"));
 

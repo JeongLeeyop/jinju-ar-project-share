@@ -82,7 +82,7 @@
               
               <!-- 구매자 정보 표시 (거래중 또는 거래완료 상태) -->
               <div v-if="(product.status === 'TRADING' || product.status === 'SOLD_OUT') && product.currentBuyerName" class="buyer-info">
-                <div class="info-title"><i class="el-icon-user"></i> 구매자 정보</div>
+                <div class="info-title"><i class="el-icon-user"></i> {{ getTransactionLabel(product) }} 정보</div>
                 <div class="buyer-profile">
                   <img 
                     v-if="product.currentBuyerIconFileUid" 
@@ -95,9 +95,33 @@
                 </div>
               </div>
               
-              <!-- 오프라인 상품인 경우 회원번호 입력 버튼 -->
-              <div v-if="product.isOffline || product.offlineMarketplaceUid" class="action-buttons">
-                <button class="action-btn primary" @click.stop="openPointDeductModal(product)">
+              <!-- 거래 진행 버튼들 (판매자용) -->
+              <div class="action-buttons">
+                <!-- 거래중 상태일 때 확정/취소 버튼 -->
+                <button 
+                  v-if="product.status === 'TRADING' && product.currentPurchaseUid" 
+                  class="action-btn primary"
+                  @click.stop="sellerConfirmTransaction(product)"
+                  :disabled="confirmingProduct === product.uid"
+                >
+                  {{ confirmingProduct === product.uid ? '처리 중...' : getConfirmButtonLabel(product) }}
+                </button>
+                
+                <button 
+                  v-if="product.status === 'TRADING' && product.currentPurchaseUid" 
+                  class="action-btn secondary"
+                  @click.stop="sellerCancelTransaction(product)"
+                  :disabled="cancellingProduct === product.uid"
+                >
+                  {{ cancellingProduct === product.uid ? '취소 중...' : '거래 취소' }}
+                </button>
+                
+                <!-- 오프라인 상품인 경우 회원번호 입력 버튼 -->
+                <button 
+                  v-if="(product.isOffline || product.offlineMarketplaceUid) && product.status === 'ACTIVE'" 
+                  class="action-btn primary" 
+                  @click.stop="openPointDeductModal(product)"
+                >
                   이름/연락처 입력
                 </button>
               </div>
@@ -154,15 +178,11 @@
               
               <!-- 거래 진행 버튼들 -->
               <div class="action-buttons">
-                <!-- 거래중 상태일 때 지급완료하기 버튼 -->
-                <button 
-                  v-if="product.status === 'IN_PROGRESS'" 
-                  class="action-btn primary"
-                  @click.stop="completeTransaction(product)"
-                  :disabled="completingPurchase === product.uid"
-                >
-                  {{ completingPurchase === product.uid ? '처리 중...' : '지급완료하기' }}
-                </button>
+                <!-- 거래중 상태일 때 대기 안내 메시지 -->
+                <div v-if="product.status === 'IN_PROGRESS'" class="waiting-message">
+                  <i class="el-icon-time"></i>
+                  <span>판매자 확정 대기중</span>
+                </div>
                 
                 <!-- 거래중 상태일 때 취소 버튼 -->
                 <button 
@@ -272,7 +292,7 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import CommunitySidebar from './components/communitySidebar.vue';
-import { getMyRegisteredProducts, getMyPurchasedProducts, MarketplaceProduct, MarketplacePurchase, deductPointForOfflineProduct, completeTrade, cancelTrade } from '@/api/marketplace';
+import { getMyRegisteredProducts, getMyPurchasedProducts, MarketplaceProduct, MarketplacePurchase, deductPointForOfflineProduct, cancelTrade, sellerConfirmTrade } from '@/api/marketplace';
 
 @Component({
   name: 'MyMarketplace',
@@ -302,9 +322,12 @@ export default class extends Vue {
     deductPoints: 0,
   };
   
-  // 거래 완료/취소 로딩 상태
-  private completingPurchase: string | null = null;
+  // 거래 취소 로딩 상태 (구매자)
   private cancellingPurchase: string | null = null;
+  
+  // 판매자 확정/취소 로딩 상태
+  private confirmingProduct: string | null = null;
+  private cancellingProduct: string | null = null;
 
   mounted() {
     this.loadRegisteredProducts();
@@ -513,7 +536,7 @@ export default class extends Vue {
   
   // 구매 상품 상태 배지 (구매자 관점)
   private getPurchaseStatusBadge(product: MarketplacePurchase): string {
-    if (product.status === 'IN_PROGRESS') return '거래중';
+    if (product.status === 'IN_PROGRESS') return '확정 대기중';
     if (product.status === 'COMPLETED') return '거래완료';
     if (product.status === 'CANCELLED') return '취소됨';
     if (product.status === 'REFUNDED') return '환불됨';
@@ -540,36 +563,7 @@ export default class extends Vue {
     });
   }
   
-  // 거래 완료 (포인트 지급)
-  private async completeTransaction(product: MarketplacePurchase) {
-    try {
-      await this.$confirm(
-        `판매자에게 ${product.totalPrice.toLocaleString()} R포인트를 지급하시겠습니까?`,
-        '지급 확인',
-        {
-          confirmButtonText: '지급하기',
-          cancelButtonText: '취소',
-          type: 'warning',
-        }
-      );
-      
-      this.completingPurchase = product.uid;
-      
-      await completeTrade(product.uid);
-      
-      this.$message.success('포인트가 지급되었습니다');
-      // 목록 새로고침
-      this.loadPurchasedProducts();
-    } catch (error: any) {
-      if (error === 'cancel') return;
-      const message = error.response?.data?.message || '지급에 실패했습니다';
-      this.$message.error(message);
-    } finally {
-      this.completingPurchase = null;
-    }
-  }
-  
-  // 거래 취소
+  // 거래 취소 (구매자)
   private async cancelTransaction(product: MarketplacePurchase) {
     try {
       await this.$confirm(
@@ -595,6 +589,128 @@ export default class extends Vue {
       this.$message.error(message);
     } finally {
       this.cancellingPurchase = null;
+    }
+  }
+  
+  // 상품 유형에 따른 거래 라벨 반환
+  private getTransactionLabel(product: MarketplaceProduct): string {
+    const type = product.category || product.productType;
+    switch (type) {
+      case 'SALE':
+        return '구매자';
+      case 'SHARE':
+        return '수혜자';
+      case 'REQUEST':
+        return '지원자';
+      default:
+        return '구매자';
+    }
+  }
+  
+  // 상품 유형에 따른 확정 버튼 라벨 반환
+  private getConfirmButtonLabel(product: MarketplaceProduct): string {
+    const type = product.category || product.productType;
+    switch (type) {
+      case 'SALE':
+        return '판매 확정';
+      case 'SHARE':
+        return '나눔 확정';
+      case 'REQUEST':
+        return '지원 수락';
+      default:
+        return '거래 확정';
+    }
+  }
+  
+  // 판매자 확정 (판매자가 거래 완료 확정)
+  private async sellerConfirmTransaction(product: MarketplaceProduct) {
+    if (!product.currentPurchaseUid) {
+      this.$message.error('거래 정보를 찾을 수 없습니다');
+      return;
+    }
+    
+    const type = product.category || product.productType;
+    const priceText = product.price > 0 ? `${product.price.toLocaleString()} R포인트` : '무료';
+    
+    let confirmMessage = '';
+    let title = '';
+    
+    switch (type) {
+      case 'SALE':
+        confirmMessage = `${product.currentBuyerName}님에게 ${priceText}를 받고 판매를 확정하시겠습니까?`;
+        title = '판매 확정';
+        break;
+      case 'SHARE':
+        confirmMessage = `${product.currentBuyerName}님에게 나눔을 확정하시겠습니까?`;
+        title = '나눔 확정';
+        break;
+      case 'REQUEST':
+        confirmMessage = `${product.currentBuyerName}님의 지원을 수락하시겠습니까? 수락 시 ${priceText}가 지급됩니다.`;
+        title = '지원 수락';
+        break;
+      default:
+        confirmMessage = '거래를 확정하시겠습니까?';
+        title = '거래 확정';
+    }
+
+    try {
+      await this.$confirm(confirmMessage, title, {
+        confirmButtonText: '확정하기',
+        cancelButtonText: '취소',
+        type: 'warning',
+      });
+      
+      this.confirmingProduct = product.uid;
+      
+      await sellerConfirmTrade(product.currentPurchaseUid);
+      
+      const successMessage = type === 'SHARE' ? '나눔이 완료되었습니다' :
+                             type === 'REQUEST' ? '지원을 수락하였습니다' : 
+                             '판매가 완료되었습니다';
+      this.$message.success(successMessage);
+      
+      // 목록 새로고침
+      this.loadRegisteredProducts();
+    } catch (error: any) {
+      if (error === 'cancel') return;
+      const message = error.response?.data?.message || '거래 확정에 실패했습니다';
+      this.$message.error(message);
+    } finally {
+      this.confirmingProduct = null;
+    }
+  }
+  
+  // 판매자 거래 취소
+  private async sellerCancelTransaction(product: MarketplaceProduct) {
+    if (!product.currentPurchaseUid) {
+      this.$message.error('거래 정보를 찾을 수 없습니다');
+      return;
+    }
+
+    try {
+      await this.$confirm(
+        '거래를 취소하시겠습니까?',
+        '거래 취소',
+        {
+          confirmButtonText: '취소하기',
+          cancelButtonText: '돌아가기',
+          type: 'warning',
+        }
+      );
+      
+      this.cancellingProduct = product.uid;
+      
+      await cancelTrade(product.currentPurchaseUid);
+      
+      this.$message.success('거래가 취소되었습니다');
+      // 목록 새로고침
+      this.loadRegisteredProducts();
+    } catch (error: any) {
+      if (error === 'cancel') return;
+      const message = error.response?.data?.message || '거래 취소에 실패했습니다';
+      this.$message.error(message);
+    } finally {
+      this.cancellingProduct = null;
     }
   }
 }
@@ -979,6 +1095,26 @@ export default class extends Vue {
   display: flex;
   gap: 10px;
   margin-top: 16px;
+  flex-wrap: wrap;
+}
+
+.waiting-message {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  background: #FFF3E0;
+  border: 1px solid #FF9800;
+  border-radius: 8px;
+  color: #E65100;
+  font-size: 14px;
+  font-weight: 600;
+  width: 100%;
+  justify-content: center;
+  
+  i {
+    font-size: 16px;
+  }
 }
 
 .action-btn {
