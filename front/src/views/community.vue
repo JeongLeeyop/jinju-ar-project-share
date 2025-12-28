@@ -119,7 +119,7 @@
               :postUid="post.uid"
               :boardUid="boardUid"
               :channelUid="channelUid"
-              @refresh="getPostList"
+              @refresh="handleCommentChange(post)"
             />
           </div>
         </div>
@@ -334,6 +334,27 @@ export default class extends Vue {
 
   private toggleComments(postUid: string) {
     this.$set(this.showCommentsForPost, postUid, !this.showCommentsForPost[postUid]);
+  }
+
+  /**
+   * 댓글 변경 시 해당 게시글의 댓글 수만 업데이트
+   */
+  private async handleCommentChange(post: any) {
+    try {
+      // 해당 게시글의 최신 정보만 가져와서 댓글 수 업데이트
+      const res = await getPost(post.uid);
+      const updatedPost = res.data;
+      
+      // postList에서 해당 게시글 찾아서 댓글 수만 업데이트
+      const postIndex = this.postList.findIndex((p: any) => p.uid === post.uid);
+      if (postIndex !== -1) {
+        this.$set(this.postList[postIndex], 'commentCount', updatedPost.commentCount || 0);
+      }
+    } catch (error) {
+      console.error('Failed to update comment count:', error);
+      // 에러 발생 시 전체 목록 새로고침
+      this.getPostList();
+    }
   }
 
   private postDetail(uid: any, noticeStatus: any) {

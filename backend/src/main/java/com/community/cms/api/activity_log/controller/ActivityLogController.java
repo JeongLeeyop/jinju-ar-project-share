@@ -2,10 +2,13 @@ package com.community.cms.api.activity_log.controller;
 
 import com.community.cms.api.activity_log.dto.ActivityLogDto;
 import com.community.cms.api.activity_log.service.ActivityLogService;
+import com.community.cms.oauth.SinghaUser;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -27,13 +30,15 @@ public class ActivityLogController {
     @GetMapping("/user/{userUid}")
     public ResponseEntity<Page<ActivityLogDto.DetailResDto>> getUserActivities(
             @PathVariable String userUid,
+            @AuthenticationPrincipal SinghaUser authUser,
             @RequestParam(required = false) String channelUid,
             @RequestParam(required = false, defaultValue = "1") Integer months,
             @RequestParam(required = false, defaultValue = "0") Integer page,
             @RequestParam(required = false, defaultValue = "20") Integer size) {
-        
-        ActivityLogDto.ListReq listReq = ActivityLogDto.ListReq.builder()
-                .userUid(userUid)
+
+            String authUserUid = authUser.getUser().getUid();
+            ActivityLogDto.ListReq listReq = ActivityLogDto.ListReq.builder()
+                .userUid(authUserUid)
                 .channelUid(channelUid)
                 .months(months)
                 .page(page)

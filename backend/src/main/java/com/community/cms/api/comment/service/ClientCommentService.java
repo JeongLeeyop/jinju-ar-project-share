@@ -20,11 +20,14 @@ import com.community.cms.api.comment.exception.CommentNotFoundException;
 import com.community.cms.api.comment.repository.CommentRepository;
 import com.community.cms.api.event.dto.EventHistoryDto;
 import com.community.cms.api.event.service.EventHistoryService;
+import com.community.cms.api.activity_log.dto.ActivityLogDto;
+import com.community.cms.api.activity_log.service.ActivityLogService;
 import com.community.cms.api.post.exception.PostNotFoundException;
 import com.community.cms.api.post.repository.PostRepository;
 import com.community.cms.api.user.exception.UserNotFoundException;
 import com.community.cms.api.user.repository.UserRepository;
 import com.community.cms.common.exception.BadRequestException;
+import com.community.cms.entity.ActivityLog;
 import com.community.cms.entity.Comment;
 import com.community.cms.entity.Post;
 import com.community.cms.entity.User;
@@ -44,6 +47,7 @@ public interface ClientCommentService {
 @AllArgsConstructor
 class ClientCommentServiceImpl implements ClientCommentService {
     private final EventHistoryService eventHistoryService;
+    private final ActivityLogService activityLogService;
     private final CommentRepository commentRepository;
     private final PostRepository postRepository;
     private final UserRepository userRepository;
@@ -85,7 +89,20 @@ class ClientCommentServiceImpl implements ClientCommentService {
         }
 
         commentRepository.save(comment);
-        eventHistoryService.add(new EventHistoryDto.add(EventType.COMMENT.toString(),user.getUid(), addDto.getChannelUid(), null, null, comment.getUid(), null));
+        eventHistoryService.add(new EventHistoryDto.add(EventType.COMMENT.toString(), user.getUid(), addDto.getChannelUid(), null, null, comment.getUid(), null));
+
+        // ✅ Activity Log 추가: 댓글 작성
+        activityLogService.logActivity(ActivityLogDto.CreateReq.builder()
+                .userUid(user.getUid())
+                .userName(user.getActualName())
+                .channelUid(addDto.getChannelUid())
+                .activityType(ActivityLog.ActivityType.COMMENT_CREATED)
+                .description(ActivityLog.generateDescription(ActivityLog.ActivityType.COMMENT_CREATED, post.getWriter(), null))
+                .relatedUid(post.getUid())
+                .relatedName("게시글")
+                .targetUserUid(post.getUserUid())
+                .targetUserName(post.getWriter())
+                .build());
     }
 
     @Override
