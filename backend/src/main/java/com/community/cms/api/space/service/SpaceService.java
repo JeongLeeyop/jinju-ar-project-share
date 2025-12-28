@@ -170,14 +170,8 @@ public class SpaceService {
      * 채널의 모든 공간 조회
      */
     public List<SpaceDto> getSpacesByChannel(String channelUid, String currentUserUid) {
-        log.info("=== 공간 조회 시작 ===");
-        log.info("channelUid(domain): {}, currentUserUid: {}", channelUid, currentUserUid);
-        
         List<Space> spaces = spaceRepository.findAccessibleSpaces(channelUid, currentUserUid);
-        log.info("조회된 공간 수: {}", spaces.size());
-        
         boolean isChannelAdminUser = currentUserUid != null && isChannelAdmin(channelUid, currentUserUid);
-        log.info("커뮤니티 관리자 여부: {}", isChannelAdminUser);
         
         return spaces.stream()
                 .map(space -> {
