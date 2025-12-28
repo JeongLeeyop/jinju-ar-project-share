@@ -706,6 +706,13 @@ public class MarketplacePurchaseService {
      * 장터 이용 권한 체크
      */
     private void checkMarketplaceUsePermission(String channelUid, String userUid) {
+        // 커뮤니티 관리자인 경우 권한 체크 생략
+        Channel channel = channelRepository.findByUid(channelUid).orElse(null);
+        if (channel != null && channel.getUserUid() != null && channel.getUserUid().equals(userUid)) {
+            log.info("✅ 커뮤니티 관리자로 장터 이용 권한 자동 승인: userUid={}", userUid);
+            return;
+        }
+
         ChannelMember member = channelMemberRepository.findByUserUidAndChannelUid(userUid, channelUid)
                 .orElseThrow(() -> new RuntimeException("채널 멤버가 아닙니다"));
 
