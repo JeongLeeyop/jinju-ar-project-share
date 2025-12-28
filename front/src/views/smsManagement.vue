@@ -717,10 +717,11 @@ export default class extends Vue {
   margin-bottom: 24px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
+
 .template-selector {
   margin-bottom: 24px;
 
-  ::v-deep .el-select {
+  .el-select {
     width: 100%;
 
     ::v-deep .el-input__inner {
@@ -728,7 +729,6 @@ export default class extends Vue {
     }
   }
 }
-
 
 .field-label {
   display: flex;

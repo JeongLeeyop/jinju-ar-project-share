@@ -862,7 +862,7 @@ export default class extends Vue {
       .el-textarea__inner {
         border: 1px solid #E0E0E0;
         border-radius: 8px;
-        font-size: 14px;
+        font-size: 16px;
 
         &:focus {
           border-color: #073DFF;

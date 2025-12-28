@@ -221,6 +221,11 @@ setting-wrap은 사용자도 사용함
 * 전체 헤더
 */
 
+.el-select-dropdown__item {
+	font-size: 16px;
+	height: 40px;
+}
+
 .el-select-dropdown__item.home-btn {
 	background-color: #F5F7FA;
 	font-weight: 600;
