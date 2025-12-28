@@ -58,6 +58,25 @@ public class MarketplacePurchaseDto {
     }
 
     /**
+     * 오프라인 상품 포인트 차감 요청 DTO (회원번호로 처리)
+     */
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class OfflineDeductRequest {
+        
+        @NotNull(message = "구매자 이름을 입력해주세요")
+        private String buyerName;
+        
+        @NotNull(message = "구매자 연락처를 입력해주세요")
+        private String buyerContact;
+        
+        @NotNull(message = "차감할 포인트를 입력해주세요")
+        private Integer deductPoints;
+    }
+
+    /**
      * 구매자의 즉시 구매 요청 DTO (오프라인 장터)
      */
     @Getter

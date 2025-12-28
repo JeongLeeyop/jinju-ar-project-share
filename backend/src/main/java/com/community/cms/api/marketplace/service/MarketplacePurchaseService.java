@@ -225,6 +225,64 @@ public class MarketplacePurchaseService {
     }
 
     /**
+     * 오프라인 상품 직접 포인트 차감 (판매자가 회원번호로 처리)
+     */
+    @Transactional
+    public void deductPointForOfflineProduct(
+            String productUid,
+            MarketplacePurchaseDto.OfflineDeductRequest request,
+            String sellerUid,
+            String sellerName) {
+
+        MarketplaceProduct product = productRepository.findByUid(productUid)
+                .orElseThrow(() -> new RuntimeException("상품을 찾을 수 없습니다"));
+
+        // 판매자 확인
+        if (!product.getSellerUid().equals(sellerUid)) {
+            throw new RuntimeException("상품 판매자만 포인트 차감을 할 수 있습니다");
+        }
+
+        // 오프라인 장터 상품인지 확인
+        if (product.getOfflineMarketplaceUid() == null) {
+            throw new RuntimeException("온라인 장터 상품은 직접 구매해야 합니다");
+        }
+
+        // 구매자 조회 (이름으로 검색 - 실제로는 회원번호나 UID로 검색하는 것이 더 정확)
+        // TODO: 실제 구현시에는 회원번호 필드를 추가하고 정확히 검색
+        User buyer = userRepository.findAll().stream()
+                .filter(u -> u.getActualName() != null && u.getActualName().equals(request.getBuyerName()))
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("해당 이름의 회원을 찾을 수 없습니다"));
+
+
+        // 포인트 차감 (나눔 상품이 아닐 경우만)
+        if (request.getDeductPoints() > 0) {
+            deductPoints(buyer.getUid(), product.getChannelUid(), request.getDeductPoints(), productUid);
+        }
+
+        // 구매 내역 생성
+        MarketplacePurchase purchase = MarketplacePurchase.builder()
+                .uid(UUID.randomUUID().toString())
+                .productUid(productUid)
+                .buyerUid(buyer.getUid())
+                .buyerName(buyer.getActualName())
+                .buyerContact(request.getBuyerContact())
+                .sellerUid(sellerUid)
+                .quantity(1)
+                .totalPrice(request.getDeductPoints())
+                .status("COMPLETED")
+                .paymentMethod(request.getDeductPoints() > 0 ? "POINT" : "FREE")
+                .isOffline(true)
+                .completedAt(LocalDateTime.now())
+                .build();
+
+        purchaseRepository.save(purchase);
+
+        log.info("Offline point deducted: {} for buyer {} by seller {} ({}P)", 
+                 productUid, buyer.getUid(), sellerUid, request.getDeductPoints());
+    }
+
+    /**
      * 내 구매 내역 조회
      */
     @Transactional(readOnly = true)

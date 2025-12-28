@@ -240,6 +240,13 @@ export interface OfflineProcessRequest {
   pointAmount: number;
 }
 
+// 오프라인 상품 포인트 차감 요청
+export interface OfflineDeductRequest {
+  buyerName: string;
+  buyerContact: string;
+  deductPoints: number;
+}
+
 // 오프라인 장터 즉시 구매 요청 (구매자가 직접 구매)
 export interface InstantPurchaseRequest {
   quantity: number;
@@ -266,6 +273,14 @@ export const instantOfflinePurchase = (productUid: string, data: InstantPurchase
 export const processOfflinePurchase = (productUid: string, purchaseUid: string, data: OfflineProcessRequest) =>
   request({
     url: `${PURCHASES_PATH}/${productUid}/offline/${purchaseUid}`,
+    method: 'post',
+    data,
+  });
+
+// 오프라인 상품 직접 포인트 차감 (판매자가 회원번호로 처리)
+export const deductPointForOfflineProduct = (productUid: string, data: OfflineDeductRequest) =>
+  request({
+    url: `${PURCHASES_PATH}/${productUid}/deduct-point`,
     method: 'post',
     data,
   });

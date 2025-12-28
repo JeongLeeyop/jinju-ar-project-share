@@ -83,7 +83,7 @@
               <!-- 오프라인 상품인 경우 회원번호 입력 버튼 -->
               <div v-if="product.isOffline || product.offlineMarketplaceUid" class="action-buttons">
                 <button class="action-btn primary" @click.stop="openPointDeductModal(product)">
-                  회원번호 입력
+                  이름/연락처 입력
                 </button>
               </div>
             </div>
@@ -169,11 +169,21 @@
 
         <div class="form-section">
           <div class="form-group">
-            <label class="form-label">회원번호</label>
+            <label class="form-label">구매자 이름</label>
             <input 
-              v-model="deductForm.memberNumber" 
+              v-model="deductForm.buyerName" 
               type="text" 
-              placeholder="회원번호를 입력해주세요"
+              placeholder="구매자 이름을 입력해주세요"
+              class="form-input"
+            />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">구매자 연락처</label>
+            <input 
+              v-model="deductForm.buyerContact" 
+              type="text" 
+              placeholder="연락처를 입력해주세요 (예: 010-1234-5678)"
               class="form-input"
             />
           </div>
@@ -193,7 +203,7 @@
         <button 
           class="submit-btn" 
           @click="submitPointDeduct"
-          :disabled="!deductForm.memberNumber || !deductForm.deductPoints || submittingDeduct"
+          :disabled="!deductForm.buyerName || !deductForm.buyerContact || !deductForm.deductPoints || submittingDeduct"
         >
           {{ submittingDeduct ? '처리 중...' : '포인트 차감하기' }}
         </button>
@@ -205,7 +215,7 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import CommunitySidebar from './components/communitySidebar.vue';
-import { getMyRegisteredProducts, getMyPurchasedProducts, MarketplaceProduct, MarketplacePurchase } from '@/api/marketplace';
+import { getMyRegisteredProducts, getMyPurchasedProducts, MarketplaceProduct, MarketplacePurchase, deductPointForOfflineProduct } from '@/api/marketplace';
 
 @Component({
   name: 'MyMarketplace',
@@ -230,7 +240,8 @@ export default class extends Vue {
   private selectedProduct: MarketplaceProduct | null = null;
   private submittingDeduct = false;
   private deductForm = {
-    memberNumber: '',
+    buyerName: '',
+    buyerContact: '',
     deductPoints: 0,
   };
 
@@ -321,22 +332,38 @@ export default class extends Vue {
   }
 
   private formatPrice(product: MarketplaceProduct | MarketplacePurchase): string {
-    // MarketplaceProduct
+    // MarketplaceProduct - 나눔 상품
     if ('productType' in product && product.productType === 'SHARE') {
       return '나눔';
     }
     
-    // MarketplacePurchase
+    // MarketplaceProduct - category가 SHARE인 경우
+    if ('category' in product && product.category === 'SHARE') {
+      return '나눔';
+    }
+    
+    // MarketplacePurchase - productCategory가 SHARE인 경우
+    if ('productCategory' in product && product.productCategory === 'SHARE') {
+      return '나눔';
+    }
+    
+    // MarketplacePurchase - totalPrice
     if ('totalPrice' in product) {
+      if (product.totalPrice === 0) {
+        return '나눔';
+      }
       return `${product.totalPrice.toLocaleString()} R포인트`;
     }
     
-    // MarketplaceProduct
+    // MarketplaceProduct - price
     if ('price' in product) {
+      if (product.price === 0) {
+        return '나눔';
+      }
       return `${product.price.toLocaleString()} R포인트`;
     }
     
-    return '0 R포인트';
+    return '나눔';
   }
 
   private formatDate(dateString?: string): string {
@@ -359,7 +386,8 @@ export default class extends Vue {
   private openPointDeductModal(product: MarketplaceProduct) {
     this.selectedProduct = product;
     this.deductForm = {
-      memberNumber: '',
+      buyerName: '',
+      buyerContact: '',
       deductPoints: product.price,
     };
     this.pointDeductModalVisible = true;
@@ -370,7 +398,8 @@ export default class extends Vue {
     this.pointDeductModalVisible = false;
     this.selectedProduct = null;
     this.deductForm = {
-      memberNumber: '',
+      buyerName: '',
+      buyerContact: '',
       deductPoints: 0,
     };
   }
@@ -382,17 +411,16 @@ export default class extends Vue {
     try {
       this.submittingDeduct = true;
       
-      // TODO: 실제 API 호출
-      // await deductPointForOfflineProduct({
-      //   productUid: this.selectedProduct.uid,
-      //   memberNumber: this.deductForm.memberNumber,
-      //   deductPoints: this.deductForm.deductPoints,
-      // });
-
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await deductPointForOfflineProduct(this.selectedProduct.uid, {
+        buyerName: this.deductForm.buyerName,
+        buyerContact: this.deductForm.buyerContact,
+        deductPoints: this.deductForm.deductPoints,
+      });
 
       this.$message.success('포인트가 차감되었습니다');
       this.closePointDeductModal();
+      // 목록 새로고침
+      this.loadRegisteredProducts();
     } catch (error: any) {
       const message = error.response?.data?.message || '포인트 차감에 실패했습니다';
       this.$message.error(message);
@@ -629,6 +657,7 @@ export default class extends Vue {
   margin: 0 0 8px 0;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 4px;
 
   i {

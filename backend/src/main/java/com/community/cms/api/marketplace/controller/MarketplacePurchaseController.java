@@ -87,6 +87,27 @@ public class MarketplacePurchaseController {
     }
 
     /**
+     * 오프라인 상품 직접 포인트 차감 (판매자가 회원번호로 처리)
+     */
+    @PostMapping("/{productUid}/deduct-point")
+    public ResponseEntity<?> deductPointForOfflineProduct(
+            @PathVariable String productUid,
+            @Valid @RequestBody MarketplacePurchaseDto.OfflineDeductRequest request,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        try {
+            User seller = validateAndGetCurrentUser(userDetails);
+            purchaseService.deductPointForOfflineProduct(
+                    productUid, request, seller.getUid(), seller.getActualName());
+            return ResponseEntity.ok(Map.of("message", "포인트가 차감되었습니다"));
+        } catch (RuntimeException e) {
+            log.error("Failed to deduct point for offline product: {}", e.getMessage());
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+    }
+
+    /**
      * 오프라인 장터 즉시 구매 (구매자가 직접 구매 - 새로운 API)
      */
     @PostMapping("/{productUid}/offline/instant")
