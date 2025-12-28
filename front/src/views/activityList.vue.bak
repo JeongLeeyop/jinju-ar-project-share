@@ -65,6 +65,8 @@
 
       <!-- Activity List Section -->
       <div class="activity-section activity-history-section">
+        <!-- <h2 class="section-title">활동 리스트</h2> -->
+
         <!-- Activity List -->
         <div class="activities-list">
           <div
@@ -346,6 +348,40 @@ export default class extends Vue {
     console.log('Floating action button clicked');
   }
 }
+
+  /**
+   * 조회 버튼 클릭
+   */
+  private searchActivities() {
+    if (!this.startDate || !this.endDate) {
+      this.$message.warning('시작일과 종료일을 선택해주세요');
+      return;
+    }
+
+    const start = new Date(this.startDate);
+    const end = new Date(this.endDate);
+
+    if (start > end) {
+      this.$message.warning('시작일은 종료일보다 이전이어야 합니다');
+      return;
+    }
+
+    // 페이지 리셋 후 조회
+    this.page = 1;
+    this.loadActivities();
+  }
+
+  private onPagination(payload: { page: number; limit: number }) {
+    // payload.page is 1-based
+    this.page = payload.page;
+    this.limit = payload.limit;
+    this.loadActivities();
+  }
+
+  private handleFloatingAction() {
+    this.$message.info('새 항목 추가');
+  }
+}
 </script>
 
 <style scoped lang="scss">
@@ -368,6 +404,100 @@ export default class extends Vue {
 
 .mobile-only {
   display: none;
+}
+
+.profile-card {
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  gap: 20px;
+  border-radius: 10px;
+  border: 2px solid #EBEBEB;
+  background: #FFF;
+
+  .profile-info {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .profile-avatar {
+    width: 100px;
+    height: 100px;
+    flex-shrink: 0;
+
+    svg {
+      width: 100%;
+      height: 100%;
+    }
+  }
+
+  .profile-details {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .profile-name {
+    color: #000;
+    text-align: center;
+    font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
+    font-size: 18px;
+    font-weight: 600;
+    line-height: 100%;
+    margin: 0;
+  }
+
+  .points-badge {
+    display: flex;
+    padding: 10px 12px;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    border-radius: 20px;
+    background: rgba(7, 61, 255, 0.10);
+  }
+
+  .points-text {
+    color: #073DFF;
+    font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 100%;
+  }
+
+  .profile-edit-btn {
+    display: flex;
+    height: 54px;
+    padding: 12px;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    border-radius: 10px;
+    background: #073DFF;
+    border: none;
+    color: #FFF;
+    text-align: center;
+    font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 100%;
+    cursor: pointer;
+    transition: all 0.3s ease;
+
+    &:hover {
+      background: #0535e6;
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(7, 61, 255, 0.2);
+    }
+
+    &:active {
+      transform: translateY(0);
+    }
+  }
 }
 
 .activity-section {
@@ -469,11 +599,14 @@ export default class extends Vue {
 
   svg {
     flex-shrink: 0;
-    position: absolute;
-    top: 50%;
-    right: 10px;
-    transform: translateY(-50%);
   }
+}
+
+.date-input-wrapper svg {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  transform: translateY(-50%);
 }
 
 .date-input {
@@ -514,6 +647,83 @@ export default class extends Vue {
 
   &:active {
     transform: translateY(0);
+  }
+}
+
+.transactions-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.transaction-item {
+  padding: 20px 0;
+  border-top: 1px solid #222;
+  transition: background 0.2s ease;
+
+  &.first {
+    border-top: 2px solid #222;
+  }
+
+  &:hover {
+    background: rgba(7, 61, 255, 0.02);
+  }
+}
+
+.transaction-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.transaction-title {
+  color: #000;
+  font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 100%;
+  text-align: left;
+}
+
+.transaction-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.transaction-date {
+  color: #000;
+  font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 100%;
+}
+
+.transaction-amount-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.transaction-amount {
+  color: #000;
+  font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 100%;
+}
+
+.transaction-type {
+  font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 100%;
+
+  &.deduct {
+    color: #FF3B30;
+  }
+
+  &.earn {
+    color: #34C759;
   }
 }
 
@@ -571,6 +781,28 @@ export default class extends Vue {
   font-weight: 400;
 }
 
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
+  gap: 16px;
+  color: #888;
+  font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+
+  i {
+    font-size: 32px;
+    color: #073DFF;
+  }
+
+  p {
+    margin: 0;
+  }
+}
+
 .floating-action-btn {
   position: fixed;
   right: 20px;
@@ -601,7 +833,7 @@ export default class extends Vue {
 @media screen and (max-width: 1200px) {
   .activity-main {
     gap: 40px;
-  }
+  } 
 }
 
 @media screen and (max-width: 1024px) {
@@ -696,6 +928,10 @@ export default class extends Vue {
     height: 52px;
   }
 
+  .date-input-wrapper svg {
+    flex-shrink: unset;
+  }
+
   .date-input {
     font-size: 16px;
   }
@@ -703,6 +939,10 @@ export default class extends Vue {
   .search-btn {
     height: 54px;
     font-size: 16px;
+  }
+
+  .transaction-item {
+    padding: 20px 0;
   }
 
   .activity-item {
@@ -729,10 +969,7 @@ export default class extends Vue {
 }
 
 @media screen and (max-width: 500px) {
-  .activity-main {
-    padding: 110px 20px 20px;
-  }
-
+  .activity-main {padding: 110px 20px 20px;}
   .activity-description,
   .activity-date {
     font-size: 16px;

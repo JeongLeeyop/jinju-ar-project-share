@@ -3,6 +3,8 @@ package com.community.cms.api.activity.controller;
 import com.community.cms.api.activity.dto.ActivityDto;
 import com.community.cms.api.activity.dto.ActivityListRequest;
 import com.community.cms.api.activity.service.ActivityService;
+import com.community.cms.api.activity_log.dto.ActivityLogDto;
+import com.community.cms.api.activity_log.service.ActivityLogService;
 import com.community.cms.entity.User;
 import com.community.cms.oauth.SinghaUser;
 import com.community.cms.util.AuthenticationUtil;
@@ -27,6 +29,7 @@ import java.util.Map;
 public class ActivityController {
 
     private final ActivityService activityService;
+    private final ActivityLogService activityLogService;
     private final AuthenticationUtil authenticationUtil;
 
     /**

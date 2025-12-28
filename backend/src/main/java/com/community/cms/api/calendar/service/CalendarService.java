@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 
 import com.community.cms.api.activity_log.dto.ActivityLogDto;
 import com.community.cms.api.activity_log.service.ActivityLogService;
+import com.community.cms.api.activity.service.ActivityService;
 import com.community.cms.api.calendar.dto.CalendarDto;
 import com.community.cms.api.calendar.dto.CalendarSearch;
 import com.community.cms.api.calendar.dto.ScheduleParticipantDto;
@@ -106,6 +107,9 @@ class CalendarServiceImpl implements CalendarService {
 
     @Autowired
     ActivityLogService activityLogService;
+
+    @Autowired
+    ActivityService activityService;
 
     @Override
     public CalendarDto.detail detail(SinghaUser authUser, Integer idx) {
@@ -369,7 +373,7 @@ class CalendarServiceImpl implements CalendarService {
                 .build();
         participantRepository.save(participant);
 
-        // Log activity
+        // Log activity to activity_log table
         activityLogService.logActivity(ActivityLogDto.CreateReq.builder()
                 .userUid(user.getUid())
                 .userName(user.getActualName())
@@ -380,6 +384,15 @@ class CalendarServiceImpl implements CalendarService {
                 .relatedUid(String.valueOf(calendarIdx))
                 .relatedName(calendar.getTitle())
                 .build());
+
+        // Log activity to activity table
+        activityService.logActivity(
+                "SCHEDULE_PARTICIPATE",
+                user.getUid(),
+                user.getActualName(),
+                calendar.getChannelUid(),
+                "일정 참여: " + calendar.getTitle()
+        );
 
         if ("paid".equals(eventType)) {
             return CalendarDto.JoinResult.builder()
@@ -452,7 +465,7 @@ class CalendarServiceImpl implements CalendarService {
         participant.setCancelledAt(LocalDateTime.now());
         participantRepository.save(participant);
 
-        // Log activity
+        // Log activity to activity_log table
         activityLogService.logActivity(ActivityLogDto.CreateReq.builder()
                 .userUid(user.getUid())
                 .userName(user.getActualName())
@@ -462,6 +475,15 @@ class CalendarServiceImpl implements CalendarService {
                 .relatedUid(String.valueOf(calendarIdx))
                 .relatedName(calendar.getTitle())
                 .build());
+
+        // Log activity to activity table
+        activityService.logActivity(
+                "SCHEDULE_CANCEL",
+                user.getUid(),
+                user.getActualName(),
+                calendar.getChannelUid(),
+                "일정 참여 취소: " + calendar.getTitle()
+        );
     }
 
     @Override
@@ -539,6 +561,15 @@ class CalendarServiceImpl implements CalendarService {
                     .relatedUid(String.valueOf(calendar.getIdx()))
                     .relatedName(calendar.getTitle())
                     .build());
+
+            // Log activity to activity table
+            activityService.logActivity(
+                    "SCHEDULE_EARN",
+                    participantUser.getUid(),
+                    participantUser.getActualName(),
+                    calendar.getChannelUid(),
+                    "일정 참여 포인트 획득: " + calendar.getTitle() + " (" + pointsToGrant + "P)"
+            );
         }
 
         // Update participant record

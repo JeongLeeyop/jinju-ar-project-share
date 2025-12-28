@@ -43,4 +43,14 @@ public interface ActivityRepository extends JpaRepository<Activity, Long> {
      * 사용자별 활동 로그 페이징 조회
      */
     Page<Activity> findByUserUidOrderByCreatedAtDesc(String userUid, Pageable pageable);
+
+    /**
+     * 사용자+채널별 활동 로그 조회
+     */
+    List<Activity> findByUserUidAndChannelUidOrderByCreatedAtDesc(String userUid, String channelUid);
+
+    /**
+     * 사용자+채널별 활동 로그 페이징 조회
+     */
+    Page<Activity> findByUserUidAndChannelUidOrderByCreatedAtDesc(String userUid, String channelUid, Pageable pageable);
 }

@@ -496,7 +496,7 @@ export default class extends Vue {
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 0 32px;
+  padding: 3px 32px;
   position: relative;
 }
 

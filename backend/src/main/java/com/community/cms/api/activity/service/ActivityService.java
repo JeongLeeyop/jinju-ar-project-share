@@ -96,13 +96,21 @@ public class ActivityService {
      * 사용자별 활동 리스트 조회
      */
     public Page<ActivityDto> getActivitiesByUser(String userUid, ActivityListRequest request) {
-        log.info("Getting activities for user: {}", userUid);
+        log.info("Getting activities for user: {}, channel: {}", userUid, request.getChannelUid());
 
         if (request.getPage() != null && request.getSize() != null) {
             // 페이징 처리
             Pageable pageable = PageRequest.of(request.getPage(), request.getSize());
-            Page<Activity> activities = activityRepository.findByUserUidOrderByCreatedAtDesc(
-                    userUid, pageable);
+            Page<Activity> activities;
+            
+            // 채널 필터링 여부 확인
+            if (request.getChannelUid() != null && !request.getChannelUid().isEmpty()) {
+                activities = activityRepository.findByUserUidAndChannelUidOrderByCreatedAtDesc(
+                        userUid, request.getChannelUid(), pageable);
+            } else {
+                activities = activityRepository.findByUserUidOrderByCreatedAtDesc(
+                        userUid, pageable);
+            }
 
             List<ActivityDto> dtoList = activities.getContent().stream()
                     .filter(activity -> filterByDateRange(activity, request))
@@ -112,7 +120,15 @@ public class ActivityService {
             return new PageImpl<>(dtoList, pageable, activities.getTotalElements());
         } else {
             // 전체 조회
-            List<Activity> activities = activityRepository.findByUserUidOrderByCreatedAtDesc(userUid);
+            List<Activity> activities;
+            
+            // 채널 필터링 여부 확인
+            if (request.getChannelUid() != null && !request.getChannelUid().isEmpty()) {
+                activities = activityRepository.findByUserUidAndChannelUidOrderByCreatedAtDesc(
+                        userUid, request.getChannelUid());
+            } else {
+                activities = activityRepository.findByUserUidOrderByCreatedAtDesc(userUid);
+            }
 
             List<ActivityDto> dtoList = activities.stream()
                     .filter(activity -> filterByDateRange(activity, request))
