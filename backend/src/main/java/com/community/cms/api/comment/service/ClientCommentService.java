@@ -35,7 +35,7 @@ import lombok.AllArgsConstructor;
 
 public interface ClientCommentService {
     Page<CommentDto.Detail> list(Pageable pageable, SinghaUser authUser, CommentSearch commentSearch);
-    void add(CommentDto.Add addDto, UserDetails userDetail);
+    void add(CommentDto.Add addDto, SinghaUser userDetail);
     void update(Comment comment, CommentDto.Update updateDto);
     void delete(Comment comment, SinghaUser authUser);
 }
@@ -57,7 +57,7 @@ class ClientCommentServiceImpl implements ClientCommentService {
 
     @Override
     @Transactional
-    public void add(CommentDto.Add addDto, @AuthenticationPrincipal UserDetails userDetail) {
+    public void add(CommentDto.Add addDto, @AuthenticationPrincipal SinghaUser userDetail) {
         if (userDetail == null || userDetail.getUsername() == null) throw new UserNotFoundException("잘못된 접근입니다.");
         User user = userRepository.findByUserId(userDetail.getUsername().toString()).orElseThrow(() -> new UserNotFoundException("잘못된 접근입니다."));
 

@@ -67,7 +67,7 @@ public class PostController {
 	
 	@PostMapping
 	public ResponseEntity<PostDto.Detail> add(
-			@AuthenticationPrincipal UserDetails userDetail,
+			@AuthenticationPrincipal SinghaUser userDetail,
 			@Valid @RequestBody PostDto.Add addDto) {
 		return ResponseEntity.ok(postService.add(addDto, userDetail));
 	}

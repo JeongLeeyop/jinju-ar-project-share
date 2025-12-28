@@ -34,7 +34,7 @@ public class MarketplacePurchaseController {
     /**
      * 현재 인증된 사용자 조회
      */
-    private User validateAndGetCurrentUser(UserDetails userDetails) {
+    private User validateAndGetCurrentUser(SinghaUser userDetails) {
         if (userDetails == null || userDetails.getUsername() == null) {
             log.error("Unauthenticated access attempt detected");
             throw new RuntimeException("인증되지 않은 접근입니다");
@@ -50,7 +50,7 @@ public class MarketplacePurchaseController {
     public ResponseEntity<?> purchaseProduct(
             @PathVariable String productUid,
             @Valid @RequestBody MarketplaceProductDto.PurchaseRequest request,
-            @AuthenticationPrincipal UserDetails userDetails) {
+            @AuthenticationPrincipal SinghaUser userDetails) {
         try {
             User user = validateAndGetCurrentUser(userDetails);
             MarketplacePurchaseDto result = purchaseService.purchaseProduct(
@@ -72,7 +72,7 @@ public class MarketplacePurchaseController {
             @PathVariable String productUid,
             @PathVariable String purchaseUid,
             @Valid @RequestBody MarketplacePurchaseDto.OfflineProcessRequest request,
-            @AuthenticationPrincipal UserDetails userDetails) {
+            @AuthenticationPrincipal SinghaUser userDetails) {
         try {
             User user = validateAndGetCurrentUser(userDetails);
             MarketplacePurchaseDto result = purchaseService.processOfflinePurchase(
@@ -93,7 +93,7 @@ public class MarketplacePurchaseController {
     public ResponseEntity<?> deductPointForOfflineProduct(
             @PathVariable String productUid,
             @Valid @RequestBody MarketplacePurchaseDto.OfflineDeductRequest request,
-            @AuthenticationPrincipal UserDetails userDetails) {
+            @AuthenticationPrincipal SinghaUser userDetails) {
         try {
             User seller = validateAndGetCurrentUser(userDetails);
             purchaseService.deductPointForOfflineProduct(
@@ -114,7 +114,7 @@ public class MarketplacePurchaseController {
     public ResponseEntity<?> instantOfflinePurchase(
             @PathVariable String productUid,
             @Valid @RequestBody MarketplacePurchaseDto.InstantPurchaseRequest request,
-            @AuthenticationPrincipal UserDetails userDetails) {
+            @AuthenticationPrincipal SinghaUser userDetails) {
         try {
             User user = validateAndGetCurrentUser(userDetails);
             MarketplacePurchaseDto result = purchaseService.instantOfflinePurchase(
@@ -133,7 +133,7 @@ public class MarketplacePurchaseController {
      */
     @GetMapping("/my")
     public ResponseEntity<?> getMyPurchases(
-            @AuthenticationPrincipal UserDetails userDetails,
+            @AuthenticationPrincipal SinghaUser userDetails,
             @PageableDefault(size = 20) Pageable pageable) {
         try {
             User user = validateAndGetCurrentUser(userDetails);
@@ -154,7 +154,7 @@ public class MarketplacePurchaseController {
     public ResponseEntity<?> getMyPurchasedProducts(
             @PathVariable String channelDomain,
             @RequestParam(required = false) String marketplaceType,  // "online", "offline", null(전체)
-            @AuthenticationPrincipal UserDetails userDetails,
+            @AuthenticationPrincipal SinghaUser userDetails,
             @PageableDefault(size = 20) Pageable pageable) {
         try {
             User user = validateAndGetCurrentUser(userDetails);
@@ -175,7 +175,7 @@ public class MarketplacePurchaseController {
     @GetMapping("/product/{productUid}")
     public ResponseEntity<?> getProductPurchases(
             @PathVariable String productUid,
-            @AuthenticationPrincipal UserDetails userDetails,
+            @AuthenticationPrincipal SinghaUser userDetails,
             @PageableDefault(size = 20) Pageable pageable) {
         try {
             User user = validateAndGetCurrentUser(userDetails);
@@ -197,7 +197,7 @@ public class MarketplacePurchaseController {
     public ResponseEntity<?> startTrade(
             @PathVariable String productUid,
             @Valid @RequestBody MarketplacePurchaseDto.StartTradeRequest request,
-            @AuthenticationPrincipal UserDetails userDetails) {
+            @AuthenticationPrincipal SinghaUser userDetails) {
         try {
             User user = validateAndGetCurrentUser(userDetails);
             MarketplacePurchaseDto result = purchaseService.startTrade(
@@ -217,7 +217,7 @@ public class MarketplacePurchaseController {
     @PostMapping("/{purchaseUid}/complete")
     public ResponseEntity<?> completeTrade(
             @PathVariable String purchaseUid,
-            @AuthenticationPrincipal UserDetails userDetails) {
+            @AuthenticationPrincipal SinghaUser userDetails) {
         try {
             User user = validateAndGetCurrentUser(userDetails);
             MarketplacePurchaseDto result = purchaseService.completeTrade(purchaseUid, user.getUid());
@@ -236,7 +236,7 @@ public class MarketplacePurchaseController {
     @PostMapping("/{purchaseUid}/cancel")
     public ResponseEntity<?> cancelTrade(
             @PathVariable String purchaseUid,
-            @AuthenticationPrincipal UserDetails userDetails) {
+            @AuthenticationPrincipal SinghaUser userDetails) {
         try {
             User user = validateAndGetCurrentUser(userDetails);
             purchaseService.cancelTrade(purchaseUid, user.getUid());
@@ -256,7 +256,7 @@ public class MarketplacePurchaseController {
     public ResponseEntity<?> applyForRequest(
             @PathVariable String productUid,
             @Valid @RequestBody MarketplacePurchaseDto.ApplyForRequestRequest request,
-            @AuthenticationPrincipal UserDetails userDetails) {
+            @AuthenticationPrincipal SinghaUser userDetails) {
         try {
             User user = validateAndGetCurrentUser(userDetails);
             MarketplacePurchaseDto result = purchaseService.applyForRequest(

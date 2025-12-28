@@ -38,7 +38,7 @@ public class SpacePostController {
      * @param userDetails @AuthenticationPrincipal로 주입된 UserDetails
      * @return 검증된 User 엔티티 (null 가능 - 공개 공간 접근 시)
      */
-    private User validateAndGetCurrentUser(UserDetails userDetails) {
+    private User validateAndGetCurrentUser(SinghaUser userDetails) {
         if (userDetails == null || userDetails.getUsername() == null) {
             // 인증되지 않은 사용자 (공개 공간 접근 가능)
             return null;
@@ -53,7 +53,7 @@ public class SpacePostController {
      * @param userDetails @AuthenticationPrincipal로 주입된 UserDetails
      * @return 검증된 User 엔티티
      */
-    private User requireAuthenticatedUser(UserDetails userDetails) {
+    private User requireAuthenticatedUser(SinghaUser userDetails) {
         User user = validateAndGetCurrentUser(userDetails);
         if (user == null) {
             log.error("Unauthenticated access attempt detected");

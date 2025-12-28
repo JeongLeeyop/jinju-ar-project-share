@@ -3,14 +3,14 @@ package com.community.cms.api.activity.controller;
 import com.community.cms.api.activity.dto.ActivityDto;
 import com.community.cms.api.activity.dto.ActivityListRequest;
 import com.community.cms.api.activity.service.ActivityService;
-import com.community.cms.api.user.repository.UserRepository;
 import com.community.cms.entity.User;
+import com.community.cms.oauth.SinghaUser;
+import com.community.cms.util.AuthenticationUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -27,19 +27,7 @@ import java.util.Map;
 public class ActivityController {
 
     private final ActivityService activityService;
-    private final UserRepository userRepository;
-
-    /**
-     * 현재 인증된 사용자 검증 및 반환
-     */
-    private User validateAndGetCurrentUser(UserDetails userDetails) {
-        if (userDetails == null || userDetails.getUsername() == null) {
-            log.error("Unauthenticated access attempt detected");
-            throw new RuntimeException("인증되지 않은 접근입니다");
-        }
-        return userRepository.findByUserId(userDetails.getUsername())
-                .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다"));
-    }
+    private final AuthenticationUtil authenticationUtil;
 
     /**
      * 채널별 활동 리스트 조회
@@ -52,9 +40,9 @@ public class ActivityController {
             @RequestParam(required = false) String endDate,
             @RequestParam(required = false) Integer page,
             @RequestParam(required = false) Integer size,
-            @AuthenticationPrincipal UserDetails userDetails) {
+            @AuthenticationPrincipal SinghaUser userDetails) {
         try {
-            User user = validateAndGetCurrentUser(userDetails);
+            User user = authenticationUtil.validateAndGetCurrentUser(userDetails);
             log.info("Getting activities for channel: {} by user: {}", channelUid, user.getActualName());
 
             ActivityListRequest request = ActivityListRequest.builder()
@@ -86,9 +74,9 @@ public class ActivityController {
             @RequestParam(required = false) String endDate,
             @RequestParam(required = false) Integer page,
             @RequestParam(required = false) Integer size,
-            @AuthenticationPrincipal UserDetails userDetails) {
+            @AuthenticationPrincipal SinghaUser userDetails) {
         try {
-            User user = validateAndGetCurrentUser(userDetails);
+            User user = authenticationUtil.validateAndGetCurrentUser(userDetails);
             log.info("Getting activities for space: {} by user: {}", spaceUid, user.getActualName());
 
             ActivityListRequest request = ActivityListRequest.builder()
@@ -120,9 +108,9 @@ public class ActivityController {
             @RequestParam(required = false) String endDate,
             @RequestParam(required = false) Integer page,
             @RequestParam(required = false) Integer size,
-            @AuthenticationPrincipal UserDetails userDetails) {
+            @AuthenticationPrincipal SinghaUser userDetails) {
         try {
-            User user = validateAndGetCurrentUser(userDetails);
+            User user = authenticationUtil.validateAndGetCurrentUser(userDetails);
             log.info("Getting activities for user: {}", user.getActualName());
 
             ActivityListRequest request = ActivityListRequest.builder()

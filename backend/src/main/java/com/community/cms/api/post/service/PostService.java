@@ -49,7 +49,7 @@ public interface PostService {
 
 	PostDto.Detail view(Post post);
 
-	PostDto.Detail add(PostDto.Add addDto, UserDetails userDetail);
+	PostDto.Detail add(PostDto.Add addDto, SinghaUser userDetail);
 
 	PostDto.Detail update(Post post, PostDto.Update updateDto);
 
@@ -86,7 +86,7 @@ class PostServiceImpl implements PostService {
 
 	@Transactional
 	@Override
-	public PostDto.Detail add(PostDto.Add addDto, UserDetails userDetail) {
+	public PostDto.Detail add(PostDto.Add addDto, SinghaUser userDetail) {
 		if (userDetail == null || userDetail.getUsername() == null) throw new UserNotFoundException("잘못된 접근입니다.");
 		User user = userRepository.findByUserId(userDetail.getUsername()).orElseThrow(() -> new UserNotFoundException("잘못된 접근입니다."));
 		Post post = PostMapper.INSTANCE.addDtoToEntity(addDto);

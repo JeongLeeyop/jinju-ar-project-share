@@ -33,7 +33,7 @@ public class MarketplaceProductController {
     /**
      * 현재 인증된 사용자 조회
      */
-    private User validateAndGetCurrentUser(UserDetails userDetails) {
+    private User validateAndGetCurrentUser(SinghaUser userDetails) {
         if (userDetails == null || userDetails.getUsername() == null) {
             log.error("Unauthenticated access attempt detected");
             throw new RuntimeException("인증되지 않은 접근입니다");
@@ -49,7 +49,7 @@ public class MarketplaceProductController {
     public ResponseEntity<?> createProduct(
             @PathVariable String channelUid,
             @Valid @RequestBody MarketplaceProductDto.CreateRequest request,
-            @AuthenticationPrincipal UserDetails userDetails) {
+            @AuthenticationPrincipal SinghaUser userDetails) {
         try {
             User user = validateAndGetCurrentUser(userDetails);
             MarketplaceProductDto result = productService.createProduct(
@@ -70,7 +70,7 @@ public class MarketplaceProductController {
     public ResponseEntity<?> getMainMarketplaceProducts(
             @PathVariable String channelUid,
             @RequestParam(required = false) String category,
-            @AuthenticationPrincipal UserDetails userDetails,
+            @AuthenticationPrincipal SinghaUser userDetails,
             @PageableDefault(size = 20) Pageable pageable) {
         try {
             String currentUserUid = "";
@@ -99,7 +99,7 @@ public class MarketplaceProductController {
     public ResponseEntity<?> getAllChannelProducts(
             @PathVariable String channelUid,
             @RequestParam(required = false) String productType,
-            @AuthenticationPrincipal UserDetails userDetails,
+            @AuthenticationPrincipal SinghaUser userDetails,
             @PageableDefault(size = 100) Pageable pageable) {
         try {
             String currentUserUid = "";
@@ -128,7 +128,7 @@ public class MarketplaceProductController {
     public ResponseEntity<?> getOfflineMarketplaceProducts(
             @PathVariable String offlineMarketplaceUid,
             @RequestParam(required = false) String category,
-            @AuthenticationPrincipal UserDetails userDetails,
+            @AuthenticationPrincipal SinghaUser userDetails,
             @PageableDefault(size = 20) Pageable pageable) {
         try {
             String currentUserUid = "";
@@ -155,7 +155,7 @@ public class MarketplaceProductController {
      */
     @GetMapping("/my")
     public ResponseEntity<?> getMyProducts(
-            @AuthenticationPrincipal UserDetails userDetails,
+            @AuthenticationPrincipal SinghaUser userDetails,
             @PageableDefault(size = 20) Pageable pageable) {
         try {
             User user = validateAndGetCurrentUser(userDetails);
@@ -176,7 +176,7 @@ public class MarketplaceProductController {
     public ResponseEntity<?> getMyRegisteredProducts(
             @PathVariable String channelDomain,
             @RequestParam(required = false) String marketplaceType,  // "online", "offline", null(전체)
-            @AuthenticationPrincipal UserDetails userDetails,
+            @AuthenticationPrincipal SinghaUser userDetails,
             @PageableDefault(size = 20) Pageable pageable) {
         try {
             User user = validateAndGetCurrentUser(userDetails);
@@ -197,7 +197,7 @@ public class MarketplaceProductController {
     @GetMapping("/{uid}")
     public ResponseEntity<?> getProduct(
             @PathVariable String uid,
-            @AuthenticationPrincipal UserDetails userDetails) {
+            @AuthenticationPrincipal SinghaUser userDetails) {
         try {
             String currentUserUid = "";
             if (userDetails != null) {
@@ -224,7 +224,7 @@ public class MarketplaceProductController {
     public ResponseEntity<?> updateProduct(
             @PathVariable String uid,
             @Valid @RequestBody MarketplaceProductDto.UpdateRequest request,
-            @AuthenticationPrincipal UserDetails userDetails) {
+            @AuthenticationPrincipal SinghaUser userDetails) {
         try {
             User user = validateAndGetCurrentUser(userDetails);
             MarketplaceProductDto result = productService.updateProduct(uid, request, user.getUid());
@@ -243,7 +243,7 @@ public class MarketplaceProductController {
     @DeleteMapping("/{uid}")
     public ResponseEntity<?> deleteProduct(
             @PathVariable String uid,
-            @AuthenticationPrincipal UserDetails userDetails) {
+            @AuthenticationPrincipal SinghaUser userDetails) {
         try {
             User user = validateAndGetCurrentUser(userDetails);
             productService.deleteProduct(uid, user.getUid());

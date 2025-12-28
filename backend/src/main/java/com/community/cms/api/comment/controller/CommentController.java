@@ -43,7 +43,7 @@ public class CommentController {
 
     @PostMapping
     public ResponseEntity add(
-        @AuthenticationPrincipal UserDetails userDetail,
+        @AuthenticationPrincipal SinghaUser userDetail,
         @RequestBody @Valid CommentDto.Add addDto) {
         commentService.add(addDto, userDetail);
         return ResponseEntity.ok().build();       

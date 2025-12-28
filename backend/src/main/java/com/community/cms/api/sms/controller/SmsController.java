@@ -30,7 +30,7 @@ public class SmsController {
     /**
      * Get current authenticated user from UserDetails
      */
-    private User validateAndGetCurrentUser(UserDetails userDetails) {
+    private User validateAndGetCurrentUser(SinghaUser userDetails) {
         if (userDetails == null || userDetails.getUsername() == null) {
             log.error("Unauthenticated access attempt detected");
             throw new RuntimeException("인증되지 않은 접근입니다");
@@ -45,7 +45,7 @@ public class SmsController {
     @PostMapping("/send")
     public ResponseEntity<?> sendSms(
             @Valid @RequestBody SmsSendRequest request,
-            @AuthenticationPrincipal UserDetails userDetails) {
+            @AuthenticationPrincipal SinghaUser userDetails) {
         try {
             User user = validateAndGetCurrentUser(userDetails);
             
@@ -80,7 +80,7 @@ public class SmsController {
             @RequestParam(required = false, defaultValue = "30") Integer pageSize,
             @RequestParam(required = false) String startDate,
             @RequestParam(required = false) Integer limitDay,
-            @AuthenticationPrincipal UserDetails userDetails) {
+            @AuthenticationPrincipal SinghaUser userDetails) {
         try {
             User user = validateAndGetCurrentUser(userDetails);
             
@@ -100,7 +100,7 @@ public class SmsController {
      * 발송 가능 건수 조회
      */
     @GetMapping("/remain")
-    public ResponseEntity<?> getRemainCount(@AuthenticationPrincipal UserDetails userDetails) {
+    public ResponseEntity<?> getRemainCount(@AuthenticationPrincipal SinghaUser userDetails) {
         try {
             User user = validateAndGetCurrentUser(userDetails);
             

@@ -49,7 +49,7 @@ public class ChannelMemberPermissionController {
     /**
      * 현재 사용자 인증 및 조회
      */
-    private User validateAndGetCurrentUser(UserDetails userDetails) {
+    private User validateAndGetCurrentUser(SinghaUser userDetails) {
         if (userDetails == null || userDetails.getUsername() == null) {
             log.error("Unauthenticated access attempt detected");
             throw new RuntimeException("인증되지 않은 접근입니다");
@@ -90,7 +90,7 @@ public class ChannelMemberPermissionController {
     @GetMapping("/member/{channelMemberIdx}")
     public ResponseEntity<?> getMemberPermissions(
             @PathVariable Integer channelMemberIdx,
-            @AuthenticationPrincipal UserDetails userDetails) {
+            @AuthenticationPrincipal SinghaUser userDetails) {
         try {
             User user = validateAndGetCurrentUser(userDetails);
             
@@ -119,7 +119,7 @@ public class ChannelMemberPermissionController {
     @PostMapping
     public ResponseEntity<?> createOrUpdatePermission(
             @Valid @RequestBody ChannelMemberPermissionDto.CreateRequest request,
-            @AuthenticationPrincipal UserDetails userDetails) {
+            @AuthenticationPrincipal SinghaUser userDetails) {
         try {
             User user = validateAndGetCurrentUser(userDetails);
             
@@ -148,7 +148,7 @@ public class ChannelMemberPermissionController {
     @PutMapping("/bulk")
     public ResponseEntity<?> bulkUpdatePermissions(
             @Valid @RequestBody ChannelMemberPermissionDto.BulkUpdateRequest request,
-            @AuthenticationPrincipal UserDetails userDetails) {
+            @AuthenticationPrincipal SinghaUser userDetails) {
         try {
             User user = validateAndGetCurrentUser(userDetails);
             
@@ -178,7 +178,7 @@ public class ChannelMemberPermissionController {
     public ResponseEntity<?> checkPermission(
             @RequestParam Integer channelMemberIdx,
             @RequestParam String permissionType,
-            @AuthenticationPrincipal UserDetails userDetails) {
+            @AuthenticationPrincipal SinghaUser userDetails) {
         try {
             validateAndGetCurrentUser(userDetails);
             
@@ -202,7 +202,7 @@ public class ChannelMemberPermissionController {
     public ResponseEntity<?> checkPermissionByUserUid(
             @RequestParam String channelUid,
             @RequestParam String permissionType,
-            @AuthenticationPrincipal UserDetails userDetails) {
+            @AuthenticationPrincipal SinghaUser userDetails) {
         try {
             User user = validateAndGetCurrentUser(userDetails);
             
@@ -228,7 +228,7 @@ public class ChannelMemberPermissionController {
     @DeleteMapping("/{permissionId}")
     public ResponseEntity<?> deletePermission(
             @PathVariable Long permissionId,
-            @AuthenticationPrincipal UserDetails userDetails) {
+            @AuthenticationPrincipal SinghaUser userDetails) {
         try {
             validateAndGetCurrentUser(userDetails);
             

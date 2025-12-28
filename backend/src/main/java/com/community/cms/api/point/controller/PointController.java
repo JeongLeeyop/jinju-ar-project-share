@@ -44,7 +44,7 @@ public class PointController {
     /**
      * 현재 인증된 사용자 조회 및 검증
      */
-    private User validateAndGetCurrentUser(UserDetails userDetails) {
+    private User validateAndGetCurrentUser(SinghaUser userDetails) {
         if (userDetails == null || userDetails.getUsername() == null) {
             log.error("Unauthenticated access attempt detected");
             throw new RuntimeException("인증되지 않은 접근입니다");
@@ -72,7 +72,7 @@ public class PointController {
     @GetMapping("/current")
     public ResponseEntity<?> getCurrentPoint(
             @RequestParam String channelUid,
-            @AuthenticationPrincipal UserDetails userDetails) {
+            @AuthenticationPrincipal SinghaUser userDetails) {
         try {
             User user = validateAndGetCurrentUser(userDetails);
             
@@ -100,7 +100,7 @@ public class PointController {
             @RequestParam String channelUid,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
-            @AuthenticationPrincipal UserDetails userDetails) {
+            @AuthenticationPrincipal SinghaUser userDetails) {
         try {
             User user = validateAndGetCurrentUser(userDetails);
             
@@ -127,7 +127,7 @@ public class PointController {
     @PostMapping("/add")
     public ResponseEntity<?> addPoint(
             @RequestBody Map<String, Object> request,
-            @AuthenticationPrincipal UserDetails userDetails) {
+            @AuthenticationPrincipal SinghaUser userDetails) {
         try {
             User user = validateAndGetCurrentUser(userDetails);
             
@@ -164,7 +164,7 @@ public class PointController {
             @RequestParam String channelUid,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
-            @AuthenticationPrincipal UserDetails userDetails) {
+            @AuthenticationPrincipal SinghaUser userDetails) {
         try {
             User currentUser = validateAndGetCurrentUser(userDetails);
             validateChannelAdmin(channelUid, currentUser.getUid());
@@ -218,7 +218,7 @@ public class PointController {
     @PostMapping("/admin/adjust")
     public ResponseEntity<?> adminAdjustPoint(
             @Valid @RequestBody AdminPointAdjustRequest request,
-            @AuthenticationPrincipal UserDetails userDetails) {
+            @AuthenticationPrincipal SinghaUser userDetails) {
         try {
             User currentUser = validateAndGetCurrentUser(userDetails);
             validateChannelAdmin(request.getChannelUid(), currentUser.getUid());
@@ -305,7 +305,7 @@ public class PointController {
             @RequestParam String channelUid,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
-            @AuthenticationPrincipal UserDetails userDetails) {
+            @AuthenticationPrincipal SinghaUser userDetails) {
         try {
             User currentUser = validateAndGetCurrentUser(userDetails);
             validateChannelAdmin(channelUid, currentUser.getUid());

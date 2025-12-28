@@ -35,7 +35,7 @@ public class SpaceInvitationController {
      * @param userDetails @AuthenticationPrincipal로 주입된 UserDetails
      * @return 검증된 User 엔티티
      */
-    private User validateAndGetCurrentUser(UserDetails userDetails) {
+    private User validateAndGetCurrentUser(SinghaUser userDetails) {
         if (userDetails == null || userDetails.getUsername() == null) {
             log.error("Unauthenticated access attempt detected");
             throw new RuntimeException("인증되지 않은 접근입니다");

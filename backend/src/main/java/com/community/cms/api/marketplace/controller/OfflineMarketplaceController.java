@@ -31,7 +31,7 @@ public class OfflineMarketplaceController {
     /**
      * 현재 인증된 사용자 조회
      */
-    private User validateAndGetCurrentUser(UserDetails userDetails) {
+    private User validateAndGetCurrentUser(SinghaUser userDetails) {
         if (userDetails == null || userDetails.getUsername() == null) {
             log.error("Unauthenticated access attempt detected");
             throw new RuntimeException("인증되지 않은 접근입니다");
@@ -47,7 +47,7 @@ public class OfflineMarketplaceController {
     public ResponseEntity<?> createOfflineMarketplace(
             @PathVariable String channelUid,
             @Valid @RequestBody OfflineMarketplaceDto.CreateRequest request,
-            @AuthenticationPrincipal UserDetails userDetails) {
+            @AuthenticationPrincipal SinghaUser userDetails) {
         try {
             User user = validateAndGetCurrentUser(userDetails);
             OfflineMarketplaceDto result = offlineMarketplaceService.createOfflineMarketplace(
@@ -103,7 +103,7 @@ public class OfflineMarketplaceController {
     public ResponseEntity<?> updateOfflineMarketplace(
             @PathVariable String uid,
             @Valid @RequestBody OfflineMarketplaceDto.UpdateRequest request,
-            @AuthenticationPrincipal UserDetails userDetails) {
+            @AuthenticationPrincipal SinghaUser userDetails) {
         try {
             User user = validateAndGetCurrentUser(userDetails);
             OfflineMarketplaceDto result = offlineMarketplaceService.updateOfflineMarketplace(
@@ -123,7 +123,7 @@ public class OfflineMarketplaceController {
     @DeleteMapping("/{uid}")
     public ResponseEntity<?> deleteOfflineMarketplace(
             @PathVariable String uid,
-            @AuthenticationPrincipal UserDetails userDetails) {
+            @AuthenticationPrincipal SinghaUser userDetails) {
         try {
             User user = validateAndGetCurrentUser(userDetails);
             offlineMarketplaceService.deleteOfflineMarketplace(uid, user.getUid());
