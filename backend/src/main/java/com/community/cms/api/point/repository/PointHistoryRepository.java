@@ -38,11 +38,12 @@ public interface PointHistoryRepository extends JpaRepository<PointHistory, Long
     );
 
     /**
-     * 사용자의 현재 포인트 잔액 조회
+     * 사용자의 현재 포인트 잔액 조회 (가장 최근 기록의 잔액)
      */
-    @Query("SELECT ph.currentBalance FROM PointHistory ph " +
-           "WHERE ph.userUid = :userUid AND ph.channelUid = :channelUid " +
-           "ORDER BY ph.createdAt DESC, ph.id DESC")
+    @Query(value = "SELECT ph.current_balance FROM point_history ph " +
+           "WHERE ph.user_uid = :userUid AND ph.channel_uid = :channelUid " +
+           "ORDER BY ph.created_at DESC, ph.id DESC " +
+           "LIMIT 1", nativeQuery = true)
     Optional<Integer> findCurrentBalance(@Param("userUid") String userUid, 
                                          @Param("channelUid") String channelUid);
 
