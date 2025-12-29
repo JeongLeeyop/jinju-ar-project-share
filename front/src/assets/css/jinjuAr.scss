@@ -460,6 +460,11 @@ setting-wrap은 사용자도 사용함
 * 전체 헤더 반응형
 */
 @media (max-width: 768px) {
+	
+	.el-dialog {
+		width: 100% !important;
+	}
+	
 	.header .header-content .aside-btn {
 		min-width: 100px;
 	}

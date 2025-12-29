@@ -238,4 +238,9 @@ export default class extends Vue {
 </script>
 <style>
     .setting-wrap .dialog-wrap .write_wr .el-form-item .el-form-item__content{margin-right:60px;}
+    @media (max-width: 768px) {
+        .el-form-item__content {
+            margin-left: 0 !important;
+        }
+    }
 </style>
