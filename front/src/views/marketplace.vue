@@ -66,6 +66,14 @@
 
     </div>
 
+    <!-- Floating Write Button (Mobile) -->
+    <button class="write-post-btn-fixed" @click="openWriteModal">
+      <span class="btn-text">상품 등록하기</span>
+      <svg class="btn-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 5V19M5 12H19" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
+
     <!-- 상품 등록 모달 -->
     <el-dialog
       :visible.sync="writeModalVisible"
@@ -562,6 +570,47 @@ export default class extends Vue {
   min-height: 400px;
   color: #888;
   font-size: 18px;
+}
+
+// Floating Write Button (initially hidden on desktop, shown on mobile)
+.write-post-btn-fixed {
+  position: fixed;
+  left: 30px;
+  bottom: 40px;
+  width: 210px;
+  height: 50px;
+  padding: 0;
+  background: #073DFF;
+  border: none;
+  border-radius: 10px;
+  color: #FFF;
+  font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 100%;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  z-index: 100;
+  display: none; // Hidden on desktop (sidebar has write button)
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 4px 12px rgba(7, 61, 255, 0.3);
+
+  .btn-icon {
+    display: none;
+  }
+
+  &:hover {
+    background: #0530CC;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(7, 61, 255, 0.4);
+  }
+
+  &:active {
+    background: #042099;
+    transform: translateY(0);
+  }
 }
 
 .filter-btn {
@@ -1107,11 +1156,23 @@ export default class extends Vue {
 @media screen and (max-width: 1024px) {
   .marketplace-main {margin:120px 0 0 240px}
 
-  .write-post-btn-fixed { width: 60px; height: 60px; border-radius: 50%; left: auto; right: 24px; bottom: 24px;
+  // Show floating write button on mobile (circular style)
+  .write-post-btn-fixed {
+    display: flex; // Show button on mobile
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    left: auto;
+    right: 24px;
+    bottom: 24px;
 
-    .btn-text{ display: none;}
+    .btn-text {
+      display: none;
+    }
 
-    .btn-icon{ display: block;}
+    .btn-icon {
+      display: block;
+    }
   }
 
   .products-grid {gap: 20px;}
@@ -1163,8 +1224,8 @@ export default class extends Vue {
   }
 
   .write-post-btn-fixed {
-    width: 43px;
-    height: 43px;
+    width: 50px;
+    height: 50px;
     right: 20px;
     bottom: 20px;
     padding: 14px;

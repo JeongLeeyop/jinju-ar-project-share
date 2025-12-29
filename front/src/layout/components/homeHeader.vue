@@ -771,6 +771,21 @@ export default class extends Vue {
     await this.loadSpaces();
   }
 
+  private navigateToOfflineMarketplace(marketplaceUid: string) {
+    this.$router.push({
+      name: 'Marketplace',
+      params: {
+        domain: this.$route.params.domain || 'default',
+        marketplaceUid: marketplaceUid,
+      },
+    }).catch(err => {
+      if (err.name !== 'NavigationDuplicated') {
+        console.error('Navigation error:', err);
+      }
+    });
+    this.toggleMobileMenu();
+  }
+
   private getSpaceDotClass(spaceType: string): string {
     return spaceType === 'BOARD' ? 'red-dot' : 'orange-dot';
   }
@@ -885,7 +900,7 @@ export default class extends Vue {
 }
 
 @media screen and (max-width: 500px) {
-  .community-header .header-container {padding: 0;min-height: 80px;}
+  .community-header .header-container {min-height: 80px;}
 }
 
 .mobile-menu-btn {display: none; align-items: center; justify-content: center; width: 40px; height: 40px; background: transparent; border: none; cursor: pointer; padding: 0; flex-shrink: 0;

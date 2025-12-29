@@ -1814,6 +1814,8 @@ export default class extends Vue {
   flex: 1;
   margin-left: 310px;
   padding: 140px 60px 40px;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .page-header {
@@ -1832,6 +1834,7 @@ export default class extends Vue {
 // 탭 메뉴
 .tabs-section {
   display: flex;
+  flex-wrap: wrap;
   gap: 20px;
   margin-bottom: 40px;
   border-bottom: 2px solid #EBEBEB;
@@ -1885,6 +1888,7 @@ export default class extends Vue {
 // 탭 컨텐츠
 .tab-content {
   min-height: 400px;
+  overflow: hidden;
 }
 
 // 필터 바
@@ -1902,7 +1906,7 @@ export default class extends Vue {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 0 16px;
+  padding: 10px 16px;
   height: 48px;
   background: #FFF;
   border: 1px solid #CECECE;
@@ -1980,10 +1984,31 @@ export default class extends Vue {
 
 // 회원 테이블
 .members-table-wrapper {
+  display: block;
+  max-width: 100%;
   background: #FFF;
   border-radius: 12px;
-  overflow: hidden;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  
+  &::-webkit-scrollbar {
+    height: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 3px;
+    
+    &:hover {
+      background: #999;
+    }
+  }
 }
 
 .members-table {
@@ -2890,10 +2915,6 @@ export default class extends Vue {
   .members-table-wrapper {
     overflow-x: auto;
   }
-
-  .members-table {
-    min-width: 700px;
-  }
 }
 
 @media screen and (max-width: 768px) {
@@ -3027,7 +3048,7 @@ export default class extends Vue {
 
   .search-box {
     height: 40px;
-    padding: 0 12px;
+    padding: 10px 12px;
     gap: 10px;
 
     i {
@@ -3086,9 +3107,6 @@ export default class extends Vue {
   }
 
   .members-table {
-    min-width: 550px;
-    width: max-content;
-
     thead th {
       padding: 12px 12px;
       font-size: 12px;

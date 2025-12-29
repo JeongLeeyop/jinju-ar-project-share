@@ -1367,8 +1367,8 @@ display: flex;
   // Show floating write button on mobile (circular style)
   .write-post-btn-fixed {
     display: flex; // Show button on mobile
-    width: 60px;
-    height: 60px;
+    width: 50px;
+    height: 50px;
     border-radius: 50%;
     left: auto;
     right: 24px;

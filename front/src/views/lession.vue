@@ -712,8 +712,8 @@ export default class extends Vue {
   position: fixed;
   right: 20px;
   bottom: 20px;
-  width: 43px;
-  height: 43px;
+  width: 50px;
+  height: 50px;
   padding: 14px;
   background: #073DFF;
   border: none;
@@ -755,8 +755,8 @@ export default class extends Vue {
     display: flex; // 모바일에서만 보임
     right: 20px;
     bottom: 20px;
-    width: 43px;
-    height: 43px;
+    width: 50px;
+    height: 50px;
   }
 }
 

@@ -94,12 +94,12 @@
     </div>
 
     <!-- Floating Action Button (Mobile Only) -->
-    <button class="floating-action-btn mobile-only" @click="handleFloatingAction">
+    <!-- <button class="floating-action-btn mobile-only" @click="handleFloatingAction">
       <svg width="43" height="43" viewBox="0 0 43 43" fill="none" xmlns="http://www.w3.org/2000/svg">
         <rect width="43" height="43" rx="21.5" fill="#073DFF"/>
         <path d="M21.5 14V29M29 21.5H14" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
-    </button>
+    </button> -->
   </div>
 </template>
 

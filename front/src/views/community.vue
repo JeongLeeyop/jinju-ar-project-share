@@ -1289,8 +1289,8 @@ export default class extends Vue {
     left: auto;
     right: 20px;
     bottom: 20px;
-    width: 43px;
-    height: 43px;
+    width: 50px;
+    height: 50px;
     border-radius: 50%;
     font-size: 0;
     display: flex;

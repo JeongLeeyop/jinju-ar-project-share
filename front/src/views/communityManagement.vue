@@ -1179,7 +1179,7 @@ export default class extends Vue {
 @media screen and (max-width: 768px) {
   .community-management-main {
     margin-left: 0;
-    padding: 20px 16px;
+    padding: 40px 16px;
   }
 
   .tabs-section {
@@ -1271,7 +1271,7 @@ export default class extends Vue {
 // 425px 이하 모바일 반응형
 @media screen and (max-width: 425px) {
   .community-management-main {
-    padding: 20px 16px;
+    padding: 40px 16px;
   }
 
   .page-header {
