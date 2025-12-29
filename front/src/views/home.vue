@@ -274,10 +274,8 @@ export default class extends Vue {
   private handleChannelCreate() {
     if (!UserModule.isLogin) {
       this.userModalVisible = true;
-    } else if (UserModule.roles.includes('ROLE_CREATOR')) {
-      this.$router.push({ name: 'CreateCommunity' });
     } else {
-      this.$message.warning('커뮤니티는 관리자 계정만 생성가능합니다.');
+      this.$router.push({ name: 'CreateCommunity' });
     }
   }
 
