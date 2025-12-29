@@ -49,6 +49,9 @@ public class Channel implements Serializable {
     private String userUid;
     private String password;
     
+    // 삭제 상태 (DB에서 직접 관리, false=보임, true=숨김)
+    private boolean deleteStatus = false;
+    
     // private String tags;
     // private String basicInfo;
     // private String breakTimeStart;

@@ -114,17 +114,17 @@ class ClientUserServiceImpl implements ClientUserService {
 		user.setUserId(user.getEmail());
 		user = userRepository.save(user);
 
+		// 무조건 ROLE_CREATOR 권한 부여
+		UserRole creatorRole = new UserRole();
+		creatorRole.setUserUid(user.getUid());
+		creatorRole.setRoleCode("ROLE_CREATOR");
+		userRoleRepository.save(creatorRole);
+
+		// ROLE_USER 권한도 함께 부여
 		UserRole userRole = new UserRole();
 		userRole.setUserUid(user.getUid());
-		userRole.setRoleCode(dto.getRole());
+		userRole.setRoleCode("ROLE_USER");
 		userRoleRepository.save(userRole);
-
-		if(dto.getRole().equals("ROLE_CREATOR")) {
-			UserRole userRole2 = new UserRole();
-			userRole2.setUserUid(user.getUid());
-			userRole2.setRoleCode("ROLE_USER");
-			userRoleRepository.save(userRole2);
-		}
 
 		// Collection<OAuth2AccessToken> tokens = tokenStore.findTokensByClientIdAndUserName("singha_oauth", user.getUserId());
 		// for (OAuth2AccessToken token : tokens) {

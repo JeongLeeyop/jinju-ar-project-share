@@ -676,8 +676,8 @@ export default class extends Vue {
   }
 
   private moveHome() {
-    const target = this.homeLink;
-    this.$router.push(target);
+    // 항상 메인 페이지로 이동
+    this.$router.push('/');
   }
 
   get homeLink() {

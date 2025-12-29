@@ -911,5 +911,7 @@ export default class extends Vue {
   @media screen and (max-width: 500px) {
     .filter-reset-btn {padding: 10px 0;}
   }
+
+  .header-nav {visibility: hidden;}
 }
 </style>

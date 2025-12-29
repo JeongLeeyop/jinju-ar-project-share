@@ -3,6 +3,7 @@ package com.community.cms.api.sms.service;
 import com.community.cms.api.sms.dto.SmsHistoryDto;
 import com.community.cms.api.sms.dto.SmsSendRequest;
 import com.community.cms.api.sms.dto.SmsSendResponse;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
@@ -31,9 +32,11 @@ public class SmsService {
     private static final String ALIGO_API_URL = "https://apis.aligo.in";
     
     private final RestTemplate restTemplate;
+    private final ObjectMapper objectMapper;
     
     public SmsService() {
         this.restTemplate = new RestTemplate();
+        this.objectMapper = new ObjectMapper();
     }
     
     /**
@@ -91,17 +94,21 @@ public class SmsService {
             
             HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(params, headers);
             
-            // API 호출
-            ResponseEntity<Map> response = restTemplate.exchange(
+            log.info("SMS 발송 API 호출: URL={}, receiver={}, msgType={}", 
+                    ALIGO_API_URL + "/send/", receiver, msgType);
+            
+            // API 호출 - String으로 먼저 받기
+            ResponseEntity<String> response = restTemplate.exchange(
                     ALIGO_API_URL + "/send/",
                     HttpMethod.POST,
                     entity,
-                    Map.class
+                    String.class
             );
             
-            Map<String, Object> body = response.getBody();
+            String responseBody = response.getBody();
+            log.info("SMS API 응답: status={}, body={}", response.getStatusCode(), responseBody);
             
-            if (body == null) {
+            if (responseBody == null || responseBody.isEmpty()) {
                 return SmsSendResponse.builder()
                         .resultCode(-1)
                         .message("API 응답이 없습니다")
@@ -109,16 +116,37 @@ public class SmsService {
                         .build();
             }
             
-            Integer resultCode = (Integer) body.get("result_code");
-            String message = (String) body.get("message");
+            // HTML 응답인 경우 처리
+            if (responseBody.trim().startsWith("<")) {
+                log.error("SMS API가 HTML을 반환했습니다: {}", responseBody.substring(0, Math.min(200, responseBody.length())));
+                return SmsSendResponse.builder()
+                        .resultCode(-1)
+                        .message("API 인증 실패 또는 잘못된 요청입니다. API Key와 User ID를 확인해주세요.")
+                        .isSuccess(false)
+                        .build();
+            }
+            
+            // JSON 파싱
+            Map<String, Object> body = objectMapper.readValue(responseBody, Map.class);
+            
+            if (body == null) {
+                return SmsSendResponse.builder()
+                        .resultCode(-1)
+                        .message("API 응답 파싱 실패")
+                        .isSuccess(false)
+                        .build();
+            }
+            
+            Integer resultCode = safeGetInteger(body, "result_code");
+            String message = safeGetString(body, "message");
             
             return SmsSendResponse.builder()
                     .resultCode(resultCode)
                     .message(message != null ? message : "")
-                    .msgId(body.get("msg_id") != null ? Long.valueOf(body.get("msg_id").toString()) : null)
-                    .successCnt((Integer) body.get("success_cnt"))
-                    .errorCnt((Integer) body.get("error_cnt"))
-                    .msgType((String) body.get("msg_type"))
+                    .msgId(safeGetLong(body, "msg_id"))
+                    .successCnt(safeGetInteger(body, "success_cnt"))
+                    .errorCnt(safeGetInteger(body, "error_cnt"))
+                    .msgType(safeGetString(body, "msg_type"))
                     .isSuccess(resultCode != null && resultCode > 0)
                     .build();
                     
@@ -170,15 +198,28 @@ public class SmsService {
             
             HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(params, headers);
             
-            // API 호출
-            ResponseEntity<Map> response = restTemplate.exchange(
+            // API 호출 - String으로 먼저 받기
+            ResponseEntity<String> response = restTemplate.exchange(
                     ALIGO_API_URL + "/list/",
                     HttpMethod.POST,
                     entity,
-                    Map.class
+                    String.class
             );
             
-            Map<String, Object> body = response.getBody();
+            String responseBody = response.getBody();
+            
+            if (responseBody == null || responseBody.isEmpty()) {
+                return new ArrayList<>();
+            }
+            
+            // HTML 응답인 경우 처리
+            if (responseBody.trim().startsWith("<")) {
+                log.error("SMS 내역 조회 API가 HTML을 반환했습니다");
+                return new ArrayList<>();
+            }
+            
+            // JSON 파싱
+            Map<String, Object> body = objectMapper.readValue(responseBody, Map.class);
             
             if (body == null || body.get("list") == null) {
                 return new ArrayList<>();
@@ -188,20 +229,27 @@ public class SmsService {
             List<SmsHistoryDto> histories = new ArrayList<>();
             
             for (Map<String, Object> item : list) {
-                String type = (String) item.get("type");
-                Integer smsCount = item.get("sms_count") != null ? Integer.valueOf(item.get("sms_count").toString()) : 0;
-                Integer cost = calculateCost(type, smsCount);
+                String msg = safeGetString(item, "msg");
+                
+                // "문화제작소"가 포함된 메시지는 필터링
+                if (msg != null && msg.contains("문화제작소")) {
+                    continue;
+                }
+                
+                String type = safeGetString(item, "type");
+                Integer smsCount = safeGetInteger(item, "sms_count");
+                Integer cost = calculateCost(type, smsCount != null ? smsCount : 0);
                 
                 SmsHistoryDto history = SmsHistoryDto.builder()
-                        .mid(item.get("mid") != null ? Long.valueOf(item.get("mid").toString()) : null)
+                        .mid(safeGetLong(item, "mid"))
                         .type(type)
-                        .sender((String) item.get("sender"))
+                        .sender(safeGetString(item, "sender"))
                         .smsCount(smsCount)
-                        .reserveState((String) item.get("reserve_state"))
-                        .msg((String) item.get("msg"))
-                        .failCount(item.get("fail_count") != null ? Integer.valueOf(item.get("fail_count").toString()) : 0)
-                        .regDate((String) item.get("reg_date"))
-                        .reserve((String) item.get("reserve"))
+                        .reserveState(safeGetString(item, "reserve_state"))
+                        .msg(msg)
+                        .failCount(safeGetInteger(item, "fail_count"))
+                        .regDate(safeGetString(item, "reg_date"))
+                        .reserve(safeGetString(item, "reserve"))
                         .cost(cost)
                         .build();
                 
@@ -237,15 +285,28 @@ public class SmsService {
             
             HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(params, headers);
             
-            // API 호출
-            ResponseEntity<Map> response = restTemplate.exchange(
+            // API 호출 - String으로 먼저 받기
+            ResponseEntity<String> response = restTemplate.exchange(
                     ALIGO_API_URL + "/remain/",
                     HttpMethod.POST,
                     entity,
-                    Map.class
+                    String.class
             );
             
-            return response.getBody();
+            String responseBody = response.getBody();
+            
+            if (responseBody == null || responseBody.isEmpty()) {
+                return Map.of("error", "응답이 없습니다");
+            }
+            
+            // HTML 응답인 경우 처리
+            if (responseBody.trim().startsWith("<")) {
+                log.error("발송 가능 건수 조회 API가 HTML을 반환했습니다");
+                return Map.of("error", "API 인증 실패");
+            }
+            
+            // JSON 파싱
+            return objectMapper.readValue(responseBody, Map.class);
             
         } catch (Exception e) {
             log.error("발송 가능 건수 조회 실패", e);
@@ -275,5 +336,54 @@ public class SmsService {
         }
         
         return count * pricePerMessage;
+    }
+    
+    /**
+     * Map에서 안전하게 Integer 추출
+     */
+    private Integer safeGetInteger(Map<String, Object> map, String key) {
+        Object value = map.get(key);
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof Integer) {
+            return (Integer) value;
+        }
+        try {
+            return Integer.parseInt(value.toString());
+        } catch (NumberFormatException e) {
+            log.warn("Failed to parse integer from key '{}': {}", key, value);
+            return null;
+        }
+    }
+    
+    /**
+     * Map에서 안전하게 Long 추출
+     */
+    private Long safeGetLong(Map<String, Object> map, String key) {
+        Object value = map.get(key);
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof Long) {
+            return (Long) value;
+        }
+        if (value instanceof Integer) {
+            return ((Integer) value).longValue();
+        }
+        try {
+            return Long.parseLong(value.toString());
+        } catch (NumberFormatException e) {
+            log.warn("Failed to parse long from key '{}': {}", key, value);
+            return null;
+        }
+    }
+    
+    /**
+     * Map에서 안전하게 String 추출
+     */
+    private String safeGetString(Map<String, Object> map, String key) {
+        Object value = map.get(key);
+        return value != null ? value.toString() : null;
     }
 }

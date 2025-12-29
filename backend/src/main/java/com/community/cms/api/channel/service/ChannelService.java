@@ -260,10 +260,7 @@ class ChannelServiceImpl implements ChannelService {
     @Transactional
     @Override
     public void add(SinghaUser authUser, ChannelDto.add addDto) {
-        if (!authUser.getAuthorities().stream()
-                .anyMatch(authority -> authority.getAuthority().equals("ROLE_CREATOR"))) {
-            throw new UserAccessDeniedException();
-        }
+        // 모든 회원이 커뮤니티 생성 가능
         if (!this.checkDomainDuplicate(addDto.getDomain())) {
             throw new DomainDuplicateException();
         }
@@ -271,6 +268,7 @@ class ChannelServiceImpl implements ChannelService {
         User user = authUser.getUser();
         entity = ChannelMapper.INSTANCE.addDtoToEntity(addDto);
         entity.setUserUid(user.getUid());
+        entity.setDeleteStatus(false); // 기본적으로 보이도록 설정
         entity = channelRepository.save(entity);
 
         // 기본레벨 세팅
@@ -301,10 +299,7 @@ class ChannelServiceImpl implements ChannelService {
     @Transactional
     @Override
     public void update(SinghaUser authUser, Channel entity, ChannelDto.update updateDto) {
-        if (!authUser.getAuthorities().stream()
-                .anyMatch(authority -> authority.getAuthority().equals("ROLE_CREATOR"))) {
-            throw new UserAccessDeniedException();
-        }
+        // 모든 회원이 커뮤니티 수정 가능
         /*
          * TODO
          * 수정할 채널의 소유자 uid와 현재 로그인한 사용자의 uid와 일치하지 않을 경우 예외

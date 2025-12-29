@@ -97,7 +97,7 @@ aligo:
   api:
     key: 8tfm95prlsz7mckj0z5l9k2mcmtkvg52  # 알리고에서 발급받은 API Key
     user-id: leeyop12  # 알리고 사용자 ID
-    sender: 01044493118  # 발신번호 (알리고에 등록된 번호)
+    sender: 010-4449-3118  # 발신번호 (알리고에 등록된 번호)
 
 ---   
 server:

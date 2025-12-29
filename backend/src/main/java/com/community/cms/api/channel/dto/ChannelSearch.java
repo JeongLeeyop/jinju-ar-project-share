@@ -94,8 +94,11 @@ public class ChannelSearch{
 
         if (myFlag) {
         //    builder.and(Channel.channelUserList.any().userUid.eq(userUid));
-        } 
-            // builder.and(Channel.deleteStatus.eq(false));
+        }
+        
+        // 삭제되지 않은 채널만 보여줌
+        builder.and(channel.deleteStatus.eq(false));
+        
         return builder;
     }
 }
