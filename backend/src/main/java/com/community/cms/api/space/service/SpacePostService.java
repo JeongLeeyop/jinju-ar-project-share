@@ -2,6 +2,8 @@ package com.community.cms.api.space.service;
 
 import com.community.cms.api.activity.repository.ActivityRepository;
 import com.community.cms.api.attached_file.repository.AttachedFileRepository;
+import com.community.cms.api.point.dto.PointHistoryDto;
+import com.community.cms.api.point.service.PointService;
 import com.community.cms.api.space.dto.*;
 import com.community.cms.api.space.repository.*;
 import com.community.cms.api.user.repository.UserRepository;
@@ -34,6 +36,7 @@ public class SpacePostService {
     private final ActivityRepository activityRepository;
     private final AttachedFileRepository attachedFileRepository;
     private final UserRepository userRepository;
+    private final PointService pointService;
 
     /**
      * 게시글 ?�성
@@ -108,6 +111,35 @@ public class SpacePostService {
         }
 
         SpacePost savedPost = spacePostRepository.save(post);
+
+        // 포인트 적립 (게시글 작성) - 최소 글자수 체크 포함
+        try {
+            // 게시글 내용 길이 (HTML 태그 제거 후 순수 텍스트 길이)
+            String plainText = request.getContent() != null ? 
+                    request.getContent().replaceAll("<[^>]*>", "").replaceAll("&nbsp;", " ").trim() : "";
+            int contentLength = plainText.length();
+            
+            log.info("Attempting to add point for POST: userUid={}, channelUid={}, postUid={}, contentLength={}", 
+                    userUid, space.getChannelUid(), savedPost.getUid(), contentLength);
+            
+            PointHistoryDto result = pointService.addPointForEventWithValidation(
+                    userUid,
+                    space.getChannelUid(),
+                    "POST",
+                    "게시글 작성: " + request.getTitle(),
+                    savedPost.getUid(),
+                    contentLength,
+                    null  // 게시글 작성은 본인 컨텐츠 체크 불필요
+            );
+            
+            if (result != null) {
+                log.info("Point added for POST: userUid={}, amount={}", userUid, result.getPointAmount());
+            } else {
+                log.info("Point NOT added for POST (validation failed): userUid={}", userUid);
+            }
+        } catch (Exception e) {
+            log.warn("Failed to add point for post creation: {}", e.getMessage());
+        }
 
         // 활동 로그 기록
         logActivity(
@@ -436,6 +468,37 @@ public class SpacePostService {
                     .userUid(userUid)
                     .build();
             spacePostLikeRepository.save(like);
+
+            // 포인트 적립 (좋아요 누르기) - 본인 게시글 좋아요 제외, 게시글당 1회만 적립
+            try {
+                Space space = spaceRepository.findByUidAndIsActiveTrueAndIsDeletedFalse(
+                        post.getSpace() != null ? post.getSpace().getUid() : null).orElse(null);
+                if (space != null && space.getChannelUid() != null) {
+                    log.info("Attempting to add point for LIKE: userUid={}, channelUid={}, postUid={}, postOwner={}", 
+                            userUid, space.getChannelUid(), postUid, post.getUserUid());
+                    PointHistoryDto result = pointService.addPointForEventWithValidation(
+                            userUid,
+                            space.getChannelUid(),
+                            "LIKE",
+                            "좋아요",
+                            postUid,
+                            0,  // 좋아요는 글자수 체크 불필요
+                            post.getUserUid()  // 게시글 작성자 (본인 게시글 좋아요 제외)
+                    );
+                    if (result != null) {
+                        log.info("Point added for LIKE: userUid={}, amount={}", userUid, result.getPointAmount());
+                    } else {
+                        log.info("Point NOT added for LIKE (validation failed): userUid={}", userUid);
+                    }
+                } else {
+                    log.warn("Cannot add point for LIKE: space={}, channelUid={}", 
+                            space != null ? space.getUid() : "null", 
+                            space != null ? space.getChannelUid() : "null");
+                }
+            } catch (Exception e) {
+                log.warn("Failed to add point for like: {}", e.getMessage());
+            }
+
             return true;
         }
     }
@@ -468,6 +531,32 @@ public class SpacePostService {
                 .build();
 
         SpacePostComment savedComment = spacePostCommentRepository.save(comment);
+
+        // 포인트 적립 (댓글 작성) - 본인 게시글 댓글 제외, 게시글당 1회만 적립, 최소 글자수 체크
+        try {
+            int contentLength = request.getContent() != null ? request.getContent().trim().length() : 0;
+            
+            log.info("Attempting to add point for COMMENT: userUid={}, channelUid={}, postUid={}, postOwner={}, contentLength={}", 
+                    userUid, space.getChannelUid(), postUid, post.getUserUid(), contentLength);
+            
+            PointHistoryDto result = pointService.addPointForEventWithValidation(
+                    userUid,
+                    space.getChannelUid(),
+                    "COMMENT",
+                    "댓글 작성",
+                    postUid,  // 댓글 UID 대신 게시글 UID 사용 (게시글당 1회만 적립)
+                    contentLength,
+                    post.getUserUid()  // 게시글 작성자 (본인 게시글 댓글 제외)
+            );
+            
+            if (result != null) {
+                log.info("Point added for COMMENT: userUid={}, amount={}", userUid, result.getPointAmount());
+            } else {
+                log.info("Point NOT added for COMMENT (validation failed): userUid={}", userUid);
+            }
+        } catch (Exception e) {
+            log.warn("Failed to add point for comment creation: {}", e.getMessage());
+        }
 
         // 활동 로그 기록
         logActivity(

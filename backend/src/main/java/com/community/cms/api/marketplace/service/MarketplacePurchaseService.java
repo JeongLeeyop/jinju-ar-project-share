@@ -12,6 +12,7 @@ import com.community.cms.api.marketplace.repository.MarketplaceProductRepository
 import com.community.cms.api.marketplace.repository.MarketplacePurchaseRepository;
 import com.community.cms.api.marketplace.repository.OfflineMarketplaceRepository;
 import com.community.cms.api.point.repository.PointHistoryRepository;
+import com.community.cms.api.point.service.PointService;
 import com.community.cms.api.user.repository.UserRepository;
 import com.community.cms.common.code.ChannelMemberPermissionType;
 import com.community.cms.entity.*;
@@ -41,6 +42,7 @@ public class MarketplacePurchaseService {
     private final OfflineMarketplaceRepository offlineMarketplaceRepository;
     private final ChannelRepository channelRepository;
     private final PointHistoryRepository pointHistoryRepository;
+    private final PointService pointService;
     private final UserRepository userRepository;
     private final ChannelMemberRepository channelMemberRepository;
     private final ChannelMemberPermissionRepository permissionRepository;
@@ -151,6 +153,22 @@ public class MarketplacePurchaseService {
         purchase.setCompletedAt(LocalDateTime.now());
 
         MarketplacePurchase saved = purchaseRepository.save(purchase);
+
+        // 판매자에게 포인트 지급 (MARKETPLACE_SELL 이벤트)
+        try {
+            pointService.addPointForEventWithValidation(
+                    sellerUid,
+                    product.getChannelUid(),
+                    "MARKETPLACE_SELL",
+                    "장터 상품 판매 완료 (오프라인): " + product.getTitle(),
+                    product.getUid(),
+                    0,  // 글자수 체크 불필요
+                    null  // 본인 컨텐츠 체크 불필요
+            );
+            log.info("Point added for marketplace sell: seller={} product={}", sellerUid, product.getUid());
+        } catch (Exception e) {
+            log.warn("Failed to add point for marketplace sell: {}", e.getMessage());
+        }
 
         log.info("Offline purchase processed: {} by seller {} ({}P)", 
                  purchaseUid, sellerUid, request.getPointAmount());
@@ -550,6 +568,22 @@ public class MarketplacePurchaseService {
         purchase.setCompletedAt(LocalDateTime.now());
 
         MarketplacePurchase saved = purchaseRepository.save(purchase);
+
+        // 판매자에게 포인트 지급 (MARKETPLACE_SELL 이벤트)
+        try {
+            pointService.addPointForEventWithValidation(
+                    sellerUid,
+                    product.getChannelUid(),
+                    "MARKETPLACE_SELL",
+                    "장터 상품 판매 완료 (거래확정): " + product.getTitle(),
+                    product.getUid(),
+                    0,  // 글자수 체크 불필요
+                    null  // 본인 컨텐츠 체크 불필요
+            );
+            log.info("Point added for marketplace sell: seller={} product={}", sellerUid, product.getUid());
+        } catch (Exception e) {
+            log.warn("Failed to add point for marketplace sell: {}", e.getMessage());
+        }
 
         // 활동 로그 기록
         logActivity(

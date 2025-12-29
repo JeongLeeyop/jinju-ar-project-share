@@ -63,10 +63,9 @@
       <div v-else class="empty-container">
         <p>등록된 상품이 없습니다</p>
       </div>
-
     </div>
 
-    <!-- Floating Write Button (Mobile) -->
+    <!-- Floating Write Button (Mobile Only) -->
     <button class="write-post-btn-fixed" @click="openWriteModal">
       <span class="btn-text">상품 등록하기</span>
       <svg class="btn-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -769,7 +768,7 @@ export default class extends Vue {
   cursor: pointer;
   transition: all 0.3s ease;
   z-index: 100;
-  display: flex;
+  display: none; /* 기본적으로 숨김 (데스크톱에서는 사이드바 버튼 사용) */
   align-items: center;
   justify-content: center;
   gap: 8px;
@@ -788,6 +787,11 @@ export default class extends Vue {
   &:active {
     background: #042099;
     transform: translateY(0);
+  }
+
+  /* 모바일에서만 표시 */
+  @media screen and (max-width: 1024px) {
+    display: flex;
   }
 }
 

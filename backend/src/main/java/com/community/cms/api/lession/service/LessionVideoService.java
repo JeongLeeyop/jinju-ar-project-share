@@ -21,8 +21,10 @@ import com.community.cms.api.lession.dto.mapper.LessionVideoWatchHistoryMapper;
 import com.community.cms.api.lession.repository.LessionVideoFileRepository;
 import com.community.cms.api.lession.repository.LessionVideoRepository;
 import com.community.cms.api.lession.repository.LessionVideoWatchHistoryRepository;
+import com.community.cms.api.point.dto.PointHistoryDto;
 import com.community.cms.api.point.repository.PointHistoryRepository;
 import com.community.cms.api.point.service.PointHistoryService;
+import com.community.cms.api.point.service.PointService;
 import com.community.cms.api.push_alarm.service.PushAlarmService;
 import com.community.cms.api.user.repository.UserFcmTokenRepository;
 import com.community.cms.api.user.repository.UserRepository;
@@ -36,6 +38,7 @@ import com.community.cms.fcm.service.PushNotificationService;
 import com.community.cms.oauth.SinghaUser;
 
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 public interface LessionVideoService {
     LessionVideoDto.detail detail(SinghaUser authUser, Integer idx);
@@ -53,6 +56,7 @@ public interface LessionVideoService {
     void delete(SinghaUser authUser, LessionVideo lession);
 }
 
+@Slf4j
 @Service
 @AllArgsConstructor
 class LessionVideoServiceImpl implements LessionVideoService {
@@ -74,6 +78,9 @@ class LessionVideoServiceImpl implements LessionVideoService {
 
     @Autowired
     PointHistoryService pointHistoryService;
+
+    @Autowired
+    PointService pointService;
 
     @Autowired
     UserFcmTokenRepository userFcmTokenRepository;
@@ -165,8 +172,18 @@ class LessionVideoServiceImpl implements LessionVideoService {
         }
         User user = userRepository.findById(authUser.getUser().getUid())
                 .orElseThrow(() -> new NotFoundException(NotFound.USER));
+        
+        log.info("saveWatchHistory called: userUid={}, videoIdx={}, percent={}, channelUid={}", 
+                user.getUid(), dto.getVideoIdx(), dto.getPercent(), dto.getChannelUid());
+        
         Optional<LessionVideoWatchHistory> optional = lessionVideoWatchHistoryRepository
                 .findByVideoIdxAndUserUid(dto.getVideoIdx(), user.getUid());
+        
+        // 이전에 100% 완료한 적이 있는지 체크 (중복 적립 방지)
+        boolean wasCompleted = optional.isPresent() && optional.get().getPercent() == 100;
+        
+        log.info("Previous watch history: exists={}, wasCompleted={}", optional.isPresent(), wasCompleted);
+        
         LessionVideoWatchHistory entity;
         if (optional.isPresent()) {
             entity = optional.get();
@@ -179,11 +196,52 @@ class LessionVideoServiceImpl implements LessionVideoService {
         }
         entity.setUserUid(user.getUid());
         entity.setUpdateDate(LocalDateTime.now());
+        
         lessionVideoWatchHistoryRepository.save(entity);
 
-        if (dto.getPercent() == 100) {
+        log.info("Checking point eligibility: percent={}, wasCompleted={}, shouldGivePoint={}", 
+                dto.getPercent(), wasCompleted, (dto.getPercent() == 100 && !wasCompleted));
+
+        if (dto.getPercent() == 100 && !wasCompleted) {
+            log.info("100% completion detected - starting point award process");
+            
+            // 이벤트 기록
             eventHistoryService.add(new EventHistoryDto.add(EventType.VIDEO.toString(), user.getUid(),
                     dto.getChannelUid(), entity.getIdx(), null, null, null));
+            
+            // 포인트 적립 (강의 수강 완료) - 중복 적립 방지, 일일 제한 체크
+            try {
+                // 강의 정보 조회
+                Optional<LessionVideo> videoOptional = lessionVideoRepository.findById(dto.getVideoIdx());
+                if (videoOptional.isPresent()) {
+                    LessionVideo video = videoOptional.get();
+                    
+                    log.info("Attempting to add point for COURSE_COMPLETE: userUid={}, channelUid={}, videoIdx={}, videoTitle={}", 
+                            user.getUid(), dto.getChannelUid(), video.getIdx(), video.getTitle());
+                    
+                    PointHistoryDto result = pointService.addPointForEventWithValidation(
+                            user.getUid(),
+                            dto.getChannelUid(),
+                            "COURSE_COMPLETE",
+                            "강의 수강 완료: " + video.getTitle(),
+                            String.valueOf(video.getIdx()), // 강의 ID를 참조로 사용
+                            0,  // 강의는 글자수 체크 불필요
+                            null  // 본인 컨텐츠 체크 불필요
+                    );
+                    
+                    if (result != null) {
+                        log.info("Point added for COURSE_COMPLETE: userUid={}, amount={}", user.getUid(), result.getPointAmount());
+                    } else {
+                        log.info("Point NOT added for COURSE_COMPLETE (validation failed): userUid={}", user.getUid());
+                    }
+                } else {
+                    log.warn("Video not found for videoIdx={}", dto.getVideoIdx());
+                }
+            } catch (Exception e) {
+                log.error("Failed to add point for course completion: {}", e.getMessage(), e);
+            }
+        } else {
+            log.info("Skipping point award: percent={}, wasCompleted={}", dto.getPercent(), wasCompleted);
         }
     }
 

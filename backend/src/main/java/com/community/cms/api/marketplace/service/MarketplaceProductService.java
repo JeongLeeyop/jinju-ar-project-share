@@ -8,6 +8,7 @@ import com.community.cms.api.marketplace.repository.MarketplaceProductImageRepos
 import com.community.cms.api.marketplace.repository.MarketplaceProductRepository;
 import com.community.cms.api.marketplace.repository.MarketplacePurchaseRepository;
 import com.community.cms.api.marketplace.repository.OfflineMarketplaceRepository;
+import com.community.cms.api.point.service.PointService;
 import com.community.cms.api.user.repository.UserRepository;
 import com.community.cms.common.code.ChannelMemberPermissionType;
 import com.community.cms.entity.ChannelMemberPermission;
@@ -45,6 +46,7 @@ public class MarketplaceProductService {
     private final ChannelMemberRepository channelMemberRepository;
     private final ChannelMemberPermissionRepository permissionRepository;
     private final UserRepository userRepository;
+    private final PointService pointService;
 
     /**
      * 상품 등록
@@ -94,6 +96,21 @@ public class MarketplaceProductService {
         // 이미지 저장
         if (request.getImageUids() != null && !request.getImageUids().isEmpty()) {
             saveProductImages(productUid, request.getImageUids());
+        }
+
+        // 포인트 적립 (장터 상품 등록) - 일일 횟수 제한 적용
+        try {
+            pointService.addPointForEventWithValidation(
+                    userUid,
+                    channelUid,
+                    "MARKETPLACE_CREATE",
+                    "장터 상품 등록: " + request.getTitle(),
+                    productUid,
+                    0,  // 글자수 체크 불필요
+                    null  // 본인 컨텐츠 체크 불필요
+            );
+        } catch (Exception e) {
+            log.warn("Failed to add point for marketplace product creation: {}", e.getMessage());
         }
 
         log.info("Marketplace product created: {} by {}", productUid, userUid);
@@ -233,8 +250,26 @@ public class MarketplaceProductService {
         product.setPrice(request.getPrice());
         product.setStockQuantity(request.getStockQuantity());
 
+        String previousStatus = product.getStatus();
         if (request.getStatus() != null) {
             product.setStatus(request.getStatus());
+            
+            // 상태가 SOLD(판매완료)로 변경된 경우 포인트 적립 - 일일 횟수 제한 적용
+            if ("SOLD".equalsIgnoreCase(request.getStatus()) && !"SOLD".equalsIgnoreCase(previousStatus)) {
+                try {
+                    pointService.addPointForEventWithValidation(
+                            product.getSellerUid(),
+                            product.getChannelUid(),
+                            "MARKETPLACE_SELL",
+                            "장터 상품 판매 완료: " + product.getTitle(),
+                            product.getUid(),
+                            0,  // 글자수 체크 불필요
+                            null  // 본인 컨텐츠 체크 불필요
+                    );
+                } catch (Exception e) {
+                    log.warn("Failed to add point for marketplace product sell: {}", e.getMessage());
+                }
+            }
         }
 
         // 이미지 업데이트

@@ -115,3 +115,57 @@ export const getTargetUserPointHistory = (params: {
     size: params.size,
   },
 });
+
+/**
+ * 포인트 설정 인터페이스
+ */
+export interface PointSettingDto {
+  id?: number;
+  channelUid?: string;
+  // 포인트 적립량
+  postCreate: number;
+  commentCreate: number;
+  likeGive: number;
+  dailyAttendance: number;
+  marketplaceCreate: number;
+  marketplaceSell: number;
+  courseComplete: number;
+  // 일일 적립 횟수 제한 (0 = 무제한)
+  postDailyLimit: number;
+  commentDailyLimit: number;
+  likeDailyLimit: number;
+  marketplaceCreateDailyLimit: number;
+  marketplaceSellDailyLimit: number;
+  courseCompleteDailyLimit: number;
+  // 최소 글자수 제한
+  postMinLength: number;
+  commentMinLength: number;
+}
+
+/**
+ * 포인트 설정 조회 (관리자용)
+ */
+export const getPointSettings = (channelUid: string) => request({
+  url: `/points/settings`,
+  method: 'get',
+  params: { channelUid },
+});
+
+/**
+ * 포인트 설정 저장 (관리자용)
+ */
+export const savePointSettings = (channelUid: string, data: PointSettingDto) => request({
+  url: `/points/settings`,
+  method: 'put',
+  params: { channelUid },
+  data,
+});
+
+/**
+ * 포인트 설정 초기화 (관리자용)
+ */
+export const resetPointSettings = (channelUid: string) => request({
+  url: `/points/settings/reset`,
+  method: 'post',
+  params: { channelUid },
+});

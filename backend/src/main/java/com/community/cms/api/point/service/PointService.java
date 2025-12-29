@@ -13,6 +13,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -21,6 +22,7 @@ import java.util.stream.Collectors;
  * 포인트 서비스
  * - 포인트는 user 테이블의 전역 포인트(user.point)로 관리됨
  * - 포인트 히스토리는 채널별로 기록됨 (추적 목적)
+ * - 악용 방지 로직: 일일 제한, 중복 적립 방지, 최소 글자수, 본인 컨텐츠 제외
  */
 @Slf4j
 @Service
@@ -29,6 +31,7 @@ public class PointService {
 
     private final PointHistoryRepository pointHistoryRepository;
     private final UserRepository userRepository;
+    private final PointSettingService pointSettingService;
 
     /**
      * 포인트 적립/차감
@@ -136,6 +139,115 @@ public class PointService {
         result.put("totalPages", pointHistoryPage.getTotalPages());
         result.put("totalElements", pointHistoryPage.getTotalElements());
         result.put("currentPoint", currentPoint);
+        
+        return result;
+    }
+
+    /**
+     * 이벤트 발생 시 포인트 자동 적립
+     * 포인트 설정에 따라 해당 이벤트의 포인트를 적립합니다.
+     * 
+     * @param userUid 사용자 UID
+     * @param channelUid 채널 UID
+     * @param eventType 이벤트 타입 (POST, COMMENT, LIKE, ATTENDANCE, MARKETPLACE_CREATE, MARKETPLACE_SELL, COURSE_COMPLETE)
+     * @param description 설명
+     * @param referenceId 참조 ID
+     * @return 저장된 포인트 히스토리 (포인트가 0이면 null)
+     */
+    @Transactional
+    public PointHistoryDto addPointForEvent(String userUid, String channelUid, String eventType, 
+                                            String description, String referenceId) {
+        // 채널의 포인트 설정에서 해당 이벤트의 포인트 조회
+        Integer pointAmount = pointSettingService.getPointForEvent(channelUid, eventType);
+        
+        // 포인트가 0이면 적립하지 않음
+        if (pointAmount == null || pointAmount <= 0) {
+            log.debug("No point configured for event: channelUid={}, eventType={}", channelUid, eventType);
+            return null;
+        }
+        
+        // 포인트 적립
+        return addPoint(userUid, channelUid, eventType, pointAmount, description, referenceId);
+    }
+
+    /**
+     * 이벤트 발생 시 포인트 자동 적립 (악용 방지 로직 포함)
+     * 
+     * @param userUid 사용자 UID
+     * @param channelUid 채널 UID
+     * @param eventType 이벤트 타입 (POST, COMMENT, LIKE, MARKETPLACE_CREATE, MARKETPLACE_SELL, COURSE_COMPLETE)
+     * @param description 설명
+     * @param referenceId 참조 ID (게시글 UID, 댓글 UID 등)
+     * @param contentLength 컨텐츠 길이 (게시글/댓글 최소 글자수 체크용, 해당 없으면 0)
+     * @param contentOwnerUid 컨텐츠 소유자 UID (댓글/좋아요의 경우 원글 작성자, 해당 없으면 null)
+     * @return 저장된 포인트 히스토리 (적립 불가 시 null)
+     */
+    @Transactional
+    public PointHistoryDto addPointForEventWithValidation(String userUid, String channelUid, String eventType, 
+                                                          String description, String referenceId,
+                                                          int contentLength, String contentOwnerUid) {
+        // 채널의 포인트 설정에서 해당 이벤트의 포인트 조회
+        Integer pointAmount = pointSettingService.getPointForEvent(channelUid, eventType);
+        
+        // 포인트가 0이면 적립하지 않음
+        if (pointAmount == null || pointAmount <= 0) {
+            log.debug("No point configured for event: channelUid={}, eventType={}", channelUid, eventType);
+            return null;
+        }
+        
+        // ========== 악용 방지 체크 시작 ==========
+        
+        // 1. 본인 컨텐츠 체크 (댓글, 좋아요의 경우 본인 게시글에 대한 액션은 포인트 미지급)
+        if (contentOwnerUid != null && contentOwnerUid.equals(userUid)) {
+            log.debug("Point denied: Self-content action. userUid={}, eventType={}, referenceId={}", 
+                    userUid, eventType, referenceId);
+            return null;
+        }
+        
+        // 2. 최소 글자수 체크 (게시글, 댓글)
+        Integer minLength = pointSettingService.getMinLengthForEvent(channelUid, eventType);
+        if (minLength != null && minLength > 0 && contentLength < minLength) {
+            log.debug("Point denied: Content too short. userUid={}, eventType={}, length={}, minLength={}", 
+                    userUid, eventType, contentLength, minLength);
+            return null;
+        }
+        
+        // 3. 중복 적립 체크 (동일 참조 ID에 대한 중복 적립 방지)
+        // - 댓글: 같은 게시글에 여러 댓글 달아도 1회만 적립
+        // - 좋아요: 같은 게시글에 좋아요해도 1회만 적립
+        // - 강좌 수강 완료: 같은 강좌 수강해도 1회만 적립
+        boolean isDuplicateEvent = "COMMENT".equalsIgnoreCase(eventType) 
+                || "COMMENT_CREATE".equalsIgnoreCase(eventType)
+                || "LIKE".equalsIgnoreCase(eventType) 
+                || "LIKE_GIVE".equalsIgnoreCase(eventType)
+                || "COURSE_COMPLETE".equalsIgnoreCase(eventType);
+        
+        if (isDuplicateEvent && referenceId != null) {
+            boolean alreadyEarned = pointHistoryRepository
+                    .existsEarningByReference(userUid, channelUid, eventType, referenceId);
+            if (alreadyEarned) {
+                log.debug("Point denied: Duplicate earning. userUid={}, eventType={}, referenceId={}", 
+                        userUid, eventType, referenceId);
+                return null;
+            }
+        }
+        
+        // 4. 일일 적립 횟수 제한 체크
+        Integer dailyLimit = pointSettingService.getDailyLimitForEvent(channelUid, eventType);
+        if (dailyLimit != null && dailyLimit > 0) {
+            LocalDate today = LocalDate.now();
+            int todayEarnings = pointHistoryRepository.countDailyEarnings(userUid, channelUid, eventType, today);
+            if (todayEarnings >= dailyLimit) {
+                log.debug("Point denied: Daily limit reached. userUid={}, eventType={}, todayEarnings={}, limit={}", 
+                        userUid, eventType, todayEarnings, dailyLimit);
+                return null;
+            }
+        }
+        
+        // ========== 악용 방지 체크 통과 ==========
+        
+        // 포인트 적립 (point_history에 기록되므로 별도 이력 저장 불필요)
+        PointHistoryDto result = addPoint(userUid, channelUid, eventType, pointAmount, description, referenceId);
         
         return result;
     }

@@ -47,7 +47,16 @@
           </p>
         </div>
 
+        <!-- 로딩 스피너 -->
+        <div v-if="loadingPointSettings" class="loading-container">
+          <el-icon class="is-loading">
+            <i class="el-icon-loading"></i>
+          </el-icon>
+          <p class="loading-text">포인트 설정을 불러오는 중...</p>
+        </div>
+
         <!-- 포인트 설정 폼 -->
+        <div v-else>
         <div class="point-settings-form">
           <div class="point-setting-item">
             <div class="setting-info">
@@ -55,19 +64,65 @@
                 <i class="el-icon-edit"></i>
               </div>
               <div class="setting-details">
-                <h3 class="setting-title">게시글 작성</h3>
+                <h3 class="setting-title">
+                  게시글 작성
+                  <el-tooltip placement="top">
+                    <div slot="content">
+                      • 최소 {{ pointSettings.postMinLength }}자 이상 작성 시 포인트 지급<br>
+                      • 일일 최대 {{ pointSettings.postDailyLimit }}회 적립 가능 (0 = 무제한)
+                    </div>
+                    <i class="el-icon-question" style="color: #909399; margin-left: 4px;"></i>
+                  </el-tooltip>
+                </h3>
                 <p class="setting-description">게시판에 새 글을 작성할 때 적립되는 포인트</p>
+                <div class="abuse-prevention-notice">
+                  <el-alert
+                    type="info"
+                    :closable="false"
+                  >
+                    <div class="abuse-rules">
+                      • 최소 글자수 미달 시 포인트 미지급<br>
+                      • 일일 적립 횟수 제한 적용
+                    </div>
+                  </el-alert>
+                </div>
               </div>
             </div>
-            <div class="setting-input">
-              <el-input-number
-                v-model="pointSettings.postCreate"
-                :min="0"
-                :max="10000"
-                :step="10"
-                controls-position="right"
-              />
-              <span class="unit">P</span>
+            <div class="setting-input-group">
+              <div class="setting-input">
+                <el-input-number
+                  v-model="pointSettings.postCreate"
+                  :min="0"
+                  :max="10000"
+                  :step="10"
+                  controls-position="right"
+                />
+                <span class="unit">P</span>
+              </div>
+              <div class="setting-input-sub">
+                <span class="sub-label">일일 제한</span>
+                <el-input-number
+                  v-model="pointSettings.postDailyLimit"
+                  :min="0"
+                  :max="100"
+                  :step="1"
+                  controls-position="right"
+                  size="small"
+                />
+                <span class="sub-unit">회</span>
+              </div>
+              <div class="setting-input-sub">
+                <span class="sub-label">최소 글자수</span>
+                <el-input-number
+                  v-model="pointSettings.postMinLength"
+                  :min="0"
+                  :max="500"
+                  :step="5"
+                  controls-position="right"
+                  size="small"
+                />
+                <span class="sub-unit">자</span>
+              </div>
             </div>
           </div>
 
@@ -77,19 +132,69 @@
                 <i class="el-icon-chat-line-square"></i>
               </div>
               <div class="setting-details">
-                <h3 class="setting-title">댓글 작성</h3>
+                <h3 class="setting-title">
+                  댓글 작성
+                  <el-tooltip placement="top">
+                    <div slot="content">
+                      • 최소 {{ pointSettings.commentMinLength }}자 이상 작성 시 포인트 지급<br>
+                      • 본인 게시글에 댓글 작성 시 포인트 미지급<br>
+                      • 게시글당 1회만 적립 가능<br>
+                      • 일일 최대 {{ pointSettings.commentDailyLimit }}회 적립 가능 (0 = 무제한)
+                    </div>
+                    <i class="el-icon-question" style="color: #909399; margin-left: 4px;"></i>
+                  </el-tooltip>
+                </h3>
                 <p class="setting-description">게시글에 댓글을 작성할 때 적립되는 포인트</p>
+                <div class="abuse-prevention-notice">
+                  <el-alert
+                    type="info"
+                    :closable="false"
+                  >
+                    <div class="abuse-rules">
+                      • 최소 글자수 미달 시 포인트 미지급<br>
+                      • 본인 게시글에 댓글 작성 시 미지급<br>
+                      • 게시글당 1회만 적립 가능<br>
+                      • 일일 적립 횟수 제한 적용
+                    </div>
+                  </el-alert>
+                </div>
               </div>
             </div>
-            <div class="setting-input">
-              <el-input-number
-                v-model="pointSettings.commentCreate"
-                :min="0"
-                :max="10000"
-                :step="10"
-                controls-position="right"
-              />
-              <span class="unit">P</span>
+            <div class="setting-input-group">
+              <div class="setting-input">
+                <el-input-number
+                  v-model="pointSettings.commentCreate"
+                  :min="0"
+                  :max="10000"
+                  :step="10"
+                  controls-position="right"
+                />
+                <span class="unit">P</span>
+              </div>
+              <div class="setting-input-sub">
+                <span class="sub-label">일일 제한</span>
+                <el-input-number
+                  v-model="pointSettings.commentDailyLimit"
+                  :min="0"
+                  :max="100"
+                  :step="1"
+                  controls-position="right"
+                  size="small"
+                />
+                <span class="sub-unit">회</span>
+              </div>
+              <div class="setting-input-sub">
+                <span class="sub-label">최소 글자수</span>
+                <el-input-number
+                  v-model="pointSettings.commentMinLength"
+                  :min="0"
+                  :max="500"
+                  :step="1"
+                  controls-position="right"
+                  size="small"
+                />
+                <span class="sub-unit">자</span>
+              </div>
             </div>
           </div>
 
@@ -99,43 +204,82 @@
                 <i class="el-icon-star-on"></i>
               </div>
               <div class="setting-details">
-                <h3 class="setting-title">좋아요 누름</h3>
+                <h3 class="setting-title">
+                  좋아요 누름
+                  <el-tooltip placement="top">
+                    <div slot="content">
+                      • 본인 게시글 좋아요 시 포인트 미지급<br>
+                      • 게시글당 1회만 적립 가능<br>
+                      • 일일 최대 {{ pointSettings.likeDailyLimit }}회 적립 가능 (0 = 무제한)
+                    </div>
+                    <i class="el-icon-question" style="color: #909399; margin-left: 4px;"></i>
+                  </el-tooltip>
+                </h3>
                 <p class="setting-description">게시글이나 댓글에 좋아요를 누를 때 적립되는 포인트</p>
+                <div class="abuse-prevention-notice">
+                  <el-alert
+                    type="info"
+                    :closable="false"
+                  >
+                    <div class="abuse-rules">
+                      • 본인 게시글 좋아요 시 포인트 미지급<br>
+                      • 게시글당 1회만 적립 가능<br>
+                      • 일일 적립 횟수 제한 적용
+                    </div>
+                  </el-alert>
+                </div>
               </div>
             </div>
-            <div class="setting-input">
-              <el-input-number
-                v-model="pointSettings.likeGive"
-                :min="0"
-                :max="10000"
-                :step="10"
-                controls-position="right"
-              />
-              <span class="unit">P</span>
+            <div class="setting-input-group">
+              <div class="setting-input">
+                <el-input-number
+                  v-model="pointSettings.likeGive"
+                  :min="0"
+                  :max="10000"
+                  :step="10"
+                  controls-position="right"
+                />
+                <span class="unit">P</span>
+              </div>
+              <div class="setting-input-sub">
+                <span class="sub-label">일일 제한</span>
+                <el-input-number
+                  v-model="pointSettings.likeDailyLimit"
+                  :min="0"
+                  :max="100"
+                  :step="1"
+                  controls-position="right"
+                  size="small"
+                />
+                <span class="sub-unit">회</span>
+              </div>
             </div>
           </div>
 
-          <div class="point-setting-item">
+         <!--  <div class="point-setting-item">
             <div class="setting-info">
               <div class="setting-icon">
                 <i class="el-icon-user-solid"></i>
               </div>
               <div class="setting-details">
                 <h3 class="setting-title">출석 체크</h3>
-                <p class="setting-description">매일 첫 로그인 시 적립되는 포인트</p>
+                <p class="setting-description">매일 첫 로그인 시 적립되는 포인트 (현재 미구현)</p>
               </div>
             </div>
-            <div class="setting-input">
-              <el-input-number
-                v-model="pointSettings.dailyAttendance"
-                :min="0"
-                :max="10000"
-                :step="10"
-                controls-position="right"
-              />
-              <span class="unit">P</span>
+            <div class="setting-input-group">
+              <div class="setting-input">
+                <el-input-number
+                  v-model="pointSettings.dailyAttendance"
+                  :min="0"
+                  :max="10000"
+                  :step="10"
+                  controls-position="right"
+                  disabled
+                />
+                <span class="unit">P</span>
+              </div>
             </div>
-          </div>
+          </div> -->
 
           <div class="point-setting-item">
             <div class="setting-info">
@@ -143,19 +287,51 @@
                 <i class="el-icon-shopping-cart-2"></i>
               </div>
               <div class="setting-details">
-                <h3 class="setting-title">장터 상품 등록</h3>
+                <h3 class="setting-title">
+                  장터 상품 등록
+                  <el-tooltip placement="top">
+                    <div slot="content">
+                      • 일일 최대 {{ pointSettings.marketplaceCreateDailyLimit }}회 적립 가능 (0 = 무제한)
+                    </div>
+                    <i class="el-icon-question" style="color: #909399; margin-left: 4px;"></i>
+                  </el-tooltip>
+                </h3>
                 <p class="setting-description">장터에 상품을 등록할 때 적립되는 포인트</p>
+                <div class="abuse-prevention-notice">
+                  <el-alert
+                    type="info"
+                    :closable="false"
+                  >
+                    <div class="abuse-rules">
+                      • 일일 적립 횟수 제한 적용
+                    </div>
+                  </el-alert>
+                </div>
               </div>
             </div>
-            <div class="setting-input">
-              <el-input-number
-                v-model="pointSettings.marketplaceCreate"
-                :min="0"
-                :max="10000"
-                :step="10"
-                controls-position="right"
-              />
-              <span class="unit">P</span>
+            <div class="setting-input-group">
+              <div class="setting-input">
+                <el-input-number
+                  v-model="pointSettings.marketplaceCreate"
+                  :min="0"
+                  :max="10000"
+                  :step="10"
+                  controls-position="right"
+                />
+                <span class="unit">P</span>
+              </div>
+              <div class="setting-input-sub">
+                <span class="sub-label">일일 제한</span>
+                <el-input-number
+                  v-model="pointSettings.marketplaceCreateDailyLimit"
+                  :min="0"
+                  :max="100"
+                  :step="1"
+                  controls-position="right"
+                  size="small"
+                />
+                <span class="sub-unit">회</span>
+              </div>
             </div>
           </div>
 
@@ -165,19 +341,51 @@
                 <i class="el-icon-sold-out"></i>
               </div>
               <div class="setting-details">
-                <h3 class="setting-title">장터 상품 판매</h3>
+                <h3 class="setting-title">
+                  장터 상품 판매
+                  <el-tooltip placement="top">
+                    <div slot="content">
+                      • 일일 최대 {{ pointSettings.marketplaceSellDailyLimit || '무제한' }}회 적립 가능
+                    </div>
+                    <i class="el-icon-question" style="color: #909399; margin-left: 4px;"></i>
+                  </el-tooltip>
+                </h3>
                 <p class="setting-description">장터에서 상품을 판매했을 때 적립되는 포인트</p>
+                <div class="abuse-prevention-notice">
+                  <el-alert
+                    type="info"
+                    :closable="false"
+                  >
+                    <div class="abuse-rules">
+                      • 일일 적립 횟수 제한 적용 (0 = 무제한)
+                    </div>
+                  </el-alert>
+                </div>
               </div>
             </div>
-            <div class="setting-input">
-              <el-input-number
-                v-model="pointSettings.marketplaceSell"
-                :min="0"
-                :max="10000"
-                :step="10"
-                controls-position="right"
-              />
-              <span class="unit">P</span>
+            <div class="setting-input-group">
+              <div class="setting-input">
+                <el-input-number
+                  v-model="pointSettings.marketplaceSell"
+                  :min="0"
+                  :max="10000"
+                  :step="10"
+                  controls-position="right"
+                />
+                <span class="unit">P</span>
+              </div>
+              <div class="setting-input-sub">
+                <span class="sub-label">일일 제한</span>
+                <el-input-number
+                  v-model="pointSettings.marketplaceSellDailyLimit"
+                  :min="0"
+                  :max="100"
+                  :step="1"
+                  controls-position="right"
+                  size="small"
+                />
+                <span class="sub-unit">회</span>
+              </div>
             </div>
           </div>
 
@@ -187,19 +395,53 @@
                 <i class="el-icon-reading"></i>
               </div>
               <div class="setting-details">
-                <h3 class="setting-title">강좌 수강 완료</h3>
+                <h3 class="setting-title">
+                  강좌 수강 완료
+                  <el-tooltip placement="top">
+                    <div slot="content">
+                      • 강좌당 1회만 적립 가능<br>
+                      • 일일 최대 {{ pointSettings.courseCompleteDailyLimit || '무제한' }}회 적립 가능
+                    </div>
+                    <i class="el-icon-question" style="color: #909399; margin-left: 4px;"></i>
+                  </el-tooltip>
+                </h3>
                 <p class="setting-description">강좌를 완료했을 때 적립되는 포인트</p>
+                <div class="abuse-prevention-notice">
+                  <el-alert
+                    type="info"
+                    :closable="false"
+                  >
+                    <div class="abuse-rules">
+                      • 강좌당 1회만 적립 가능<br>
+                      • 일일 적립 횟수 제한 적용 (0 = 무제한)
+                    </div>
+                  </el-alert>
+                </div>
               </div>
             </div>
-            <div class="setting-input">
-              <el-input-number
-                v-model="pointSettings.courseComplete"
-                :min="0"
-                :max="10000"
-                :step="10"
-                controls-position="right"
-              />
-              <span class="unit">P</span>
+            <div class="setting-input-group">
+              <div class="setting-input">
+                <el-input-number
+                  v-model="pointSettings.courseComplete"
+                  :min="0"
+                  :max="10000"
+                  :step="10"
+                  controls-position="right"
+                />
+                <span class="unit">P</span>
+              </div>
+              <div class="setting-input-sub">
+                <span class="sub-label">일일 제한</span>
+                <el-input-number
+                  v-model="pointSettings.courseCompleteDailyLimit"
+                  :min="0"
+                  :max="100"
+                  :step="1"
+                  controls-position="right"
+                  size="small"
+                />
+                <span class="sub-unit">회</span>
+              </div>
             </div>
           </div>
         </div>
@@ -219,9 +461,11 @@
             size="large"
             icon="el-icon-refresh"
             @click="resetPointSettings"
+            :loading="saving"
           >
             기본값으로 초기화
           </el-button>
+        </div>
         </div>
       </div>
 
@@ -429,9 +673,18 @@
 import { Component, Vue } from 'vue-property-decorator';
 import CommunitySidebar from './components/communitySidebar.vue';
 import { getChannelDomainDetail } from '@/api/channel';
-import { getChannelMembersWithPoints, adminAdjustPoint, MemberWithPoint } from '@/api/point';
+import { 
+  getChannelMembersWithPoints, 
+  adminAdjustPoint, 
+  MemberWithPoint,
+  getPointSettings,
+  savePointSettings,
+  resetPointSettings,
+  PointSettingDto,
+} from '@/api/point';
 
 interface PointSettings {
+  // 포인트 적립량
   postCreate: number;
   commentCreate: number;
   likeGive: number;
@@ -439,6 +692,16 @@ interface PointSettings {
   marketplaceCreate: number;
   marketplaceSell: number;
   courseComplete: number;
+  // 일일 적립 횟수 제한 (0 = 무제한)
+  postDailyLimit: number;
+  commentDailyLimit: number;
+  likeDailyLimit: number;
+  marketplaceCreateDailyLimit: number;
+  marketplaceSellDailyLimit: number;
+  courseCompleteDailyLimit: number;
+  // 최소 글자수 제한
+  postMinLength: number;
+  commentMinLength: number;
 }
 
 interface Member {
@@ -461,6 +724,7 @@ interface Member {
 export default class extends Vue {
   private activeTab = 'point';
   private saving = false;
+  private loadingPointSettings = false;
   private currentChannelUid = '';
   private loadingMembers = false;
 
@@ -486,6 +750,16 @@ export default class extends Vue {
     marketplaceCreate: 100,
     marketplaceSell: 200,
     courseComplete: 150,
+    // 일일 제한
+    postDailyLimit: 10,
+    commentDailyLimit: 20,
+    likeDailyLimit: 30,
+    marketplaceCreateDailyLimit: 5,
+    marketplaceSellDailyLimit: 0,
+    courseCompleteDailyLimit: 0,
+    // 최소 글자수
+    postMinLength: 20,
+    commentMinLength: 5,
   };
 
   // 기본값 백업
@@ -497,6 +771,16 @@ export default class extends Vue {
     marketplaceCreate: 100,
     marketplaceSell: 200,
     courseComplete: 150,
+    // 일일 제한
+    postDailyLimit: 10,
+    commentDailyLimit: 20,
+    likeDailyLimit: 30,
+    marketplaceCreateDailyLimit: 5,
+    marketplaceSellDailyLimit: 0,
+    courseCompleteDailyLimit: 0,
+    // 최소 글자수
+    postMinLength: 20,
+    commentMinLength: 5,
   };
 
   // 회원 데이터
@@ -505,6 +789,7 @@ export default class extends Vue {
   async mounted() {
     await this.loadChannelInfo();
     await this.loadMembers();
+    await this.loadPointSettings();
   }
 
   private async loadChannelInfo() {
@@ -568,18 +853,38 @@ export default class extends Vue {
   }
 
   // 포인트 설정 저장
-  private savePointSettings() {
+  private async savePointSettings() {
+    if (!this.currentChannelUid) {
+      this.$message.error('채널 정보를 찾을 수 없습니다.');
+      return;
+    }
+
     this.saving = true;
 
-    // 실제로는 API 호출
-    setTimeout(() => {
+    try {
+      console.log('포인트 설정 저장 시도:', this.pointSettings);
+      const response = await savePointSettings(this.currentChannelUid, this.pointSettings);
+      console.log('포인트 설정 저장 응답:', response);
       this.$message.success('포인트 설정이 저장되었습니다.');
+      
+      // 저장 후 다시 로드하여 최신 데이터 확인
+      await this.loadPointSettings();
+    } catch (error: any) {
+      console.error('포인트 설정 저장 실패:', error);
+      console.error('에러 상세:', error.response);
+      this.$message.error(error.response?.data?.message || '포인트 설정 저장에 실패했습니다.');
+    } finally {
       this.saving = false;
-    }, 1000);
+    }
   }
 
   // 기본값으로 초기화
   private resetPointSettings() {
+    if (!this.currentChannelUid) {
+      this.$message.error('채널 정보를 찾을 수 없습니다.');
+      return;
+    }
+
     this.$confirm(
       '포인트 설정을 기본값으로 초기화하시겠습니까?',
       '설정 초기화',
@@ -588,12 +893,77 @@ export default class extends Vue {
         cancelButtonText: '취소',
         type: 'warning',
       },
-    ).then(() => {
-      this.pointSettings = { ...this.defaultPointSettings };
-      this.$message.success('포인트 설정이 기본값으로 초기화되었습니다.');
+    ).then(async () => {
+      this.saving = true;
+      try {
+        const response = await resetPointSettings(this.currentChannelUid);
+        const settings = response.data.settings;
+        this.pointSettings = {
+          postCreate: settings.postCreate,
+          commentCreate: settings.commentCreate,
+          likeGive: settings.likeGive,
+          dailyAttendance: settings.dailyAttendance,
+          marketplaceCreate: settings.marketplaceCreate,
+          marketplaceSell: settings.marketplaceSell,
+          courseComplete: settings.courseComplete,
+          // 일일 제한
+          postDailyLimit: settings.postDailyLimit ?? 10,
+          commentDailyLimit: settings.commentDailyLimit ?? 20,
+          likeDailyLimit: settings.likeDailyLimit ?? 30,
+          marketplaceCreateDailyLimit: settings.marketplaceCreateDailyLimit ?? 5,
+          marketplaceSellDailyLimit: settings.marketplaceSellDailyLimit ?? 0,
+          courseCompleteDailyLimit: settings.courseCompleteDailyLimit ?? 0,
+          // 최소 글자수
+          postMinLength: settings.postMinLength ?? 20,
+          commentMinLength: settings.commentMinLength ?? 5,
+        };
+        this.$message.success('포인트 설정이 기본값으로 초기화되었습니다.');
+      } catch (error: any) {
+        console.error('포인트 설정 초기화 실패:', error);
+        this.$message.error(error.response?.data?.message || '포인트 설정 초기화에 실패했습니다.');
+      } finally {
+        this.saving = false;
+      }
     }).catch(() => {
       // 취소
     });
+  }
+
+  // 포인트 설정 불러오기
+  private async loadPointSettings() {
+    if (!this.currentChannelUid) return;
+
+    this.loadingPointSettings = true;
+    try {
+      const response = await getPointSettings(this.currentChannelUid);
+      const settings = response.data;
+      this.pointSettings = {
+        postCreate: settings.postCreate ?? 100,
+        commentCreate: settings.commentCreate ?? 50,
+        likeGive: settings.likeGive ?? 10,
+        dailyAttendance: settings.dailyAttendance ?? 50,
+        marketplaceCreate: settings.marketplaceCreate ?? 100,
+        marketplaceSell: settings.marketplaceSell ?? 200,
+        courseComplete: settings.courseComplete ?? 150,
+        // 일일 제한
+        postDailyLimit: settings.postDailyLimit ?? 10,
+        commentDailyLimit: settings.commentDailyLimit ?? 20,
+        likeDailyLimit: settings.likeDailyLimit ?? 30,
+        marketplaceCreateDailyLimit: settings.marketplaceCreateDailyLimit ?? 5,
+        marketplaceSellDailyLimit: settings.marketplaceSellDailyLimit ?? 0,
+        courseCompleteDailyLimit: settings.courseCompleteDailyLimit ?? 0,
+        // 최소 글자수
+        postMinLength: settings.postMinLength ?? 20,
+        commentMinLength: settings.commentMinLength ?? 5,
+      };
+      // 기본값 백업도 업데이트
+      this.defaultPointSettings = { ...this.pointSettings };
+    } catch (error) {
+      console.error('포인트 설정 조회 실패:', error);
+      // 기본값 유지
+    } finally {
+      this.loadingPointSettings = false;
+    }
   }
 
   // 포인트 조정 모달 열기
@@ -753,6 +1123,37 @@ export default class extends Vue {
   margin: 0;
 }
 
+// 로딩 컨테이너
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 20px;
+  gap: 16px;
+
+  .loading-icon {
+    font-size: 48px;
+    color: #073DFF;
+    animation: rotating 1.5s linear infinite;
+  }
+
+  .loading-text {
+    font-size: 16px;
+    color: #666;
+    margin: 0;
+  }
+}
+
+@keyframes rotating {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 // 포인트 설정 폼
 .point-settings-form {
   display: flex;
@@ -772,8 +1173,8 @@ export default class extends Vue {
   transition: all 0.2s;
 
   &:hover {
-    background: #F0F2FF;
-    border-color: #073DFF;
+    // background: #F0F2FF;
+    // border-color: #073DFF;
   }
 }
 
@@ -835,6 +1236,77 @@ export default class extends Vue {
     font-size: 16px;
     font-weight: 600;
     color: #073DFF;
+  }
+}
+
+// 설정 입력 그룹 (포인트 + 일일 제한 + 최소 글자수)
+.setting-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+.setting-input-sub {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  
+  .sub-label {
+    font-size: 12px;
+    color: #909399;
+    min-width: 55px;
+  }
+  
+  ::v-deep .el-input-number {
+    width: 100px;
+    
+    .el-input__inner {
+      height: 32px;
+      border-radius: 6px;
+      text-align: left;
+      padding-left: 10px;
+      padding-right: 40px;
+    }
+  }
+  
+  .sub-unit {
+    font-size: 12px;
+    color: #666;
+    min-width: 20px;
+  }
+}
+
+// 악용 방지 안내 (항목별)
+.abuse-prevention-notice {
+  margin-top: 12px;
+  
+  ::v-deep .el-alert {
+    padding: 12px 16px;
+    background: #F8F9FA;
+    border-radius: 8px;
+    text-align: left;
+
+    .el-alert__title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #5470d6;
+      margin-bottom: 6px;
+
+      i {
+        margin-right: 4px;
+      }
+    }
+
+    .el-alert__content {
+      padding: 0;
+    }
+  }
+  
+  .abuse-rules {
+    font-size: 13px;
+    color: #606266;
+    line-height: 1.7;
   }
 }
 

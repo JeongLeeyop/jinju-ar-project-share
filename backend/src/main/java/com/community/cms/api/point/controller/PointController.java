@@ -3,7 +3,9 @@ package com.community.cms.api.point.controller;
 import com.community.cms.api.channel.repository.ChannelMemberRepository;
 import com.community.cms.api.channel.repository.ChannelRepository;
 import com.community.cms.api.point.dto.PointHistoryDto;
+import com.community.cms.api.point.dto.PointSettingDto;
 import com.community.cms.api.point.service.PointService;
+import com.community.cms.api.point.service.PointSettingService;
 import com.community.cms.api.user.repository.UserRepository;
 import com.community.cms.entity2.Channel;
 import com.community.cms.entity.User;
@@ -39,6 +41,7 @@ import java.util.stream.Collectors;
 public class PointController {
 
     private final PointService pointService;
+    private final PointSettingService pointSettingService;
     private final UserRepository userRepository;
     private final ChannelRepository channelRepository;
     private final ChannelMemberRepository channelMemberRepository;
@@ -342,5 +345,91 @@ public class PointController {
         
         @NotBlank(message = "설명은 필수입니다")
         private String description;
+    }
+
+    // ==================== 포인트 설정 API ====================
+
+    /**
+     * 포인트 설정 조회
+     * GET /api/points/settings?channelUid={channelUid}
+     */
+    @GetMapping("/settings")
+    public ResponseEntity<?> getPointSettings(
+            @RequestParam String channelUid,
+            @AuthenticationPrincipal SinghaUser userDetails) {
+        try {
+            User currentUser = authenticationUtil.validateAndGetCurrentUser(userDetails);
+            validateChannelAdmin(channelUid, currentUser.getUid());
+            
+            PointSettingDto settings = pointSettingService.getPointSetting(channelUid);
+            return ResponseEntity.ok(settings);
+        } catch (RuntimeException e) {
+            log.error("Failed to get point settings: {}", e.getMessage());
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+    }
+
+    /**
+     * 포인트 설정 저장
+     * PUT /api/points/settings
+     */
+    @PutMapping("/settings")
+    public ResponseEntity<?> savePointSettings(
+            @RequestParam String channelUid,
+            @Valid @RequestBody PointSettingDto request,
+            @AuthenticationPrincipal SinghaUser userDetails) {
+        try {
+            log.info("Received point settings save request: channelUid={}, data={}", channelUid, request);
+            
+            User currentUser = authenticationUtil.validateAndGetCurrentUser(userDetails);
+            validateChannelAdmin(channelUid, currentUser.getUid());
+            
+            PointSettingDto saved = pointSettingService.savePointSetting(channelUid, request);
+            
+            log.info("Point settings saved successfully: channelUid={}, admin={}, saved={}", 
+                    channelUid, currentUser.getUid(), saved);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "포인트 설정이 저장되었습니다");
+            response.put("settings", saved);
+            
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            log.error("Failed to save point settings: channelUid={}, error={}", channelUid, e.getMessage(), e);
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+    }
+
+    /**
+     * 포인트 설정 초기화
+     * POST /api/points/settings/reset
+     */
+    @PostMapping("/settings/reset")
+    public ResponseEntity<?> resetPointSettings(
+            @RequestParam String channelUid,
+            @AuthenticationPrincipal SinghaUser userDetails) {
+        try {
+            User currentUser = authenticationUtil.validateAndGetCurrentUser(userDetails);
+            validateChannelAdmin(channelUid, currentUser.getUid());
+            
+            PointSettingDto reset = pointSettingService.resetPointSetting(channelUid);
+            
+            log.info("Point settings reset: channelUid={}, admin={}", channelUid, currentUser.getUid());
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "포인트 설정이 기본값으로 초기화되었습니다");
+            response.put("settings", reset);
+            
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            log.error("Failed to reset point settings: {}", e.getMessage());
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
     }
 }

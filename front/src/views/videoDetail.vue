@@ -70,6 +70,9 @@ export default class extends Vue {
   }
 
   private player: any = '';
+  private lastPlaybackTime: number = 0;
+  private isUserSeek: boolean = false;
+  private seekThreshold: number = 5; // 5초 이상 점프는 seek로 간주
 
   private loading = true;
 
@@ -198,9 +201,13 @@ export default class extends Vue {
 
   private onPlayerReady(event: any) {
     event.target.playVideo();
+    this.lastPlaybackTime = event.target.getCurrentTime();
     this.Interval = setInterval(() => {
         this.trackWatchPercentage();
     }, 60000); // 1분마다 저장
+    
+    // Seek 감지를 위한 주기적 체크
+    this.startSeekDetection();
   }
 
   private onPlayerStateChange(event: any) {
@@ -209,6 +216,9 @@ export default class extends Vue {
         this.$message.info('학습이 완료되었습니다.');
       } else if (event.data === (window as any).YT.PlayerState.PAUSED) {
         this.trackWatchPercentage();
+      } else if (event.data === (window as any).YT.PlayerState.PLAYING) {
+        // 재생 시작 시 현재 시간 업데이트
+        this.lastPlaybackTime = this.player.getCurrentTime();
       }
   }
 
@@ -226,12 +236,38 @@ export default class extends Vue {
       this.saveWatchPercentage(percentage.toFixed(0), currentTime.toFixed(0));
   }
 
+  private seekDetectionInterval: any = null;
+
+  private startSeekDetection() {
+    // 200ms마다 시간 점프 감지
+    this.seekDetectionInterval = setInterval(() => {
+      if (!this.player || typeof this.player.getCurrentTime !== 'function') return;
+      
+      const currentTime = this.player.getCurrentTime();
+      const timeDiff = Math.abs(currentTime - this.lastPlaybackTime);
+      
+      // 큰 시간 점프 감지 (5초 이상 앞으로 또는 뒤로)
+      if (timeDiff > this.seekThreshold && !this.isUserSeek) {
+        console.log(`Seek detected: ${this.lastPlaybackTime.toFixed(1)}s -> ${currentTime.toFixed(1)}s`);
+        // 이전 위치로 되돌림
+        this.player.seekTo(this.lastPlaybackTime, true);
+        this.$message.warning('진도를 건너뛸 수 없습니다.');
+      } else if (timeDiff <= 1.0) {
+        // 정상적인 재생 (1초 이하 차이)
+        this.lastPlaybackTime = currentTime;
+      }
+    }, 200);
+  }
+
   private handleGoBack() {
     this.$router.push({ name: 'Video', params: { lessionUid: this.$route.params.lessionUid } });
   }
 
   beforeDestroy() {
     clearInterval(this.Interval);
+    if (this.seekDetectionInterval) {
+      clearInterval(this.seekDetectionInterval);
+    }
     if (this.player) {
         this.player.destroy();
         this.player = null; // 인스턴스를 null로 설정하여 메모리 해제
