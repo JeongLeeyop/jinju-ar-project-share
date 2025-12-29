@@ -468,7 +468,7 @@ export default class extends Vue {
 }
 
 .category-pills { flex: 0 1 calc(100% - 110px) ;display: flex; align-items: center; gap: 10px; flex-wrap: wrap; overflow-x: auto; -webkit-overflow-scrolling: touch; overflow-y: hidden;}
-.category-pills::-webkit-scrollbar{width:5px}
+.category-pills::-webkit-scrollbar{display: none;}
 .category-pills::-webkit-scrollbar-thumb{background-color:#272c8f;border-radius:10px}
 .category-pills::-webkit-scrollbar-track{background-color:#d2d2d2;border-radius:10px}
 
