@@ -24,7 +24,7 @@
           </svg>
         </button>
 
-        <router-link to="/" class="nav-item" :class="{ active: isActiveRoute('Home') }" @click.native="toggleMobileMenu">
+        <router-link :to="homeLink" class="nav-item" :class="{ active: isActiveRoute('Home') }" @click.native="toggleMobileMenu">
           <svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path
               d="M14.6249 17.4686C14.6249 17.2446 14.4426 17.0624 14.2187 17.0624H11.7812C11.5572 17.0624 11.3749 17.2446 11.3749 17.4686V21.9374H14.6249V17.4686ZM21.9374 21.5311C21.9374 22.6526 21.0276 23.5624 19.9062 23.5624H6.09365C4.97217 23.5624 4.0624 22.6526 4.0624 21.5311V12.5227L3.01187 13.5743C2.69458 13.8917 2.18026 13.8916 1.86294 13.5743C1.54569 13.257 1.54568 12.7427 1.86294 12.4254L11.5632 2.72407V2.72301C12.3566 1.93141 13.6423 1.93095 14.4355 2.72407L24.1369 12.4254C24.4542 12.7427 24.4541 13.257 24.1369 13.5743C23.8196 13.8916 23.3052 13.8916 22.9879 13.5743L21.9374 12.5238V21.5311ZM16.2499 21.9374H19.9062C20.1302 21.9374 20.3124 21.7551 20.3124 21.5311V10.8988L13.2866 3.873C13.1287 3.7152 12.8709 3.71458 12.7111 3.87406L5.6874 10.8977V21.5311C5.6874 21.7551 5.86964 21.9374 6.09365 21.9374H9.7499V17.4686C9.74994 16.3472 10.6597 15.4374 11.7812 15.4374H14.2187C15.3401 15.4374 16.2499 16.3472 16.2499 17.4686V21.9374Z"
@@ -106,14 +106,26 @@
         <!-- 오프라인 장터 섹션 (Only show when in community) -->
         <template v-if="isInCommunity">
           <div class="nav-divider"></div>
-          <div class="nav-item nav-section-title">
+          <div class="nav-item nav-section-title" @click="openCreateOfflineMarketplaceModal">
             <span>오프라인 장터</span>
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M10 5V15M15 10H5" stroke="#073DFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
           </div>
-          <div class="nav-item nav-subitem" @click="navigateToMarketplace('sancheong-clinic')">
-            <span>산청 한의원</span>
+          <div v-if="loadingOfflineMarketplaces" class="nav-item nav-subitem empty-state">
+            <span>장터 불러오는 중...</span>
           </div>
-          <div class="nav-item nav-subitem" @click="navigateToMarketplace('dongsan-cafe')">
-            <span>동산카페</span>
+          <div
+            v-for="market in offlineMarketplaces"
+            :key="market.uid"
+            class="nav-item nav-subitem"
+            :class="{ active: ($route.name === 'OfflineMarketplace' || $route.name === 'Marketplace') && $route.params.marketplaceUid === market.uid }"
+            @click="navigateToOfflineMarketplace(market.uid)"
+          >
+            <span>{{ market.name }}</span>
+          </div>
+          <div v-if="!loadingOfflineMarketplaces && offlineMarketplaces.length === 0" class="nav-item nav-subitem empty-state">
+            <span>등록된 장터가 없습니다</span>
           </div>
 
           <!-- 마이페이지 섹션 -->
@@ -219,11 +231,60 @@
     
       <!-- Create Space Modal Component -->
       <CreateSpaceModal
-        v-if="createSpaceModalVisible"
-        class="create-space-modal"
         :visible.sync="createSpaceModalVisible"
         @space-created="handleSpaceCreated"
       />
+
+      <!-- 오프라인 장터 생성 모달 (모바일 전체 화면) -->
+      <div 
+        v-if="createOfflineMarketplaceModalVisible" 
+        class="mobile-fullscreen-modal"
+        @click="createOfflineMarketplaceModalVisible = false"
+      >
+        <div class="mobile-fullscreen-modal-content" @click.stop>
+          <button class="modal-close-btn" @click="createOfflineMarketplaceModalVisible = false">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+
+          <h3 class="modal-main-title">오프라인 장터를 생성합니다.</h3>
+
+          <div class="form-section">
+            <div class="form-group-spacing">
+              <label class="form-label-large">장터 이름</label>
+              <div class="input-wrapper">
+                <input
+                  v-model="newOfflineMarketplace.name"
+                  type="text"
+                  placeholder="오프라인 장터 이름"
+                  class="space-name-input"
+                />
+              </div>
+            </div>
+
+            <div class="form-group-spacing">
+              <label class="form-label-large">설명 (선택)</label>
+              <div class="input-wrapper textarea-wrapper">
+                <textarea 
+                  v-model="newOfflineMarketplace.description" 
+                  placeholder="장터에 대한 설명을 입력해주세요."
+                  class="space-name-input textarea-input"
+                  rows="3"
+                ></textarea>
+              </div>
+            </div>
+          </div>
+
+          <button 
+            class="create-submit-btn" 
+            @click="handleCreateOfflineMarketplace"
+            :disabled="creatingOfflineMarketplace || !newOfflineMarketplace.name.trim()"
+          >
+            {{ creatingOfflineMarketplace ? '생성 중...' : '오프라인 장터 생성하기' }}
+          </button>
+        </div>
+      </div>
 
       <!-- User Modals - 항상 렌더링 (모바일 대응) -->
       <UserInfo :userModalVisible="userModalVisible" @close="userModalVisible = false;" />
@@ -305,6 +366,7 @@ import CreateSpaceModal from '@/views/components/CreateSpaceModal.vue';
 import { getUserInfo, updateOnline } from '@/api/user';
 import { getChannelMemberCount, getChannelDomainDetail } from '@/api/channel';
 import { getSpacesByChannel, Space } from '@/api/space';
+import { getOfflineMarketplaces, createOfflineMarketplace, OfflineMarketplace } from '@/api/marketplace';
 import { checkPermissionByUser } from '@/api/channelMemberPermission';
 import { EventBus, EVENTS } from '@/utils/eventBus';
 import path from 'path';
@@ -338,6 +400,7 @@ export default class extends Vue {
     // Fetch member count, spaces, and permissions on initial load
     this.fetchMemberCount();
     await this.loadSpaces();
+    await this.loadOfflineMarketplaces();
     await this.checkPermissions();
 
     // EventBus: 포인트 갱신 이벤트 리스닝
@@ -399,6 +462,18 @@ export default class extends Vue {
 
   private loadingSpaces = false;
 
+  private offlineMarketplaces: OfflineMarketplace[] = [];
+
+  private loadingOfflineMarketplaces = false;
+
+  // 오프라인 장터 생성 모달 관련
+  private createOfflineMarketplaceModalVisible = false;
+  private creatingOfflineMarketplace = false;
+  private newOfflineMarketplace = {
+    name: '',
+    description: '',
+  };
+
   // Permission and role flags
   private hasManagerPermission = false;
 
@@ -410,6 +485,7 @@ export default class extends Vue {
   private async handlechangepath() {
     this.fetchMemberCount();
     await this.loadSpaces();
+    await this.loadOfflineMarketplaces();
     await this.checkPermissions();
     this.mobileMenuOpen = false;
     this.showMobileProfile = false;
@@ -437,11 +513,22 @@ export default class extends Vue {
       return;
     }
 
-    const channelUid = this.$route.params.domain;
-    if (!channelUid) return;
+    const domain = this.$route.params.domain;
+    if (!domain) {
+      this.spaces = [];
+      return;
+    }
 
     try {
       this.loadingSpaces = true;
+      const channelResponse = await getChannelDomainDetail(domain as string);
+      const channelUid = channelResponse?.data?.uid;
+
+      if (!channelUid) {
+        this.spaces = [];
+        return;
+      }
+
       const response = await getSpacesByChannel(channelUid as string);
       this.spaces = response.data || [];
     } catch (error) {
@@ -449,6 +536,30 @@ export default class extends Vue {
       this.spaces = [];
     } finally {
       this.loadingSpaces = false;
+    }
+  }
+
+  private async loadOfflineMarketplaces() {
+    if (!this.isInCommunity) {
+      this.offlineMarketplaces = [];
+      return;
+    }
+
+    const channelUid = this.$route.params.domain;
+    if (!channelUid) {
+      this.offlineMarketplaces = [];
+      return;
+    }
+
+    try {
+      this.loadingOfflineMarketplaces = true;
+      const response = await getOfflineMarketplaces(channelUid as string);
+      this.offlineMarketplaces = response.data || [];
+    } catch (error) {
+      console.error('오프라인 장터 목록 조회 실패:', error);
+      this.offlineMarketplaces = [];
+    } finally {
+      this.loadingOfflineMarketplaces = false;
     }
   }
 
@@ -524,7 +635,8 @@ export default class extends Vue {
   }
 
   private handleHome() {
-    this.$router.push({ name: 'Home' });
+    const target = this.homeLink;
+    this.$router.push(target);
   }
 
   private activeMenu() {
@@ -564,7 +676,21 @@ export default class extends Vue {
   }
 
   private moveHome() {
-    this.$router.push({ name: 'Home' });
+    const target = this.homeLink;
+    this.$router.push(target);
+  }
+
+  get homeLink() {
+    if (this.isInCommunity) {
+      return {
+        name: 'CommunityMain',
+        params: {
+          domain: this.$route.params.domain || 'default',
+        },
+      };
+    }
+
+    return { name: 'Home' };
   }
 
   private isActiveRoute(routeName: string): boolean {
@@ -581,7 +707,7 @@ export default class extends Vue {
       'Calendar': ['Calendar'],
       'Marketplace': ['Marketplace', 'MarketplaceDetail'],
       'Member': ['Member', 'MemberDetail'],
-      'Home': ['Home'],
+      'Home': ['Home', 'CommunityMain'],
     };
 
     const relatedRoutes = routeMap[routeName] || [routeName];
@@ -609,6 +735,35 @@ export default class extends Vue {
   private handleCreateSpace() {
     this.createSpaceModalVisible = true;
     this.toggleMobileMenu();
+  }
+
+  // 오프라인 장터 생성 모달 열기
+  private openCreateOfflineMarketplaceModal() {
+    this.newOfflineMarketplace = { name: '', description: '' };
+    this.createOfflineMarketplaceModalVisible = true;
+    this.toggleMobileMenu();
+  }
+
+  // 오프라인 장터 생성
+  private async handleCreateOfflineMarketplace() {
+    const channelUid = this.$route.params.domain;
+    if (!channelUid || !this.newOfflineMarketplace.name.trim()) return;
+
+    try {
+      this.creatingOfflineMarketplace = true;
+      await createOfflineMarketplace(channelUid as string, {
+        name: this.newOfflineMarketplace.name,
+        description: this.newOfflineMarketplace.description,
+      });
+      this.$message.success('오프라인 장터가 생성되었습니다');
+      this.createOfflineMarketplaceModalVisible = false;
+      await this.loadOfflineMarketplaces();
+    } catch (error: any) {
+      const message = error.response?.data?.message || '오프라인 장터 생성에 실패했습니다';
+      this.$message.error(message);
+    } finally {
+      this.creatingOfflineMarketplace = false;
+    }
   }
 
   private async handleSpaceCreated(space: Space) {
@@ -1523,6 +1678,190 @@ export default class extends Vue {
 
 ::v-deep .el-popper.alarm {
   z-index: 10000 !important;
+}
+
+/* 모바일 전체 화면 모달 스타일 (오프라인 장터 생성) */
+.mobile-fullscreen-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 10002;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.mobile-fullscreen-modal-content {
+  width: 100%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+  background: #FFF;
+  border-radius: 16px;
+  padding: 40px 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+  position: relative;
+  animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.mobile-fullscreen-modal-content .modal-close-btn {
+  position: absolute;
+  right: 16px;
+  top: 16px;
+  width: 32px;
+  height: 32px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  color: #444;
+  transition: color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:hover {
+    color: #000;
+  }
+}
+
+.mobile-fullscreen-modal-content .modal-main-title {
+  color: #444;
+  text-align: center;
+  font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 150%;
+  margin: 0;
+  letter-spacing: -1px;
+}
+
+.mobile-fullscreen-modal-content .form-section {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+}
+
+.mobile-fullscreen-modal-content .form-group-spacing {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.mobile-fullscreen-modal-content .form-label-large {
+  color: #222;
+  font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 100%;
+  text-align: left;
+}
+
+.mobile-fullscreen-modal-content .input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 48px;
+  border-radius: 10px;
+  border: 1px solid #CECECE;
+  padding: 0 16px;
+  background: #FFF;
+  transition: border-color 0.2s;
+
+  &:focus-within {
+    border-color: #073DFF;
+  }
+
+  &.textarea-wrapper {
+    height: auto;
+    min-height: 100px;
+    padding: 12px 16px;
+    align-items: flex-start;
+  }
+}
+
+.mobile-fullscreen-modal-content .space-name-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  color: #222;
+  font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 20px;
+  background: transparent;
+  width: 100%;
+
+  &::placeholder {
+    color: #888;
+  }
+}
+
+.mobile-fullscreen-modal-content .textarea-input {
+  resize: vertical;
+  min-height: 76px;
+  line-height: 1.5;
+}
+
+.mobile-fullscreen-modal-content .create-submit-btn {
+  width: 100%;
+  height: 50px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 10px;
+  border: 1px solid #073DFF;
+  background: #073DFF;
+  color: #FFF;
+  font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 100%;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover:not(:disabled) {
+    background: #0535e6;
+    border-color: #0535e6;
+  }
+
+  &:disabled {
+    background: #CECECE;
+    border-color: #CECECE;
+    cursor: not-allowed;
+  }
+}
+
+@media (max-width: 500px) {
+  .mobile-fullscreen-modal {
+    padding: 0;
+  }
+
+  .mobile-fullscreen-modal-content {
+    max-width: 100%;
+    max-height: 100%;
+    height: 100%;
+    border-radius: 0;
+    padding: 60px 24px 40px;
+  }
 }
 </style>
 
