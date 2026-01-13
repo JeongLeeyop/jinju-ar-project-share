@@ -111,6 +111,18 @@ public class ChannelController {
         return ResponseEntity.ok(channelService.getMemberCountByDomain(domain));
     }
 
+    // 사용자가 생성한 커뮤니티 개수 조회
+    @GetMapping("my-channel-count")
+    public ResponseEntity<Long> getMyChannelCount(@AuthenticationPrincipal SinghaUser authUser) {
+        return ResponseEntity.ok(channelService.getMyChannelCount(authUser));
+    }
+
+    // 커뮤니티 생성 가능 여부 확인 (최대 3개)
+    @GetMapping("can-create")
+    public ResponseEntity<Boolean> canCreateChannel(@AuthenticationPrincipal SinghaUser authUser) {
+        return ResponseEntity.ok(channelService.canCreateChannel(authUser));
+    }
+
     // @PutMapping
     // public ResponseEntity updateSecretStatus(@AuthenticationPrincipal SinghaUser authUser, @RequestBody ChannelDto.updateSecretStatus updateDto) {
     //     channelService.updateSecretStatus(authUser, updateDto);

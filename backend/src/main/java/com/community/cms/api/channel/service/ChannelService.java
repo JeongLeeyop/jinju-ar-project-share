@@ -88,11 +88,20 @@ public interface ChannelService {
     boolean validateCode(Channel channel, String code);
 
     Long getMemberCountByDomain(String domain);
+    
+    // 사용자가 생성한 커뮤니티 개수 조회
+    Long getMyChannelCount(SinghaUser authUser);
+    
+    // 커뮤니티 생성 가능 여부 확인 (최대 3개)
+    Boolean canCreateChannel(SinghaUser authUser);
 }
 
 @Service
 @AllArgsConstructor
 class ChannelServiceImpl implements ChannelService {
+
+    // 최대 커뮤니티 생성 개수
+    private static final int MAX_CHANNEL_COUNT = 3;
 
     private final ChannelRepository channelRepository;
     // private final ChannelUserRepository channelUserRepository;
@@ -260,6 +269,12 @@ class ChannelServiceImpl implements ChannelService {
     @Transactional
     @Override
     public void add(SinghaUser authUser, ChannelDto.add addDto) {
+        // 최대 커뮤니티 생성 개수 검증
+        long channelCount = channelRepository.countByUserUid(authUser.getUser().getUid());
+        if (channelCount >= MAX_CHANNEL_COUNT) {
+            throw new RuntimeException("커뮤니티는 최대 " + MAX_CHANNEL_COUNT + "개까지만 생성할 수 있습니다.");
+        }
+        
         // 모든 회원이 커뮤니티 생성 가능
         if (!this.checkDomainDuplicate(addDto.getDomain())) {
             throw new DomainDuplicateException();
@@ -420,5 +435,22 @@ class ChannelServiceImpl implements ChannelService {
 
     private void clearRelation(Channel entity) {
         entity.getImagesList().forEach(x -> x.setChannel(null));
+    }
+    
+    @Override
+    public Long getMyChannelCount(SinghaUser authUser) {
+        if (authUser == null) {
+            return 0L;
+        }
+        return channelRepository.countByUserUid(authUser.getUser().getUid());
+    }
+    
+    @Override
+    public Boolean canCreateChannel(SinghaUser authUser) {
+        if (authUser == null) {
+            return false;
+        }
+        long count = channelRepository.countByUserUid(authUser.getUser().getUid());
+        return count < MAX_CHANNEL_COUNT;
     }
 }

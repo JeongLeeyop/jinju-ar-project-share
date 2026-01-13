@@ -69,3 +69,15 @@ export const getChannelMemberCount = (domain: string) => request({
   url: `${PATH}/domain/${domain}/member-count`,
   method: 'get',
 });
+
+// 사용자가 생성한 커뮤니티 개수 조회
+export const getMyChannelCount = () => request({
+  url: `${PATH}/my-channel-count`,
+  method: 'get',
+});
+
+// 커뮤니티 생성 가능 여부 확인 (최대 3개)
+export const canCreateChannel = () => request({
+  url: `${PATH}/can-create`,
+  method: 'get',
+});

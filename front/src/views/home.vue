@@ -164,7 +164,7 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import { getChannelList, getChannelCategory } from '@/api/channel';
+import { getChannelList, getChannelCategory, canCreateChannel } from '@/api/channel';
 import UserModal from '@/views/components/userModal.vue';
 import Pagination from '@/components/Pagination/index.vue';
 import { UserModule } from '@/store/modules/user';
@@ -271,11 +271,22 @@ export default class extends Vue {
     this.filterVisible = true;
   }
 
-  private handleChannelCreate() {
+  private async handleChannelCreate() {
     if (!UserModule.isLogin) {
       this.userModalVisible = true;
     } else {
-      this.$router.push({ name: 'CreateCommunity' });
+      // 커뮤니티 생성 가능 여부 확인
+      try {
+        const response = await canCreateChannel();
+        if (response.data === true) {
+          this.$router.push({ name: 'CreateCommunity' });
+        } else {
+          this.$message.warning('커뮤니티는 최대 3개까지만 생성할 수 있습니다.');
+        }
+      } catch (error: any) {
+        const message = error.response?.data?.message || '커뮤니티 생성 가능 여부를 확인할 수 없습니다.';
+        this.$message.error(message);
+      }
     }
   }
 

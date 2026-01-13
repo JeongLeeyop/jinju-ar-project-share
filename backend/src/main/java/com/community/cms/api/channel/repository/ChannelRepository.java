@@ -15,4 +15,7 @@ public interface ChannelRepository extends JpaRepository<Channel, String>, Query
     List<Channel> findByUserUid(String uid);
     List<Channel> findByChannelMemberUserUid(String uid);
     Optional<Channel> findByDomain(String domain);
+    
+    // 사용자가 생성한 채널 개수
+    long countByUserUid(String userUid);
 }
