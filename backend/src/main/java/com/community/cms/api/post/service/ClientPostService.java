@@ -17,6 +17,7 @@ import org.springframework.util.StringUtils;
 import com.community.cms.api.board.exception.BoardNotFoundException;
 import com.community.cms.api.board.repository.BoardRepository;
 import com.community.cms.api.channel.repository.ChannelRepository;
+import com.community.cms.api.channel.service.ChannelMemberPermissionService;
 import com.community.cms.api.event.dto.EventHistoryDto;
 import com.community.cms.api.event.service.EventHistoryService;
 import com.community.cms.api.new_alarm.repository.NewAlarmRepository;
@@ -33,6 +34,7 @@ import com.community.cms.api.post.repository.PostRepository;
 import com.community.cms.api.post.repository.query.PostQuery;
 import com.community.cms.api.user.repository.UserRepository;
 import com.community.cms.api.user.service.ClientUserService;
+import com.community.cms.common.code.ChannelMemberPermissionType;
 import com.community.cms.common.exception.NotFoundException;
 import com.community.cms.common.exception.code.NotFound;
 import com.community.cms.entity.Board;
@@ -45,6 +47,7 @@ import com.community.cms.entity2.EventType;
 import com.community.cms.oauth.SinghaUser;
 
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 public interface ClientPostService {
 	Page<PostDto.ClientList> list(PostSearch search, Pageable pageable, SinghaUser authUser);
@@ -55,6 +58,7 @@ public interface ClientPostService {
 	void delete(String uid, SinghaUser authUser);
 }
 
+@Slf4j
 @Service
 @AllArgsConstructor
 class ClientPostServiceImpl implements ClientPostService {
@@ -67,6 +71,7 @@ class ClientPostServiceImpl implements ClientPostService {
 	private final PostLikeRepository postLikeRepository;
 	private final PostQuery postQuery;
 	private final NewAlarmRepository newAlarmRepository;
+	private final ChannelMemberPermissionService permissionService;
 
 	@Override
 	public Page<PostDto.ClientList> list(PostSearch search, Pageable pageable, SinghaUser authUser) {
@@ -169,6 +174,13 @@ class ClientPostServiceImpl implements ClientPostService {
 			post.setParentUid(null);
 		}
 		
+		// ✅ 게시판 이용 권한 검증 (POST_USE 권한 필요) - 채널 게시판인 경우만
+		if (StringUtils.hasText(addDto.getChannelUid()) && authUser != null) {
+			log.info("📝 [커뮤니티 게시글 생성] 권한 검증 - userUid: {}, channelUid: {}", authUser.getUser().getUid(), addDto.getChannelUid());
+			permissionService.validatePermission(authUser.getUser().getUid(), addDto.getChannelUid(), ChannelMemberPermissionType.POST_USE);
+			log.info("✅ [커뮤니티 게시글 생성] POST_USE 권한 검증 통과 - userUid: {}", authUser.getUser().getUid());
+		}
+		
 		// 공지사항 권한 체크: 슈퍼 관리자(ROLE_ADMIN) 또는 채널 관리자만 공지사항 생성 가능
 		if (post.isNoticeStatus()) {
 			boolean hasNoticePermission = false;
@@ -225,6 +237,13 @@ class ClientPostServiceImpl implements ClientPostService {
 	public PostDto.ClientDetail update(Post post, PostDto.Update postUpdateDto, SinghaUser authUser) {
 		Board board = boardRepository.findById(post.getBoardUid()).orElseThrow(() -> new BoardNotFoundException());
 
+		// ✅ 게시판 이용 권한 검증 (POST_USE 권한 필요) - 채널 게시판인 경우만
+		if (post.getChannelUid() != null && authUser != null) {
+			log.info("📝 [커뮤니티 게시글 수정] 권한 검증 - userUid: {}, channelUid: {}", authUser.getUser().getUid(), post.getChannelUid());
+			permissionService.validatePermission(authUser.getUser().getUid(), post.getChannelUid(), ChannelMemberPermissionType.POST_USE);
+			log.info("✅ [커뮤니티 게시글 수정] POST_USE 권한 검증 통과 - userUid: {}", authUser.getUser().getUid());
+		}
+
 		boolean authCheck = true;
 		if (post.getChannelUid() != null) {
 			Channel channel = channelRepository.findById(post.getChannelUid()).orElseThrow(() -> new NotFoundException(NotFound.CHANNEL));
@@ -278,10 +297,17 @@ class ClientPostServiceImpl implements ClientPostService {
 
 		Board board = boardRepository.findById(post.getBoardUid()).orElseThrow(() -> new BoardNotFoundException());
 		
+		// ✅ 게시판 이용 권한 검증 (POST_USE 권한 필요) - 채널 게시판인 경우만
+		if (post.getChannelUid() != null && authUser != null) {
+			log.info("📝 [커뮤니티 게시글 삭제] 권한 검증 - userUid: {}, channelUid: {}", authUser.getUser().getUid(), post.getChannelUid());
+			permissionService.validatePermission(authUser.getUser().getUid(), post.getChannelUid(), ChannelMemberPermissionType.POST_USE);
+			log.info("✅ [커뮤니티 게시글 삭제] POST_USE 권한 검증 통과 - userUid: {}", authUser.getUser().getUid());
+		}
+		
 		boolean authCheck = true;
 		if (post.getChannelUid() != null) {
 			Channel channel = channelRepository.findById(post.getChannelUid()).orElseThrow(() -> new NotFoundException(NotFound.CHANNEL));
-			if (channel.getUserUid().equals(authUser.getUser().getUid())) {
+			if (authUser != null && channel.getUserUid().equals(authUser.getUser().getUid())) {
 				authCheck = false;
 			}
 		} 

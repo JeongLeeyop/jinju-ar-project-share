@@ -34,6 +34,8 @@ import com.community.cms.api.user.dto.UserFcmToken;
 import com.community.cms.api.user.exception.UserNotFoundException;
 import com.community.cms.api.user.repository.UserFcmTokenRepository;
 import com.community.cms.api.user.repository.UserRepository;
+import com.community.cms.api.channel.service.ChannelMemberPermissionService;
+import com.community.cms.common.code.ChannelMemberPermissionType;
 import com.community.cms.entity.Board;
 import com.community.cms.entity.BoardField;
 import com.community.cms.entity.Post;
@@ -44,6 +46,7 @@ import com.community.cms.fcm.service.PushNotificationService;
 import com.community.cms.oauth.SinghaUser;
 
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 public interface PostService {
 	Page<PostDto.Detail> list(PostSearch postSearch, Pageable pageable);
@@ -52,11 +55,12 @@ public interface PostService {
 
 	PostDto.Detail add(PostDto.Add addDto, SinghaUser userDetail);
 
-	PostDto.Detail update(Post post, PostDto.Update updateDto);
+	PostDto.Detail update(Post post, PostDto.Update updateDto, SinghaUser userDetail);
 
-	void delete(Post post);
+	void delete(Post post, SinghaUser userDetail);
 }
 
+@Slf4j
 @Service
 @AllArgsConstructor
 class PostServiceImpl implements PostService {
@@ -66,6 +70,7 @@ class PostServiceImpl implements PostService {
     private final EventHistoryService eventHistoryService;
     private final UserFcmTokenRepository userFcmTokenRepository;
     private final NewAlarmService newAlarmService;
+    private final ChannelMemberPermissionService permissionService;
 
 	@Autowired
     PushNotificationService pushNotificationService;
@@ -90,6 +95,14 @@ class PostServiceImpl implements PostService {
 	public PostDto.Detail add(PostDto.Add addDto, SinghaUser userDetail) {
 		if (userDetail == null || userDetail.getUsername() == null) throw new UserNotFoundException("잘못된 접근입니다.");
 		User user = userRepository.findByUserId(userDetail.getUsername()).orElseThrow(() -> new UserNotFoundException("잘못된 접근입니다."));
+		
+		// ✅ 게시판 이용 권한 검증 (POST_USE 권한 필요)
+		if (StringUtils.hasText(addDto.getChannelUid())) {
+			log.info("📝 [게시글 생성] 권한 검증 - userUid: {}, channelUid: {}", user.getUid(), addDto.getChannelUid());
+			permissionService.validatePermission(user.getUid(), addDto.getChannelUid(), ChannelMemberPermissionType.POST_USE);
+			log.info("✅ [게시글 생성] POST_USE 권한 검증 통과 - userUid: {}", user.getUid());
+		}
+		
 		Post post = PostMapper.INSTANCE.addDtoToEntity(addDto);
 		Board board = boardRepository.findById(post.getBoardUid()).orElseThrow(() -> new BoardNotFoundException());
 		validate(board.getFieldList(), addDto.getDataList());
@@ -175,7 +188,17 @@ class PostServiceImpl implements PostService {
 
 	@Transactional
 	@Override
-	public PostDto.Detail update(Post post, PostDto.Update updateDto) {
+	public PostDto.Detail update(Post post, PostDto.Update updateDto, SinghaUser userDetail) {
+		// ✅ 게시판 이용 권한 검증 (POST_USE 권한 필요)
+		if (StringUtils.hasText(post.getChannelUid())) {
+			if (userDetail == null || userDetail.getUsername() == null) throw new UserNotFoundException("잘못된 접근입니다.");
+			User user = userRepository.findByUserId(userDetail.getUsername()).orElseThrow(() -> new UserNotFoundException("잘못된 접근입니다."));
+			
+			log.info("📝 [게시글 수정] 권한 검증 - userUid: {}, channelUid: {}", user.getUid(), post.getChannelUid());
+			permissionService.validatePermission(user.getUid(), post.getChannelUid(), ChannelMemberPermissionType.POST_USE);
+			log.info("✅ [게시글 수정] POST_USE 권한 검증 통과 - userUid: {}", user.getUid());
+		}
+		
 		post.getTags().forEach(t -> t.setPost(null));
 		
 		PostMapper.INSTANCE.updateDtoToEntity(updateDto, post);
@@ -189,7 +212,17 @@ class PostServiceImpl implements PostService {
 
 	@Transactional
 	@Override
-	public void delete(Post post) {
+	public void delete(Post post, SinghaUser userDetail) {
+		// ✅ 게시판 이용 권한 검증 (POST_USE 권한 필요)
+		if (StringUtils.hasText(post.getChannelUid())) {
+			if (userDetail == null || userDetail.getUsername() == null) throw new UserNotFoundException("잘못된 접근입니다.");
+			User user = userRepository.findByUserId(userDetail.getUsername()).orElseThrow(() -> new UserNotFoundException("잘못된 접근입니다."));
+			
+			log.info("📝 [게시글 삭제] 권한 검증 - userUid: {}, channelUid: {}", user.getUid(), post.getChannelUid());
+			permissionService.validatePermission(user.getUid(), post.getChannelUid(), ChannelMemberPermissionType.POST_USE);
+			log.info("✅ [게시글 삭제] POST_USE 권한 검증 통과 - userUid: {}", user.getUid());
+		}
+		
 		// postRepository.delete(post);
 		post.setDeleteStatus(true);
 		postRepository.save(post);

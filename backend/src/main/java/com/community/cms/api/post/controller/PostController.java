@@ -83,13 +83,16 @@ public class PostController {
 	@PutMapping("{uid}")
 	public ResponseEntity<PostDto.Detail> update(
 			@PathVariable("uid") Post post,
-			@Valid @RequestBody PostDto.Update updateDto) {
-		return ResponseEntity.ok(postService.update(post, updateDto));
+			@Valid @RequestBody PostDto.Update updateDto,
+			@AuthenticationPrincipal SinghaUser userDetail) {
+		return ResponseEntity.ok(postService.update(post, updateDto, userDetail));
 	}
 	
 	@DeleteMapping("{uid}")
-	public ResponseEntity delete(@PathVariable("uid") Post post) {
-		postService.delete(post);
+	public ResponseEntity delete(
+			@PathVariable("uid") Post post,
+			@AuthenticationPrincipal SinghaUser userDetail) {
+		postService.delete(post, userDetail);
 		return ResponseEntity.ok().build();
 	}
 	
