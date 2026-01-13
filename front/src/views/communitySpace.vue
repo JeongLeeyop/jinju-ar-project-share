@@ -171,12 +171,12 @@
                   
                   <!-- 댓글 내용 (수정 모드) -->
                   <div v-else class="comment-edit-area">
-                    <input 
-                      type="text" 
-                      class="comment-input" 
+                    <textarea 
+                      class="comment-edit-textarea" 
                       v-model="editingCommentContent[comment.uid]"
-                      @keyup.enter="saveCommentEdit(post.uid, comment.uid)"
-                    />
+                      @keyup.ctrl.enter="saveCommentEdit(post.uid, comment.uid)"
+                      rows="3"
+                    ></textarea>
                     <div class="comment-edit-actions">
                       <el-button size="mini" @click="cancelCommentEdit(comment.uid)">취소</el-button>
                       <el-button size="mini" type="primary" @click="saveCommentEdit(post.uid, comment.uid)">저장</el-button>
@@ -186,20 +186,19 @@
               </div>
 
               <div class="comment-input-area">
-                <input 
-                  type="text" 
-                  class="comment-input" 
+                <textarea 
+                  class="comment-textarea" 
                   placeholder="댓글을 입력하세요." 
                   v-model="commentInputs[post.uid]"
-                  @keyup.enter="submitComment(post.uid)"
-                />
-                <button 
+                  @keyup.ctrl.enter="submitComment(post.uid)"
+                  rows="3"
+                ></textarea>
+                <el-button 
+                  icon="el-icon-s-promotion" 
                   class="comment-submit-btn"
                   @click="submitComment(post.uid)"
                   :disabled="!commentInputs[post.uid] || !commentInputs[post.uid].trim()"
-                >
-                  댓글입력
-                </button>
+                ></el-button>
               </div>
             </div>
           </div>
@@ -1137,12 +1136,17 @@ display: flex;
   font-size: 20px;
   font-weight: 400;
   line-height: 150%;
+  white-space: pre-wrap;
+  word-break: break-word;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
 
   &.expanded {
-    white-space: normal;
+    display: block;
+    -webkit-line-clamp: unset;
     overflow: visible;
   }
 }
@@ -1150,7 +1154,8 @@ display: flex;
 .comment-input-area {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 12px;
+  margin-top: 10px;
 }
 
 .comment-edit-area {
@@ -1160,16 +1165,67 @@ display: flex;
   margin-top: 10px;
 }
 
+.comment-edit-textarea {
+  width: 100%;
+  min-height: 60px;
+  max-height: 150px;
+  padding: 12px 14px;
+  border: 1px solid #CECECE;
+  border-radius: 10px;
+  color: #222;
+  font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.5;
+  outline: none;
+  transition: border-color 0.2s;
+  resize: none;
+  box-sizing: border-box;
+
+  &::placeholder {
+    color: #888;
+  }
+
+  &:focus {
+    border-color: #073DFF;
+  }
+}
+
 .comment-edit-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 8px;
+}
+
+.comment-textarea {
+  flex: 1;
+  min-height: 52px;
+  max-height: 120px;
+  padding: 14px 16px;
+  border: 1px solid #CECECE;
+  border-radius: 10px;
+  color: #222;
+  font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 150%;
+  outline: none;
+  transition: border-color 0.2s;
+  resize: none;
+  box-sizing: border-box;
+
+  &::placeholder {
+    color: #888;
+  }
+
+  &:focus {
+    border-color: #073DFF;
+  }
 }
 
 .comment-input {
   flex: 1;
   height: 52px;
-  padding: 0 16px;
+  padding: 6px 16px;
   border: 1px solid #CECECE;
   border-radius: 10px;
   color: #222;
@@ -1190,26 +1246,26 @@ display: flex;
 }
 
 .comment-submit-btn {
-  width: 136px;
+  width: 52px;
   height: 52px;
   padding: 0;
   background: #073DFF;
   border: none;
   border-radius: 10px;
   color: #FFF;
-  font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
-  font-size: 18px;
-  font-weight: 700;
-  line-height: 100%;
+  font-size: 20px;
   cursor: pointer;
   transition: background 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 
   &:hover {
-    background: #0530CC;
+    background: #0631CC;
   }
 
   &:active {
-    background: #042099;
+    background: #042299;
   }
 
   &:disabled {

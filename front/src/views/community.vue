@@ -120,6 +120,7 @@
               :boardUid="boardUid"
               :channelUid="channelUid"
               @refresh="handleCommentChange(post)"
+              @comment-count-change="(delta) => updateCommentCount(post, delta)"
             />
           </div>
         </div>
@@ -435,6 +436,11 @@ export default class extends Vue {
         $state.complete();
       });
     }, 1000);
+  }
+
+  // 댓글 수 업데이트 (게시글 목록 새로고침 없이)
+  private updateCommentCount(post: any, delta: number) {
+    post.commentCount = (post.commentCount || 0) + delta;
   }
 
   // 게시글 액션 처리 (수정/삭제)

@@ -5,16 +5,33 @@
             <div class="comment-item" v-for="comment in commentList" :key="comment.uid">
             <div class="comment-item-inner">
                 <div class="writer">{{ comment.writer }}</div>
+                <div class="comment-header-right">
+                  <div class="date_wr">{{ comment.createDate | parseDate('YY.MM.DD') }}</div>
+                  <el-dropdown v-if="comment.hasAuthority" trigger="click" @command="handleCommentAction">
+                    <span class="el-dropdown-link">
+                      <i class="el-icon-more"></i>
+                    </span>
+                    <el-dropdown-menu slot="dropdown">
+                      <el-dropdown-item :command="{action: 'edit', comment: comment}">수정</el-dropdown-item>
+                      <el-dropdown-item :command="{action: 'delete', commentUid: comment.uid}">삭제</el-dropdown-item>
+                    </el-dropdown-menu>
+                  </el-dropdown>
+                </div>
             </div>
-            <div class="txt">{{ comment.contents }}</div>
-            <div class="date_wr">{{ comment.createDate | parseDate('YY.MM.DD') }}</div>
-            <div class="btn_wr">
-                <el-button v-if="comment.hasAuthority" @click="deleteComment(comment.uid)" type="danger" class="del_btn">삭제</el-button>
+            <!-- 일반 모드 -->
+            <div v-if="!editingCommentUid || editingCommentUid !== comment.uid" class="txt">{{ comment.contents }}</div>
+            <!-- 수정 모드 -->
+            <div v-else class="comment-edit-area">
+              <textarea v-model="editingCommentContent" class="comment-edit-textarea" rows="3"></textarea>
+              <div class="comment-edit-actions">
+                <el-button size="small" @click="cancelEdit">취소</el-button>
+                <el-button size="small" type="primary" @click="saveEdit(comment.uid)">저장</el-button>
+              </div>
             </div>
             </div>
         </div>
     <div class="comment-input-wr">
-        <input v-model="commentForm.contents" type="text" placeholder="댓글을 입력해주세요" @keyup.enter="addComment()">
+        <textarea v-model="commentForm.contents" placeholder="댓글을 입력해주세요" rows="3" @keyup.ctrl.enter="addComment()" class="comment-textarea"></textarea>
         <el-button icon="el-icon-s-promotion" @click="addComment()" class="btn"></el-button>
     </div>
     <Pagination :total="commentTotalElements" :page.sync="commentListQuery.page" :limit.sync="commentListQuery.size" @pagination="getCommentList" />
@@ -22,7 +39,7 @@
 </template>
 
 <script lang="ts">
-import { addComment, deleteComment, getCommentList } from '@/api/comment';
+import { addComment, deleteComment, getCommentList, updateComment } from '@/api/comment';
 import { Component, Prop, Vue } from 'vue-property-decorator';
 import Pagination from '@/components/Pagination/index.vue';
 import { ChannelModule } from '@/store/modules/channel';
@@ -63,6 +80,10 @@ export default class extends Vue {
 
   private commentList = [];
 
+  // 수정 모드 관련
+  private editingCommentUid: string = '';
+  private editingCommentContent: string = '';
+
   private getCommentList() {
     this.commentListQuery = {
         ...this.commentListQuery,
@@ -93,28 +114,65 @@ export default class extends Vue {
         this.$message.info('댓글을 작성했습니다.');
         this.getCommentList();
         this.commentForm.contents = '';
-        // 부모 컴포넌트에 refresh 이벤트 emit (댓글 수 업데이트)
-        this.$emit('refresh');
+        // 부모 컴포넌트에 댓글 수 증가 이벤트 emit
+        this.$emit('comment-count-change', 1);
       }).catch((error) => {
         this.$message.warning(error.response.data);
       });
     });
   }
 
-  private deleteComment(postUid: string) {
+  private deleteComment(commentUid: string) {
     this.$confirm('정말 댓글을 삭제하시겠습니까?', '댓글 삭제', {
       confirmButtonText: '삭제',
       cancelButtonText: '취소',
       type: 'warning',
     }).then(() => {
-      deleteComment(postUid).then(() => {
+      deleteComment(commentUid).then(() => {
         this.$message.info('댓글을 삭제했습니다.');
         this.getCommentList();
-        // 부모 컴포넌트에 refresh 이벤트 emit (댓글 수 업데이트)
-        this.$emit('refresh');
+        // 부모 컴포넌트에 댓글 수 감소 이벤트 emit
+        this.$emit('comment-count-change', -1);
       }).catch((error) => {
         this.$message.warning(error.response.data);
       });
+    });
+  }
+
+  // 댓글 액션 처리 (수정/삭제)
+  private handleCommentAction(command: any) {
+    const { action, commentUid, comment } = command;
+    if (action === 'delete') {
+      this.deleteComment(commentUid);
+    } else if (action === 'edit') {
+      this.startEdit(comment);
+    }
+  }
+
+  // 수정 모드 시작
+  private startEdit(comment: any) {
+    this.editingCommentUid = comment.uid;
+    this.editingCommentContent = comment.contents;
+  }
+
+  // 수정 취소
+  private cancelEdit() {
+    this.editingCommentUid = '';
+    this.editingCommentContent = '';
+  }
+
+  // 수정 저장
+  private saveEdit(commentUid: string) {
+    if (!this.editingCommentContent.trim()) {
+      this.$message.warning('댓글 내용을 입력해주세요.');
+      return;
+    }
+    updateComment(commentUid, { contents: this.editingCommentContent }).then(() => {
+      this.$message.success('댓글이 수정되었습니다.');
+      this.cancelEdit();
+      this.getCommentList();
+    }).catch((error) => {
+      this.$message.warning(error.response?.data || '댓글 수정에 실패했습니다.');
     });
   }
 
@@ -123,3 +181,228 @@ export default class extends Vue {
   }
 }
 </script>
+
+<style scoped>
+.comment-box {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.comment-box.active {
+  opacity: 1;
+}
+
+.comment-item-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.comment-item {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px 0;
+  border-bottom: 1px solid #EBEBEB;
+}
+
+.comment-item:last-child {
+  border-bottom: none;
+}
+
+.comment-item-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.writer {
+  color: #222;
+  font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 100%;
+}
+
+.txt {
+  color: #222;
+  font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 160%;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.comment-edit-area {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.comment-edit-textarea {
+  width: 100%;
+  min-height: 80px;
+  padding: 12px 14px;
+  border: 1px solid #073DFF;
+  border-radius: 8px;
+  color: #222;
+  font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 150%;
+  outline: none;
+  resize: none;
+  box-sizing: border-box;
+}
+
+.comment-edit-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.date_wr {
+  color: #888;
+  font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 100%;
+}
+
+.comment-header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.el-dropdown-link {
+  cursor: pointer;
+  color: #888;
+  font-size: 18px;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s;
+}
+
+.el-dropdown-link:hover {
+  color: #222;
+}
+
+.el-dropdown-link i {
+  font-size: 18px;
+}
+
+.comment-input-wr {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.comment-textarea {
+  flex: 1;
+  min-height: 52px;
+  max-height: 120px;
+  padding: 14px 16px;
+  border: 1px solid #CECECE;
+  border-radius: 10px;
+  color: #222;
+  font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 150%;
+  outline: none;
+  transition: border-color 0.2s;
+  resize: none;
+  box-sizing: border-box;
+}
+
+.comment-textarea::placeholder {
+  color: #888;
+}
+
+.comment-textarea:focus {
+  border-color: #073DFF;
+}
+
+.comment-input-wr .btn {
+  width: 52px;
+  height: 52px;
+  padding: 0;
+  background: #073DFF;
+  border: none;
+  border-radius: 10px;
+  color: #FFF;
+  font-size: 20px;
+  cursor: pointer;
+  transition: background 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.comment-input-wr .btn:hover {
+  background: #0631CC;
+}
+
+.comment-input-wr .btn:active {
+  background: #042299;
+}
+
+.el-divider {
+  margin: 0 0 10px 0;
+}
+
+/* 반응형 스타일 */
+@media screen and (max-width: 768px) {
+  .comment-item {
+    padding: 16px 0;
+    gap: 10px;
+  }
+
+  .writer {
+    font-size: 14px;
+  }
+
+  .txt {
+    font-size: 14px;
+  }
+
+  .date_wr {
+    font-size: 12px;
+  }
+
+  .comment-textarea {
+    min-height: 44px;
+    padding: 12px 14px;
+    font-size: 14px;
+  }
+
+  .comment-input-wr .btn {
+    width: 44px;
+    height: 44px;
+    font-size: 18px;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .comment-input-wr {
+    gap: 8px;
+  }
+
+  .comment-textarea {
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+
+  .comment-input-wr .btn {
+    width: 40px;
+    height: 40px;
+    font-size: 16px;
+  }
+}
+</style>

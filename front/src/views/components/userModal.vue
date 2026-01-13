@@ -207,6 +207,14 @@ mounted() {
 @Watch('userModalVisible')
   private onUserModalVisibleChange(val: boolean) {
     this.localModalVisible = val;
+    // 모달이 열릴 때 로그인 폼 초기화 및 로그인 화면으로 이동
+    if (val === true) {
+      this.localActiveStep = 'Login';
+      this.loginForm = {
+        username: '',
+        password: '',
+      };
+    }
 }
 
 @Watch('localModalVisible')
@@ -386,17 +394,13 @@ private loginForm = {
       if (valid) {
         this.loading = true;
         UserModule.Login(this.loginForm).then(async () => {
-          this.loading = false;
-          await UserModule.GetUserInfo();
-          if (UserModule.isLogin) {
-            await ChannelModule.InitChannelList();
-            this.$message.info('로그인에 성공하셨습니다.');
-            this.$router.go(0);
-          } else {
-            this.$message.warning('로그인에 실패하였습니다. 아이디나 패스워드를 확인하세요.');
-          }
+          // 로그인 성공 시 즉시 페이지 새로고침 (Vue 반응성 업데이트 전에)
+          // 사용자 정보와 채널 정보는 새로고침 후 자동으로 로드됨
+          this.$message.info('로그인에 성공하셨습니다.');
+          window.location.reload();
         }).catch((err: any) => {
           this.loading = false;
+          this.$message.warning('로그인에 실패하였습니다. 아이디나 패스워드를 확인하세요.');
         });
       }
     });
@@ -575,6 +579,11 @@ private loginForm = {
     this.findEmailForm.concatNumber = '';
     this.foundEmail = '';
     this.localActiveStep = 'Login';
+    // 로그인 폼 초기화
+    this.loginForm = {
+      username: '',
+      password: '',
+    };
   }
 
   private viewRegister() {

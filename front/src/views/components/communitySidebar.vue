@@ -297,83 +297,105 @@ export default class extends Vue {
   private currentChannelUid = '';
 
   async mounted() {
-    await this.loadSpaces();
-    await this.loadOfflineMarketplaces();
-    await this.checkChannelAdminPermission();
-    await this.checkPermissions();
+    // UI 블로킹 없이 비동기로 실행 (await 제거)
+    this.initializeData();
   }
 
   @Watch('$route.params.domain')
   private async onDomainChange() {
-    await this.loadSpaces();
-    await this.loadOfflineMarketplaces();
-    await this.checkChannelAdminPermission();
-    await this.checkPermissions();
+    // UI 블로킹 없이 비동기로 실행
+    this.initializeData();
   }
 
-  private async checkChannelAdminPermission() {
-    // 퍼블리싱 테스트용으로 관리자 체크 비활성화 - 모두에게 표시
-    // this.isChannelAdmin = false;
-    // return;
-    
+  // 캐시 키 생성
+  private get permissionCacheKey(): string {
+    const domain = this.$route.params.domain;
+    const userId = UserModule.userId;
+    return `sidebar_permissions_${domain}_${userId}`;
+  }
+
+  // 캐시된 권한 정보 로드
+  private loadCachedPermissions() {
+    try {
+      const cached = localStorage.getItem(this.permissionCacheKey);
+      if (cached) {
+        const { hasManagerPermission, isChannelCreator, isChannelAdmin, timestamp } = JSON.parse(cached);
+        // 캐시 유효시간: 5분
+        if (Date.now() - timestamp < 5 * 60 * 1000) {
+          this.hasManagerPermission = hasManagerPermission;
+          this.isChannelCreator = isChannelCreator;
+          this.isChannelAdmin = isChannelAdmin;
+          return true;
+        }
+      }
+    } catch (e) {
+      // 캐시 로드 실패 시 무시
+    }
+    return false;
+  }
+
+  // 권한 정보 캐시 저장
+  private savePermissionsToCache() {
+    try {
+      localStorage.setItem(this.permissionCacheKey, JSON.stringify({
+        hasManagerPermission: this.hasManagerPermission,
+        isChannelCreator: this.isChannelCreator,
+        isChannelAdmin: this.isChannelAdmin,
+        timestamp: Date.now(),
+      }));
+    } catch (e) {
+      // 캐시 저장 실패 시 무시
+    }
+  }
+
+  // 모든 데이터를 병렬로 로드
+  private initializeData() {
+    // 1. 먼저 캐시된 권한 정보 로드 (즉시 UI 표시)
+    this.loadCachedPermissions();
+
+    // 2. 백그라운드에서 모든 데이터 로드
+    Promise.all([
+      this.loadSpaces(),
+      this.loadOfflineMarketplaces(),
+      this.checkAllPermissions(), // 통합된 권한 체크
+    ]).catch(err => console.error('초기화 오류:', err));
+  }
+
+  // 통합된 권한 체크 (API 호출 최소화)
+  private async checkAllPermissions() {
     const domain = this.$route.params.domain;
     if (!domain) {
       this.isChannelAdmin = false;
+      this.hasManagerPermission = false;
+      this.isChannelCreator = false;
       return;
     }
+
+    // 로그인 안 된 경우
+    if (!UserModule.isLogin) {
+      this.hasManagerPermission = false;
+      this.isChannelCreator = false;
+      return;
+    }
+
     try {
-      // 채널 정보 조회
-      const response = await getChannelDomainDetail(domain as string);
-      const channel = response.data;
-      
-      console.log('Channel info:', channel);
-      console.log('Current user ID:', UserModule.userId);
-      
-      // 현재 사용자가 채널 생성자(관리자)인지 확인
+      // 채널 정보와 사용자 정보를 병렬로 조회 (1회만 호출)
+      const [channelResponse, userResponse] = await Promise.all([
+        getChannelDomainDetail(domain as string),
+        getUserInfo(),
+      ]);
+
+      const channel = channelResponse.data;
+      const currentUserInfo: any = userResponse.data;
+      this.currentChannelUid = channel.uid;
+
+      // 채널 관리자 체크
       const currentUserId = UserModule.userId;
-      
-      // channel.userId (채널 생성자의 userId)와 현재 로그인 사용자의 userId 비교
       if (channel && channel.userId && currentUserId) {
         this.isChannelAdmin = channel.userId === currentUserId;
-        console.log('Is channel admin:', this.isChannelAdmin);
       } else {
         this.isChannelAdmin = false;
       }
-    } catch (error) {
-      console.error('채널 관리자 권한 확인 실패:', error);
-      this.isChannelAdmin = false;
-    }
-    this.isChannelAdmin = true;
-  }
-
-  /**
-   * Check manager and admin permissions for menu visibility
-   */
-  private async checkPermissions() {
-    // Reset permissions
-    this.hasManagerPermission = false;
-    this.isChannelCreator = false;
-    this.currentChannelUid = '';
-
-    // Only check if user is logged in
-    if (!UserModule.isLogin) {
-      return;
-    }
-
-    const domain = this.$route.params.domain;
-    if (!domain) return;
-
-    try {
-      // Get channel information
-      const channelResponse = await getChannelDomainDetail(domain as string);
-      this.currentChannelUid = channelResponse.data.uid;
-
-      // Get current user information
-      const userResponse: any = await getUserInfo();
-      const currentUserInfo: any = userResponse.data;
-
-      // Check if user is the channel creator (for Admin Menu)
-      this.isChannelCreator = channelResponse?.data.userUid === currentUserInfo.uid;
 
       // ✅ ChannelPermissionModule을 사용해서 권한 로드 및 확인
       await ChannelPermissionModule.loadPermissions(this.currentChannelUid);
@@ -391,8 +413,17 @@ export default class extends Vue {
         hasManagerPermission: this.hasManagerPermission,
       });
     } catch (error) {
-      console.error('채널 정보 조회 실패:', error);
+      console.error('권한 정보 조회 실패:', error);
     }
+  }
+
+  // 기존 메서드들은 제거하거나 빈 구현 유지 (호환성)
+  private async checkChannelAdminPermission() {
+    // checkAllPermissions로 통합됨
+  }
+
+  private async checkPermissions() {
+    // checkAllPermissions로 통합됨
   }
 
   private async loadOfflineMarketplaces() {
