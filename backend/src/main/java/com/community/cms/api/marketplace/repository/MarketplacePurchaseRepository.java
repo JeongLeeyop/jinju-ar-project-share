@@ -57,4 +57,7 @@ public interface MarketplacePurchaseRepository extends JpaRepository<Marketplace
     
     // 특정 상품의 진행중인 거래 조회 (구매자별)
     Optional<MarketplacePurchase> findByProductUidAndBuyerUidAndStatus(String productUid, String buyerUid, String status);
+    
+    // 특정 상품의 가장 최근 완료된 거래 조회 (COMPLETED 상태)
+    Optional<MarketplacePurchase> findFirstByProductUidAndStatusOrderByCompletedAtDesc(String productUid, String status);
 }

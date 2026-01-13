@@ -446,26 +446,47 @@ public class MarketplaceProductService {
 
         // 거래중 여부 및 현재 구매자 정보 조회
         boolean isTrading = "TRADING".equals(entity.getStatus());
+        boolean isSoldOut = "SOLD_OUT".equals(entity.getStatus());
         String currentBuyerUid = null;
         String currentBuyerName = null;
         String currentBuyerIconFileUid = null;
         String currentPurchaseUid = null;
 
-        if (isTrading && entity.getSellerUid().equals(currentUserUid)) {
-            // 판매자가 조회하는 경우, 현재 거래중인 구매자 정보 조회
-            MarketplacePurchase inProgressPurchase = purchaseRepository
-                    .findByProductUidAndStatus(entity.getUid(), "IN_PROGRESS")
-                    .orElse(null);
-            
-            if (inProgressPurchase != null) {
-                currentBuyerUid = inProgressPurchase.getBuyerUid();
-                currentPurchaseUid = inProgressPurchase.getUid();
+        // 판매자가 조회하는 경우, 구매자 정보 조회 (거래중 또는 판매완료 상태)
+        if (entity.getSellerUid().equals(currentUserUid)) {
+            if (isTrading) {
+                // 거래중 상태: IN_PROGRESS 상태의 구매 내역 조회
+                MarketplacePurchase inProgressPurchase = purchaseRepository
+                        .findByProductUidAndStatus(entity.getUid(), "IN_PROGRESS")
+                        .orElse(null);
                 
-                // 구매자 정보 조회
-                User buyer = userRepository.findById(currentBuyerUid).orElse(null);
-                if (buyer != null) {
-                    currentBuyerName = buyer.getActualName();
-                    currentBuyerIconFileUid = buyer.getIconFileUid();
+                if (inProgressPurchase != null) {
+                    currentBuyerUid = inProgressPurchase.getBuyerUid();
+                    currentPurchaseUid = inProgressPurchase.getUid();
+                    
+                    // 구매자 정보 조회
+                    User buyer = userRepository.findById(currentBuyerUid).orElse(null);
+                    if (buyer != null) {
+                        currentBuyerName = buyer.getActualName();
+                        currentBuyerIconFileUid = buyer.getIconFileUid();
+                    }
+                }
+            } else if (isSoldOut) {
+                // 판매완료 상태: COMPLETED 상태의 가장 최근 구매 내역 조회
+                MarketplacePurchase completedPurchase = purchaseRepository
+                        .findFirstByProductUidAndStatusOrderByCompletedAtDesc(entity.getUid(), "COMPLETED")
+                        .orElse(null);
+                
+                if (completedPurchase != null) {
+                    currentBuyerUid = completedPurchase.getBuyerUid();
+                    currentPurchaseUid = completedPurchase.getUid();
+                    
+                    // 구매자 정보 조회
+                    User buyer = userRepository.findById(currentBuyerUid).orElse(null);
+                    if (buyer != null) {
+                        currentBuyerName = buyer.getActualName();
+                        currentBuyerIconFileUid = buyer.getIconFileUid();
+                    }
                 }
             }
         }

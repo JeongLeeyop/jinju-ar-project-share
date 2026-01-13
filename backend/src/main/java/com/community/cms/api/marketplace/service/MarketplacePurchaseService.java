@@ -281,6 +281,11 @@ public class MarketplacePurchaseService {
             deductPoints(buyer.getUid(), product.getChannelUid(), request.getDeductPoints(), productUid);
         }
 
+        // 상품 상태를 품절로 변경 (구매 확정과 동일하게)
+        product.setStockQuantity(0);
+        product.setStatus("SOLD_OUT");
+        productRepository.save(product);
+
         // 구매 내역 생성
         MarketplacePurchase purchase = MarketplacePurchase.builder()
                 .uid(UUID.randomUUID().toString())
@@ -299,7 +304,7 @@ public class MarketplacePurchaseService {
 
         purchaseRepository.save(purchase);
 
-        log.info("Offline point deducted: {} for buyer {} by seller {} ({}P)", 
+        log.info("Offline point deducted and product marked as SOLD_OUT: {} for buyer {} by seller {} ({}P)", 
                  productUid, buyer.getUid(), sellerUid, request.getDeductPoints());
     }
 
@@ -724,12 +729,11 @@ public class MarketplacePurchaseService {
     }
 
     /**
-     * 포인트 잔액 확인
+     * 포인트 잔액 확인 (user 테이블의 전역 포인트 사용)
      */
     private void checkPointBalance(String userUid, String channelUid, int amount) {
-        Integer currentBalance = pointHistoryRepository
-                .findCurrentBalance(userUid, channelUid)
-                .orElse(0);
+        User user = userRepository.findById(userUid).orElse(null);
+        int currentBalance = (user != null && user.getPoint() != null) ? user.getPoint() : 0;
 
         if (currentBalance < amount) {
             throw new RuntimeException("포인트가 부족합니다 (보유: " + currentBalance + "P, 필요: " + amount + "P)");
@@ -762,16 +766,14 @@ public class MarketplacePurchaseService {
     }
 
     /**
-     * 포인트 차감
+     * 포인트 차감 (user 테이블의 전역 포인트 사용)
      */
     private void deductPoints(String userUid, String channelUid, int amount, String productUid) {
         User user = userRepository.findById(userUid)
                 .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다"));
 
-        // 현재 포인트 조회
-        Integer currentBalance = pointHistoryRepository
-                .findCurrentBalance(userUid, channelUid)
-                .orElse(0);
+        // 현재 전역 포인트 조회 (user 테이블)
+        int currentBalance = (user.getPoint() != null) ? user.getPoint() : 0;
 
         // 포인트 부족 체크
         if (currentBalance < amount) {
@@ -781,7 +783,7 @@ public class MarketplacePurchaseService {
         // 새로운 잔액 계산
         int newBalance = currentBalance - amount;
 
-        // 포인트 히스토리 생성
+        // 포인트 히스토리 생성 (기록용)
         PointHistory history = PointHistory.builder()
                 .userUid(userUid)
                 .channelUid(channelUid)
@@ -794,11 +796,9 @@ public class MarketplacePurchaseService {
 
         pointHistoryRepository.save(history);
 
-        // 사용자 테이블의 포인트도 업데이트 (선택적)
-        if (user.getPoint() != null) {
-            user.setPoint(Math.max(0, user.getPoint() - amount));
-            userRepository.save(user);
-        }
+        // 사용자 테이블의 전역 포인트 업데이트
+        user.setPoint(newBalance);
+        userRepository.save(user);
 
         log.info("Points deducted: {} from user {} ({}P -> {}P)", 
                  amount, userUid, currentBalance, newBalance);
