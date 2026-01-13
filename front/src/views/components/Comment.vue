@@ -5,11 +5,28 @@
             <div class="comment-item" v-for="comment in commentList" :key="comment.uid">
             <div class="comment-item-inner">
                 <div class="writer">{{ comment.writer }}</div>
+                <div class="comment-header-right">
+                  <div class="date_wr">{{ comment.createDate | parseDate('YY.MM.DD') }}</div>
+                  <el-dropdown v-if="comment.hasAuthority" trigger="click" @command="handleCommentAction">
+                    <span class="el-dropdown-link">
+                      <i class="el-icon-more"></i>
+                    </span>
+                    <el-dropdown-menu slot="dropdown">
+                      <el-dropdown-item :command="{action: 'edit', comment: comment}">수정</el-dropdown-item>
+                      <el-dropdown-item :command="{action: 'delete', commentUid: comment.uid}">삭제</el-dropdown-item>
+                    </el-dropdown-menu>
+                  </el-dropdown>
+                </div>
             </div>
-            <div class="txt" style="white-space: pre-wrap;">{{ comment.contents }}</div>
-            <div class="date_wr">{{ comment.createDate | parseDate('YY.MM.DD') }}</div>
-            <div class="btn_wr">
-                <el-button v-if="comment.hasAuthority" @click="deleteComment(comment.uid)" type="danger" class="del_btn">삭제</el-button>
+            <!-- 일반 모드 -->
+            <div v-if="!editingCommentUid || editingCommentUid !== comment.uid" class="txt">{{ comment.contents }}</div>
+            <!-- 수정 모드 -->
+            <div v-else class="comment-edit-area">
+              <textarea v-model="editingCommentContent" class="comment-edit-textarea" rows="3"></textarea>
+              <div class="comment-edit-actions">
+                <el-button size="small" @click="cancelEdit">취소</el-button>
+                <el-button size="small" type="primary" @click="saveEdit(comment.uid)">저장</el-button>
+              </div>
             </div>
             </div>
         </div>
@@ -22,7 +39,7 @@
 </template>
 
 <script lang="ts">
-import { addComment, deleteComment, getCommentList } from '@/api/comment';
+import { addComment, deleteComment, getCommentList, updateComment } from '@/api/comment';
 import { Component, Prop, Vue } from 'vue-property-decorator';
 import Pagination from '@/components/Pagination/index.vue';
 import { ChannelModule } from '@/store/modules/channel';
@@ -63,6 +80,10 @@ export default class extends Vue {
 
   private commentList = [];
 
+  // 수정 모드 관련
+  private editingCommentUid: string = '';
+  private editingCommentContent: string = '';
+
   private getCommentList() {
     this.commentListQuery = {
         ...this.commentListQuery,
@@ -101,13 +122,13 @@ export default class extends Vue {
     });
   }
 
-  private deleteComment(postUid: string) {
+  private deleteComment(commentUid: string) {
     this.$confirm('정말 댓글을 삭제하시겠습니까?', '댓글 삭제', {
       confirmButtonText: '삭제',
       cancelButtonText: '취소',
       type: 'warning',
     }).then(() => {
-      deleteComment(postUid).then(() => {
+      deleteComment(commentUid).then(() => {
         this.$message.info('댓글을 삭제했습니다.');
         this.getCommentList();
         // 부모 컴포넌트에 댓글 수 감소 이벤트 emit
@@ -115,6 +136,43 @@ export default class extends Vue {
       }).catch((error) => {
         this.$message.warning(error.response.data);
       });
+    });
+  }
+
+  // 댓글 액션 처리 (수정/삭제)
+  private handleCommentAction(command: any) {
+    const { action, commentUid, comment } = command;
+    if (action === 'delete') {
+      this.deleteComment(commentUid);
+    } else if (action === 'edit') {
+      this.startEdit(comment);
+    }
+  }
+
+  // 수정 모드 시작
+  private startEdit(comment: any) {
+    this.editingCommentUid = comment.uid;
+    this.editingCommentContent = comment.contents;
+  }
+
+  // 수정 취소
+  private cancelEdit() {
+    this.editingCommentUid = '';
+    this.editingCommentContent = '';
+  }
+
+  // 수정 저장
+  private saveEdit(commentUid: string) {
+    if (!this.editingCommentContent.trim()) {
+      this.$message.warning('댓글 내용을 입력해주세요.');
+      return;
+    }
+    updateComment(commentUid, { contents: this.editingCommentContent }).then(() => {
+      this.$message.success('댓글이 수정되었습니다.');
+      this.cancelEdit();
+      this.getCommentList();
+    }).catch((error) => {
+      this.$message.warning(error.response?.data || '댓글 수정에 실패했습니다.');
     });
   }
 
@@ -178,6 +236,33 @@ export default class extends Vue {
   word-break: break-word;
 }
 
+.comment-edit-area {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.comment-edit-textarea {
+  width: 100%;
+  min-height: 80px;
+  padding: 12px 14px;
+  border: 1px solid #073DFF;
+  border-radius: 8px;
+  color: #222;
+  font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 150%;
+  outline: none;
+  resize: none;
+  box-sizing: border-box;
+}
+
+.comment-edit-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
 .date_wr {
   color: #888;
   font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
@@ -186,14 +271,29 @@ export default class extends Vue {
   line-height: 100%;
 }
 
-.btn_wr {
-  margin-top: 4px;
+.comment-header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
-.btn_wr .del_btn {
-  padding: 6px 12px;
-  font-size: 12px;
-  border-radius: 6px;
+.el-dropdown-link {
+  cursor: pointer;
+  color: #888;
+  font-size: 18px;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s;
+}
+
+.el-dropdown-link:hover {
+  color: #222;
+}
+
+.el-dropdown-link i {
+  font-size: 18px;
 }
 
 .comment-input-wr {
