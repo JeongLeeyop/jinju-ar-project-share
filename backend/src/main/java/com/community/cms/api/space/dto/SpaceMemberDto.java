@@ -18,6 +18,7 @@ public class SpaceMemberDto {
     private String actualName;
     private String nickName;
     private String profileImage;
+    private String iconFileUid;
     
     public static SpaceMemberDto from(User user) {
         return SpaceMemberDto.builder()
@@ -25,7 +26,8 @@ public class SpaceMemberDto {
                 .userId(user.getUserId())
                 .actualName(user.getActualName())
                 .nickName(user.getActualName())  // User 엔티티에 nickName 필드가 없으면 actualName 사용
-                .profileImage(null)  // User 엔티티에 profileImage 필드 확인 필요
+                .profileImage(user.getIconFileUid())  // iconFileUid를 profileImage로도 사용
+                .iconFileUid(user.getIconFileUid())
                 .build();
     }
 }

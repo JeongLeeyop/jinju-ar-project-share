@@ -55,7 +55,7 @@
             <div v-if="!message.isSent" class="message-left">
               <div class="message-header">
                 <div class="user-avatar">
-                  <img v-if="message.userAvatar" :src="`${apiUrl}/attached-file/${message.userAvatar}`" alt="avatar"
+                  <img v-if="message.userAvatar" :src="getAvatarUrl(message.userAvatar)" alt="avatar"
                     class="user-avatar-img" />
                   <svg v-else width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <circle cx="18" cy="18" r="18" fill="#D9D9D9" />
@@ -186,6 +186,7 @@ export default class CommunityChat extends Vue {
   private currentNotice: ChatNotice | null = null;
   private participants: Participant[] = [];
   private currentUserIconFileUid: string | null = null;  // 현재 사용자 아이콘 UID
+  private userAvatarMap: Map<string, string> = new Map();  // userId -> avatar URL 매핑
 
   private isLoadingMore = false;
   private hasMoreMessages = true;
@@ -296,6 +297,9 @@ export default class CommunityChat extends Vue {
         this.currentUser.id,
       );
 
+      // 참여자 목록을 먼저 로드하여 userAvatarMap을 구성
+      await this.loadParticipants();
+
       this.unsubscribeMessages = chatService.onMessagesChange(
         this.spaceId,
         (firebaseMessages: ChatMessage[]) => {
@@ -398,8 +402,7 @@ export default class CommunityChat extends Vue {
         }
       }
 
-      // 참여자 목록 로드
-      await this.loadParticipants();
+      // 참여자 목록은 initializeChat에서 먼저 로드됨
     } catch (error) {
       console.error('Failed to load chat space info:', error);
       // 에러 무시
@@ -409,18 +412,63 @@ export default class CommunityChat extends Vue {
   private async loadParticipants() {
     try {
       const response = await getSpaceMembers(this.spaceId);
+      console.log('=== loadParticipants response ===', response.data);
       if (response.data && Array.isArray(response.data)) {
-        this.participants = response.data.map((member: any) => ({
-          id: member.uid,
-          name: member.actualName || member.name || '익명',
-          avatar: member.profileImage || member.avatar,
-        }));
+        // userAvatarMap 초기화
+        this.userAvatarMap.clear();
+        
+        this.participants = response.data.map((member: any) => {
+          const avatarUrl = member.iconFileUid ? `${this.apiUrl}/attached-file/${member.iconFileUid}` : '';
+          
+          console.log('Member:', {
+            name: member.actualName || member.name,
+            userId: member.userId,
+            uid: member.uid,
+            iconFileUid: member.iconFileUid,
+            avatarUrl,
+          });
+          
+          // userId로 아바타 URL 매핑 저장
+          if (member.userId && avatarUrl) {
+            this.userAvatarMap.set(member.userId, avatarUrl);
+          }
+          // uid로도 매핑 저장 (Firebase에서 userId로 uid를 사용할 수 있음)
+          if (member.uid && avatarUrl) {
+            this.userAvatarMap.set(member.uid, avatarUrl);
+          }
+          
+          return {
+            id: member.uid,
+            name: member.actualName || member.name || '익명',
+            avatar: avatarUrl,
+          };
+        });
         this.participantCount = this.participants.length;
+        
+        // 기존 메시지들의 아바타 업데이트
+        this.updateMessagesAvatar();
       }
     } catch (error) {
       console.error('Failed to load participants:', error);
       // 에러 시 빈 배열 유지
     }
+  }
+
+  /**
+   * 메시지들의 아바타를 참여자 정보로 업데이트
+   */
+  private updateMessagesAvatar() {
+    this.messages = this.messages.map(msg => {
+      // 이미 아바타가 있는 경우 스킵
+      if (msg.userAvatar) return msg;
+      
+      // userAvatarMap에서 아바타 찾기
+      const avatarUrl = this.userAvatarMap.get(msg.userId);
+      if (avatarUrl) {
+        return { ...msg, userAvatar: avatarUrl };
+      }
+      return msg;
+    });
   }
 
   private checkNoticeOverflow() {
@@ -435,6 +483,14 @@ export default class CommunityChat extends Vue {
 
   private convertToDisplayMessage(msg: ChatMessage): DisplayMessage {
     const createdAtDate = msg.createdAt || new Date();
+    
+    // Firebase 메시지의 userAvatar가 없으면 userAvatarMap에서 찾기
+    let avatar = msg.userAvatar;
+    if (!avatar) {
+      avatar = this.userAvatarMap.get(msg.userId) || '';
+      console.log('Looking up avatar for userId:', msg.userId, 'Found:', avatar, 'Map keys:', Array.from(this.userAvatarMap.keys()));
+    }
+    
     return {
       id: msg.id,
       userName: msg.userName,
@@ -442,9 +498,22 @@ export default class CommunityChat extends Vue {
       text: msg.text,
       isSent: msg.userId === this.currentUser.id,
       userId: msg.userId,
-      userAvatar: msg.userAvatar,
+      userAvatar: avatar,
       createdAt: createdAtDate instanceof Date ? createdAtDate : new Date(createdAtDate),
     };
+  }
+
+  /**
+   * 아바타 URL 반환 - 이미 전체 URL인지 iconFileUid인지 판단하여 적절한 URL 반환
+   */
+  private getAvatarUrl(avatar: string): string {
+    if (!avatar) return '';
+    // 이미 전체 URL인 경우 (http:// 또는 /api로 시작)
+    if (avatar.startsWith('http') || avatar.startsWith('/api')) {
+      return avatar;
+    }
+    // iconFileUid만 있는 경우 URL 구성
+    return `${this.apiUrl}/attached-file/${avatar}`;
   }
 
   private handleSpaceSelect(spaceId: string) {

@@ -427,7 +427,7 @@ public class SpaceService {
         List<SpaceMember> spaceMembers = spaceMemberRepository.findBySpaceUid(spaceUid);
 
         // User 정보를 DTO로 변환
-        return spaceMembers.stream()
+        List<SpaceMemberDto> members = spaceMembers.stream()
                 .map(spaceMember -> {
                     User user = userRepository.findByUid(spaceMember.getUserUid())
                             .orElse(null);
@@ -435,11 +435,33 @@ public class SpaceService {
                 })
                 .filter(dto -> dto != null)
                 .collect(Collectors.toList());
+        
+        // 공간 관리자(adminUid)를 멤버 목록에 추가 (중복 체크)
+        // space.getAdminUid()는 User의 uid (PK)
+        String spaceAdminUid = space.getAdminUid();
+        if (spaceAdminUid != null) {
+            // uid로만 비교 (spaceAdminUid는 User의 uid이므로)
+            boolean adminAlreadyInList = members.stream()
+                    .anyMatch(m -> spaceAdminUid.equals(m.getUid()));
+            
+            if (!adminAlreadyInList) {
+                User adminUser = userRepository.findByUid(spaceAdminUid).orElse(null);
+                if (adminUser != null) {
+                    SpaceMemberDto adminDto = SpaceMemberDto.from(adminUser);
+                    members.add(0, adminDto); // 관리자를 목록 맨 앞에 추가
+                    log.info("공간 관리자 멤버 목록에 추가: adminUid={}, userId={}, adminName={}, iconFileUid={}", 
+                            spaceAdminUid, adminUser.getUserId(), adminUser.getActualName(), adminUser.getIconFileUid());
+                }
+            }
+        }
+        
+        return members;
     }
     
     /**
      * 공개 공간의 멤버 목록 조회 (커뮤니티 전체 멤버)
      * 채널의 승인된 멤버 전체를 반환 (자동 동기화)
+     * 채널 관리자(creator)도 멤버 목록에 포함
      */
     private List<SpaceMemberDto> getPublicSpaceMembers(Space space) {
         try {
@@ -460,6 +482,35 @@ public class SpaceService {
                     })
                     .filter(dto -> dto != null)
                     .collect(Collectors.toList());
+            
+            // 4. 채널 관리자(creator)를 멤버 목록에 추가 (중복 체크)
+            // channel.getUserUid()는 User의 uid (PK)
+            String channelAdminUid = channel.getUserUid();
+            log.info("채널 관리자 확인: channelAdminUid={}", channelAdminUid);
+            if (channelAdminUid != null) {
+                // uid로만 비교 (channelAdminUid는 User의 uid이므로)
+                boolean adminAlreadyInList = members.stream()
+                        .anyMatch(m -> channelAdminUid.equals(m.getUid()));
+                
+                log.info("채널 관리자 중복 체크: adminAlreadyInList={}", adminAlreadyInList);
+                
+                if (!adminAlreadyInList) {
+                    User adminUser = userRepository.findByUid(channelAdminUid).orElse(null);
+                    if (adminUser != null) {
+                        SpaceMemberDto adminDto = SpaceMemberDto.from(adminUser);
+                        members.add(0, adminDto); // 관리자를 목록 맨 앞에 추가
+                        log.info("채널 관리자 멤버 목록에 추가: adminUid={}, userId={}, adminName={}, iconFileUid={}", 
+                                channelAdminUid, adminUser.getUserId(), adminUser.getActualName(), adminUser.getIconFileUid());
+                    }
+                } else {
+                    // 이미 목록에 있는 경우 해당 멤버의 정보 로깅
+                    members.stream()
+                            .filter(m -> channelAdminUid.equals(m.getUid()))
+                            .findFirst()
+                            .ifPresent(m -> log.info("채널 관리자 이미 목록에 존재: uid={}, userId={}, iconFileUid={}", 
+                                    m.getUid(), m.getUserId(), m.getIconFileUid()));
+                }
+            }
             
             log.info("공개 공간 멤버 조회: spaceUid={}, spaceType={}, channelUid={}, memberCount={}", 
                     space.getUid(), space.getSpaceType(), channel.getUid(), members.size());
