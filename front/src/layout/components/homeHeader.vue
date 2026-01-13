@@ -24,7 +24,7 @@
           </svg>
         </button>
 
-        <router-link :to="homeLink" class="nav-item" :class="{ active: isActiveRoute('Home') }" @click.native="toggleMobileMenu">
+        <router-link v-if="isInCommunity" :to="homeLink" class="nav-item" :class="{ active: isActiveRoute('Home') }" @click.native="toggleMobileMenu">
           <svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path
               d="M14.6249 17.4686C14.6249 17.2446 14.4426 17.0624 14.2187 17.0624H11.7812C11.5572 17.0624 11.3749 17.2446 11.3749 17.4686V21.9374H14.6249V17.4686ZM21.9374 21.5311C21.9374 22.6526 21.0276 23.5624 19.9062 23.5624H6.09365C4.97217 23.5624 4.0624 22.6526 4.0624 21.5311V12.5227L3.01187 13.5743C2.69458 13.8917 2.18026 13.8916 1.86294 13.5743C1.54569 13.257 1.54568 12.7427 1.86294 12.4254L11.5632 2.72407V2.72301C12.3566 1.93141 13.6423 1.93095 14.4355 2.72407L24.1369 12.4254C24.4542 12.7427 24.4541 13.257 24.1369 13.5743C23.8196 13.8916 23.3052 13.8916 22.9879 13.5743L21.9374 12.5238V21.5311ZM16.2499 21.9374H19.9062C20.1302 21.9374 20.3124 21.7551 20.3124 21.5311V10.8988L13.2866 3.873C13.1287 3.7152 12.8709 3.71458 12.7111 3.87406L5.6874 10.8977V21.5311C5.6874 21.7551 5.86964 21.9374 6.09365 21.9374H9.7499V17.4686C9.74994 16.3472 10.6597 15.4374 11.7812 15.4374H14.2187C15.3401 15.4374 16.2499 16.3472 16.2499 17.4686V21.9374Z"
@@ -62,7 +62,7 @@
             </div>
         </template>
 
-        <router-link :to="{ name: 'Lession' }" class="nav-item" :class="{ active: isActiveRoute('Lession') }"
+        <router-link v-if="isInCommunity" :to="{ name: 'Lession' }" class="nav-item" :class="{ active: isActiveRoute('Lession') }"
           @click.native="toggleMobileMenu">
           <svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path
@@ -72,7 +72,7 @@
           </svg>
           <span>강좌</span>
         </router-link>
-        <router-link :to="{ name: 'Calendar' }" class="nav-item" :class="{ active: isActiveRoute('Calendar') }"
+        <router-link v-if="isInCommunity" :to="{ name: 'Calendar' }" class="nav-item" :class="{ active: isActiveRoute('Calendar') }"
           @click.native="toggleMobileMenu">
           <svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path
@@ -82,7 +82,7 @@
           </svg>
           <span>일정</span>
         </router-link>
-        <router-link :to="{ name: 'Marketplace' }" class="nav-item" :class="{ active: isActiveRoute('Marketplace') }"
+        <router-link v-if="isInCommunity" :to="{ name: 'Marketplace' }" class="nav-item" :class="{ active: isActiveRoute('Marketplace') }"
           @click.native="toggleMobileMenu">
           <svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path
@@ -92,7 +92,7 @@
           </svg>
           <span>장터</span>
         </router-link>
-        <router-link :to="{ name: 'Member' }" class="nav-item" :class="{ active: isActiveRoute('Member') }"
+        <router-link v-if="isInCommunity" :to="{ name: 'Member' }" class="nav-item" :class="{ active: isActiveRoute('Member') }"
           @click.native="toggleMobileMenu">
           <svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path
