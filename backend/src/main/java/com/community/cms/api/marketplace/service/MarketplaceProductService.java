@@ -64,10 +64,15 @@ public class MarketplaceProductService {
         // 권한 체크
         checkProductCreatePermission(channelDomain, userUid, request.getOfflineMarketplaceUid());
 
-        // 오프라인 장터인 경우 존재 확인
+        // 오프라인 장터인 경우 존재 확인 및 상품 타입 검증
         if (request.getOfflineMarketplaceUid() != null) {
             offlineMarketplaceRepository.findByUid(request.getOfflineMarketplaceUid())
                     .orElseThrow(() -> new RuntimeException("오프라인 장터를 찾을 수 없습니다"));
+            
+            // 오프라인 장터는 판매(SALE) 유형만 허용
+            if (!"SALE".equals(request.getProductType())) {
+                throw new RuntimeException("오프라인 장터에서는 판매 상품만 등록할 수 있습니다");
+            }
         }
 
         String productUid = UUID.randomUUID().toString();
@@ -339,18 +344,28 @@ public class MarketplaceProductService {
             return;
         }
 
+        // 오프라인 장터인 경우 생성자만 상품 등록 가능
+        if (offlineMarketplaceUid != null) {
+            OfflineMarketplace offlineMarketplace = offlineMarketplaceRepository.findByUid(offlineMarketplaceUid)
+                    .orElseThrow(() -> new RuntimeException("오프라인 장터를 찾을 수 없습니다"));
+            
+            log.info("Checking offline marketplace permission - userUid: [{}], createdBy: [{}]", 
+                    userUid, offlineMarketplace.getCreatedBy());
+            
+            if (!userUid.equals(offlineMarketplace.getCreatedBy())) {
+                log.warn("Permission denied - userUid: [{}] != createdBy: [{}]", 
+                        userUid, offlineMarketplace.getCreatedBy());
+                throw new RuntimeException("오프라인 장터는 생성자만 상품을 등록할 수 있습니다");
+            }
+            log.info("Offline marketplace creator {} registering product in marketplace {}", userUid, offlineMarketplaceUid);
+            return;
+        }
+
+        // 메인 장터 권한 체크
         ChannelMember member = channelMemberRepository.findByUserUidAndChannelUid(userUid, channel.getUid())
                 .orElseThrow(() -> new RuntimeException("채널 멤버만 등록할 수 있습니다"));
 
-        ChannelMemberPermissionType requiredPermission;
-
-        if (offlineMarketplaceUid != null) {
-            // 오프라인 장터
-            requiredPermission = ChannelMemberPermissionType.OFFLINE_MARKETPLACE_REGISTER;
-        } else {
-            // 메인 장터
-            requiredPermission = ChannelMemberPermissionType.MARKETPLACE_REGISTER;
-        }
+        ChannelMemberPermissionType requiredPermission = ChannelMemberPermissionType.MARKETPLACE_REGISTER;
 
         ChannelMemberPermission permission = permissionRepository
                 .findByChannelMemberIdxAndPermissionType(member.getIdx(), requiredPermission)

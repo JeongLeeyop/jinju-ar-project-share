@@ -18,6 +18,7 @@ export interface OfflineMarketplace {
   createdAt: string;
   updatedAt: string;
   productCount: number;
+  isCreator: boolean;  // 현재 사용자가 생성자인지 여부
 }
 
 export interface CreateOfflineMarketplaceRequest {

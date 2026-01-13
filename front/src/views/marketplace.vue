@@ -18,15 +18,19 @@
         </button>
         <button 
           class="filter-btn" 
-          :class="{ active: activeFilter === 'SHARE' }"
+          :class="{ active: activeFilter === 'SHARE', disabled: isOfflineMarketplace }"
+          :disabled="isOfflineMarketplace"
           @click="setFilter('SHARE')"
+          :title="isOfflineMarketplace ? '오프라인 장터에서는 판매만 가능합니다' : ''"
         >
           나눔
         </button>
         <button 
           class="filter-btn" 
-          :class="{ active: activeFilter === 'REQUEST' }"
+          :class="{ active: activeFilter === 'REQUEST', disabled: isOfflineMarketplace }"
+          :disabled="isOfflineMarketplace"
           @click="setFilter('REQUEST')"
+          :title="isOfflineMarketplace ? '오프라인 장터에서는 판매만 가능합니다' : ''"
         >
           요청
         </button>
@@ -65,8 +69,12 @@
       </div>
     </div>
 
-    <!-- Floating Write Button (Mobile Only) -->
-    <button class="write-post-btn-fixed" @click="openWriteModal">
+    <!-- Floating Write Button (Mobile Only) - 오프라인 장터일 때 생성자만 보임 -->
+    <button 
+      v-if="canRegisterProduct" 
+      class="write-post-btn-fixed" 
+      @click="openWriteModal"
+    >
       <span class="btn-text">상품 등록하기</span>
       <svg class="btn-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M12 5V19M5 12H19" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -125,6 +133,7 @@
                 판매
               </button>
               <button
+                v-if="!isOfflineMarketplace"
                 class="type-btn"
                 :class="{ active: newPost.productType === 'SHARE' }"
                 @click="newPost.productType = 'SHARE'"
@@ -132,6 +141,7 @@
                 나눔
               </button>
               <button
+                v-if="!isOfflineMarketplace"
                 class="type-btn"
                 :class="{ active: newPost.productType === 'REQUEST' }"
                 @click="newPost.productType = 'REQUEST'"
@@ -204,9 +214,11 @@ import CommunitySidebar from './components/communitySidebar.vue';
 import { 
   getMainMarketplaceProducts,
   getOfflineMarketplaceProducts,
+  getOfflineMarketplace,
   createProduct, 
   MarketplaceProduct,
-  MarketplaceProductCreateRequest 
+  MarketplaceProductCreateRequest,
+  OfflineMarketplace 
 } from '@/api/marketplace';
 import { uploadFile } from '@/api/post';
 
@@ -235,6 +247,9 @@ export default class extends Vue {
   private products: MarketplaceProduct[] = [];
   private channelUid = '';
   private canWrite = false;
+  
+  // 오프라인 장터 정보
+  private offlineMarketplaceInfo: OfflineMarketplace | null = null;
 
   // 오프라인 장터 UID (라우트 파라미터로 전달)
   get currentMarketplaceUid(): string | null {
@@ -245,16 +260,35 @@ export default class extends Vue {
     return !!this.currentMarketplaceUid;
   }
 
+  // 오프라인 장터 생성자인지 확인
+  get isOfflineMarketplaceCreator(): boolean {
+    if (!this.isOfflineMarketplace || !this.offlineMarketplaceInfo) {
+      return false;
+    }
+    // 백엔드에서 계산된 isCreator 값 사용
+    return this.offlineMarketplaceInfo.isCreator;
+  }
+
+  // 상품 등록 가능 여부 (메인 장터: 권한 있으면 가능, 오프라인 장터: 생성자만 가능)
+  get canRegisterProduct(): boolean {
+    if (this.isOfflineMarketplace) {
+      return this.isOfflineMarketplaceCreator;
+    }
+    return this.canWrite;
+  }
+
   async mounted() {
     this.channelUid = this.$route.params.domain || '';
     if (this.channelUid) {
       await this.checkPermission();
+      await this.loadOfflineMarketplaceInfo();
       await this.loadProducts();
     }
   }
 
   @Watch('$route.params.marketplaceUid')
   async onMarketplaceChange() {
+    await this.loadOfflineMarketplaceInfo();
     await this.loadProducts();
   }
 
@@ -268,6 +302,21 @@ export default class extends Vue {
   private async checkPermission() {
     // TODO: 권한 체크 API 호출
     this.canWrite = true;
+  }
+
+  // 오프라인 장터 정보 로드
+  private async loadOfflineMarketplaceInfo() {
+    if (this.isOfflineMarketplace && this.currentMarketplaceUid) {
+      try {
+        const response = await getOfflineMarketplace(this.currentMarketplaceUid);
+        this.offlineMarketplaceInfo = response.data;
+      } catch (error: any) {
+        console.error('오프라인 장터 정보 조회 실패:', error);
+        this.offlineMarketplaceInfo = null;
+      }
+    } else {
+      this.offlineMarketplaceInfo = null;
+    }
   }
 
   private async loadProducts() {
@@ -310,9 +359,17 @@ export default class extends Vue {
   }
 
   private openWriteModal() {
-    if (!this.canWrite) {
-      this.$message.warning('상품 등록 권한이 없습니다');
+    if (!this.canRegisterProduct) {
+      if (this.isOfflineMarketplace) {
+        this.$message.warning('오프라인 장터 생성자만 상품을 등록할 수 있습니다');
+      } else {
+        this.$message.warning('상품 등록 권한이 없습니다');
+      }
       return;
+    }
+    // 오프라인 장터에서는 판매 타입으로 강제 설정
+    if (this.isOfflineMarketplace) {
+      this.newPost.productType = 'SALE';
     }
     this.writeModalVisible = true;
   }
@@ -629,13 +686,21 @@ export default class extends Vue {
   cursor: pointer;
   transition: all 0.2s;
 
-  &:hover {
+  &:hover:not(:disabled) {
     background: #E0E0E0;
   }
 
   &.active {
     background: #073DFF;
     color: #FFF;
+  }
+
+  &:disabled,
+  &.disabled {
+    background: #E0E0E0;
+    color: #AAA;
+    cursor: not-allowed;
+    opacity: 0.6;
   }
 }
 
@@ -1000,13 +1065,21 @@ export default class extends Vue {
   cursor: pointer;
   transition: all 0.2s;
 
-  &:hover {
+  &:hover:not(:disabled) {
     background: #C0C0C0;
   }
 
   &.active {
     background: #073DFF;
     color: #FFF;
+  }
+
+  &:disabled,
+  &.disabled {
+    background: #E0E0E0;
+    color: #AAA;
+    cursor: not-allowed;
+    opacity: 0.6;
   }
 
   @media screen and (max-width: 768px) {

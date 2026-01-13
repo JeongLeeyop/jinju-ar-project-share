@@ -77,9 +77,18 @@ public class OfflineMarketplaceController {
      * 오프라인 장터 상세 조회
      */
     @GetMapping("/detail/{uid}")
-    public ResponseEntity<?> getOfflineMarketplace(@PathVariable String uid) {
+    public ResponseEntity<?> getOfflineMarketplace(
+            @PathVariable String uid,
+            @AuthenticationPrincipal SinghaUser userDetails) {
         try {
-            OfflineMarketplaceDto result = offlineMarketplaceService.getOfflineMarketplace(uid);
+            String currentUserUid = "";
+            if (userDetails != null) {
+                User user = userRepository.findByUserId(userDetails.getUsername()).orElse(null);
+                if (user != null) {
+                    currentUserUid = user.getUid();
+                }
+            }
+            OfflineMarketplaceDto result = offlineMarketplaceService.getOfflineMarketplace(uid, currentUserUid);
             return ResponseEntity.ok(result);
         } catch (RuntimeException e) {
             log.error("Failed to get offline marketplace: {}", e.getMessage());

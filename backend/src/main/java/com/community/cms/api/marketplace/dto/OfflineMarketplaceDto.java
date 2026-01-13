@@ -29,6 +29,9 @@ public class OfflineMarketplaceDto {
     private LocalDateTime updatedAt;
     
     private Integer productCount;  // 상품 개수
+    
+    @JsonProperty("isCreator")
+    private boolean isCreator;  // 현재 사용자가 생성자인지 여부
 
     /**
      * 오프라인 장터 생성 요청 DTO

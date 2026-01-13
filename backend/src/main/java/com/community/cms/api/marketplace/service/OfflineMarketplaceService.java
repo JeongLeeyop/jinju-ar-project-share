@@ -102,7 +102,7 @@ public class OfflineMarketplaceService {
      * 오프라인 장터 상세 조회
      */
     @Transactional(readOnly = true)
-    public OfflineMarketplaceDto getOfflineMarketplace(String uid) {
+    public OfflineMarketplaceDto getOfflineMarketplace(String uid, String currentUserUid) {
         OfflineMarketplace marketplace = offlineMarketplaceRepository.findByUid(uid)
                 .orElseThrow(() -> new RuntimeException("오프라인 장터를 찾을 수 없습니다"));
 
@@ -111,7 +111,7 @@ public class OfflineMarketplaceService {
                 .getContent()
                 .size();
 
-        return toDto(marketplace, productCount);
+        return toDto(marketplace, productCount, currentUserUid);
     }
 
     /**
@@ -178,7 +178,9 @@ public class OfflineMarketplaceService {
     /**
      * Entity to DTO
      */
-    private OfflineMarketplaceDto toDto(OfflineMarketplace entity, int productCount) {
+    private OfflineMarketplaceDto toDto(OfflineMarketplace entity, int productCount, String currentUserUid) {
+        boolean isCreator = currentUserUid != null && currentUserUid.equals(entity.getCreatedBy());
+        
         return OfflineMarketplaceDto.builder()
                 .uid(entity.getUid())
                 .channelUid(entity.getChannelUid())
@@ -189,6 +191,14 @@ public class OfflineMarketplaceService {
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())
                 .productCount(productCount)
+                .isCreator(isCreator)
                 .build();
+    }
+    
+    /**
+     * Entity to DTO (without user context)
+     */
+    private OfflineMarketplaceDto toDto(OfflineMarketplace entity, int productCount) {
+        return toDto(entity, productCount, null);
     }
 }
