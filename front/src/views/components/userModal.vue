@@ -101,20 +101,68 @@
             <div class="logo">
                 <img src="@/assets/images/logo.png" alt="">
             </div>
-            <div class="title">비밀번호를 재설정하세요!
+            <div class="title">비밀번호 찾기
             </div>
-            <div class="subtitle">이메일 주소를 입력하면<br>비밀번호를 재설정할 수 있는 링크를 보내드립니다.</div>
+            <div class="subtitle">가입 시 등록한 이메일과 핸드폰 번호를 입력하면<br>임시 비밀번호를 SMS로 보내드립니다.</div>
             <div class="button-wrap">
                 <el-form-item prop="email">
                 <div class="btn-wr email"><el-input placeholder="이메일 주소" @input="removeSpaceFormData" v-model="findPasswordForm.email"/></div>
                 </el-form-item>
+                <el-form-item prop="concatNumber">
+                <div class="btn-wr phone"><el-input v-model="findPasswordForm.concatNumber" @input="formatFindPasswordPhone" placeholder="핸드폰 번호 (예: 010-1234-5678)" maxlength="13"/></div>
+                </el-form-item>
             </div>
-            <div class="register-btn"><el-button @click="handleSendPasswordReset()">이메일 보내기</el-button></div>
+            <div class="register-btn"><el-button :loading="loading" @click="handleSendTempPassword()">임시 비밀번호 발급</el-button></div>
             <div class="legacy-wr">
+                <div class="txt2">이메일(아이디)을 잊으셨나요? <a @click="viewFindEmail()">이메일 찾기</a></div>
                 <div class="txt2">이미 계정이 있으신가요? <a @click="viewLogin()">로그인</a></div>
             </div>
             </fieldset>
         </el-form>
+    </div>
+    <!-- 이메일(아이디) 찾기 -->
+    <div class="section step4 find-email active" v-if="localActiveStep === 'FindEmail'">
+        <el-form ref="findEmailForm" class="find-email-form" :rules="findEmailRules" :model="findEmailForm" onsubmit="return false;">
+            <fieldset class="login__fs">
+            <div class="logo">
+                <img src="@/assets/images/logo.png" alt="">
+            </div>
+            <div class="title">이메일(아이디) 찾기
+            </div>
+            <div class="subtitle">가입 시 등록한 이름과 핸드폰 번호를 입력해주세요.</div>
+            <div class="button-wrap">
+                <el-form-item prop="actualName">
+                <div class="btn-wr name"><el-input placeholder="이름" v-model="findEmailForm.actualName"/></div>
+                </el-form-item>
+                <el-form-item prop="concatNumber">
+                <div class="btn-wr phone"><el-input v-model="findEmailForm.concatNumber" @input="formatFindEmailPhone" placeholder="핸드폰 번호 (예: 010-1234-5678)" maxlength="13"/></div>
+                </el-form-item>
+            </div>
+            <div class="register-btn"><el-button :loading="loading" @click="handleFindEmail()">이메일 찾기</el-button></div>
+            <div class="legacy-wr">
+                <div class="txt2">비밀번호를 잊으셨나요? <a @click="viewFindPassword()">비밀번호 찾기</a></div>
+                <div class="txt2">이미 계정이 있으신가요? <a @click="viewLogin()">로그인</a></div>
+            </div>
+            </fieldset>
+        </el-form>
+    </div>
+    <!-- 이메일 찾기 결과 -->
+    <div class="section step5 find-email-result active" v-if="localActiveStep === 'FindEmailResult'">
+        <fieldset class="login__fs">
+        <div class="logo">
+            <img src="@/assets/images/logo.png" alt="">
+        </div>
+        <div class="title">이메일(아이디) 찾기 결과
+        </div>
+        <div class="email-result-box">
+            <div class="result-label">가입된 이메일(아이디)</div>
+            <div class="result-email">{{ foundEmail }}</div>
+        </div>
+        <div class="register-btn"><el-button @click="viewLogin()">로그인하기</el-button></div>
+        <div class="legacy-wr">
+            <div class="txt2">비밀번호를 잊으셨나요? <a @click="viewFindPassword()">비밀번호 찾기</a></div>
+        </div>
+        </fieldset>
     </div>
     </el-dialog>
 </template>
@@ -132,6 +180,8 @@ import {
   userIdCheck,
   addUser,
   getUserInfo,
+  requestTempPassword,
+  findEmail,
 } from '@/api/user';
 import { UserModule } from '@/store/modules/user';
 import { ChannelModule } from '@/store/modules/channel';
@@ -219,7 +269,15 @@ private loginForm = {
 
   private findPasswordForm = {
     email: '',
+    concatNumber: '',
   }
+
+  private findEmailForm = {
+    actualName: '',
+    concatNumber: '',
+  }
+
+  private foundEmail: string = '';
 
   private loginRules = {
     username: [{ required: true, message: '아이디를 입력하세요.', trigger: 'blur' }],
@@ -229,11 +287,19 @@ private loginForm = {
   private findPasswordRules = {
     email: [
       { required: true, message: '이메일을 입력하세요.', trigger: 'blur' },
-      {
-        pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-        message: '올바른 이메일 형식으로 입력하세요.',
-        trigger: 'blur',
-      },
+      { type: 'email', message: '올바른 이메일 형식이 아닙니다.', trigger: ['blur', 'change'] },
+    ],
+    concatNumber: [
+      { required: true, message: '핸드폰 번호를 입력하세요.', trigger: 'blur' },
+    ],
+  }
+
+  private findEmailRules = {
+    actualName: [
+      { required: true, message: '이름을 입력하세요.', trigger: 'blur' },
+    ],
+    concatNumber: [
+      { required: true, message: '핸드폰 번호를 입력하세요.', trigger: 'blur' },
     ],
   }
 
@@ -394,6 +460,44 @@ private loginForm = {
     }
   }
 
+  private formatFindPasswordPhone() {
+    // 숫자만 추출
+    let numbers = this.findPasswordForm.concatNumber.replace(/[^\d]/g, '');
+    
+    // 최대 11자리로 제한
+    if (numbers.length > 11) {
+      numbers = numbers.slice(0, 11);
+    }
+    
+    // 하이픈 추가
+    if (numbers.length <= 3) {
+      this.findPasswordForm.concatNumber = numbers;
+    } else if (numbers.length <= 7) {
+      this.findPasswordForm.concatNumber = numbers.slice(0, 3) + '-' + numbers.slice(3);
+    } else {
+      this.findPasswordForm.concatNumber = numbers.slice(0, 3) + '-' + numbers.slice(3, 7) + '-' + numbers.slice(7);
+    }
+  }
+
+  private formatFindEmailPhone() {
+    // 숫자만 추출
+    let numbers = this.findEmailForm.concatNumber.replace(/[^\d]/g, '');
+    
+    // 최대 11자리로 제한
+    if (numbers.length > 11) {
+      numbers = numbers.slice(0, 11);
+    }
+    
+    // 하이픈 추가
+    if (numbers.length <= 3) {
+      this.findEmailForm.concatNumber = numbers;
+    } else if (numbers.length <= 7) {
+      this.findEmailForm.concatNumber = numbers.slice(0, 3) + '-' + numbers.slice(3);
+    } else {
+      this.findEmailForm.concatNumber = numbers.slice(0, 3) + '-' + numbers.slice(3, 7) + '-' + numbers.slice(7);
+    }
+  }
+
   private triggerIconUpload() {
     const input = this.$refs.iconInput as HTMLInputElement;
     if (input) {
@@ -462,28 +566,97 @@ private loginForm = {
   }
 
   private viewLogin() {
+    // 데이터 초기화
+    this.loginForm.username = '';
+    this.loginForm.password = '';
+    this.findPasswordForm.email = '';
+    this.findPasswordForm.concatNumber = '';
+    this.findEmailForm.actualName = '';
+    this.findEmailForm.concatNumber = '';
+    this.foundEmail = '';
     this.localActiveStep = 'Login';
   }
 
   private viewRegister() {
+    // 데이터 초기화
+    this.loginForm.username = '';
+    this.loginForm.password = '';
+    this.findPasswordForm.email = '';
+    this.findPasswordForm.concatNumber = '';
+    this.findEmailForm.actualName = '';
+    this.findEmailForm.concatNumber = '';
+    this.foundEmail = '';
     this.localActiveStep = 'Register';
   }
 
   private viewFindPassword() {
+    // 데이터 초기화
+    this.findPasswordForm.email = '';
+    this.findPasswordForm.concatNumber = '';
+    this.foundEmail = '';
     this.localActiveStep = 'FindPassword';
   }
 
-  private handleSendPasswordReset() {
-    (this.$refs.findPasswordForm as Form).validate((valid: boolean) => {
+  private viewFindEmail() {
+    // 데이터 초기화
+    this.findEmailForm.actualName = '';
+    this.findEmailForm.concatNumber = '';
+    this.foundEmail = '';
+    this.localActiveStep = 'FindEmail';
+  }
+
+  private async handleSendTempPassword() {
+    (this.$refs.findPasswordForm as Form).validate(async (valid: boolean) => {
       if (valid) {
         this.loading = true;
-        // TODO: API 연동 필요 - 비밀번호 재설정 이메일 발송
-        // 임시로 성공 메시지만 표시
-        setTimeout(() => {
+        try {
+          const response = await requestTempPassword({
+            email: this.findPasswordForm.email,
+            concatNumber: this.findPasswordForm.concatNumber,
+          });
+          
+          if (response.data.success) {
+            this.$message.success(response.data.message);
+            this.findPasswordForm.email = '';
+            this.findPasswordForm.concatNumber = '';
+            this.viewLogin();
+          } else {
+            this.$message.error(response.data.message);
+          }
+        } catch (error: any) {
+          const message = error.response?.data?.message || '임시 비밀번호 발급에 실패했습니다.';
+          this.$message.error(message);
+        } finally {
           this.loading = false;
-          this.$message.success('비밀번호 재설정 링크를 이메일로 보냈습니다. 이메일을 확인해주세요.');
-          this.viewLogin();
-        }, 1000);
+        }
+      }
+    });
+  }
+
+  private async handleFindEmail() {
+    (this.$refs.findEmailForm as Form).validate(async (valid: boolean) => {
+      if (valid) {
+        this.loading = true;
+        try {
+          const response = await findEmail({
+            actualName: this.findEmailForm.actualName,
+            concatNumber: this.findEmailForm.concatNumber,
+          });
+          
+          if (response.data.found) {
+            // 찾은 이메일을 메시지로 표시
+            this.$message.success(`${response.data.message}\n이메일: ${response.data.maskedEmail}`);
+            this.foundEmail = response.data.maskedEmail;
+          } else {
+            this.foundEmail = '';
+            this.$message.error(response.data.message);
+          }
+        } catch (error: any) {
+          const message = error.response?.data?.message || '이메일 찾기에 실패했습니다.';
+          this.$message.error(message);
+        } finally {
+          this.loading = false;
+        }
       }
     });
   }

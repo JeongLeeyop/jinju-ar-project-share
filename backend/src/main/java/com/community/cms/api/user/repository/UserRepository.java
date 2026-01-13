@@ -34,6 +34,16 @@ public interface UserRepository extends JpaRepository<User, String>, QuerydslPre
     List<User> findAllByBirth(LocalDate birth);
 
     /**
+     * 이름과 전화번호로 사용자 조회 (이메일/아이디 찾기용)
+     */
+    Optional<User> findByActualNameAndConcatNumber(String actualName, String concatNumber);
+
+    /**
+     * 이메일(아이디)과 전화번호로 사용자 조회 (임시 비밀번호 발급용)
+     */
+    Optional<User> findByUserIdAndConcatNumber(String userId, String concatNumber);
+
+    /**
      * 채널 멤버 중 특정 공간에 속하지 않은 사용자 조회 (본인 제외)
      * @param channelUid 채널 UID (domain)
      * @param spaceUid 공간 UID

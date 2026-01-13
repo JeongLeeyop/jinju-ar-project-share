@@ -118,3 +118,46 @@ export const getTeacherList = (institutionUid: string) => request({
   url: `${PATH}/institution/${institutionUid}/teacher`,
   method: 'get',
 });
+
+// 비밀번호 찾기 API
+const PASSWORD_PATH = '/password';
+
+/**
+ * 이메일(아이디) 찾기
+ */
+export interface FindEmailRequest {
+  actualName: string;
+  concatNumber: string;
+}
+
+export interface FindEmailResponse {
+  found: boolean;
+  maskedEmail: string;
+  message: string;
+}
+
+export const findEmail = (data: FindEmailRequest) => request({
+  url: `${PASSWORD_PATH}/find-email`,
+  method: 'post',
+  data,
+});
+
+/**
+ * 임시 비밀번호 발급 (SMS 발송)
+ */
+export interface TempPasswordRequest {
+  email: string;
+  concatNumber: string;
+}
+
+export interface TempPasswordResponse {
+  success: boolean;
+  message: string;
+  maskedPhone: string;
+}
+
+export const requestTempPassword = (data: TempPasswordRequest) => request({
+  url: `${PASSWORD_PATH}/temp-password`,
+  method: 'post',
+  data,
+});

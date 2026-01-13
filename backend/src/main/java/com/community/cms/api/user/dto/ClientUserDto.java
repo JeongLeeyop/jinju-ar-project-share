@@ -106,6 +106,9 @@ public class ClientUserDto {
         private String email;
         private String iconFileUid;
         private String concatNumber;
+        private String currentPassword;  // 현재 비밀번호
+        private String newPassword;      // 새 비밀번호
+        private String newPasswordCheck; // 새 비밀번호 확인
     }
 
     @Data

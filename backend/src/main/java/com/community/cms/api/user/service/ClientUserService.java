@@ -18,6 +18,7 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 import org.springframework.security.core.session.SessionRegistry;
@@ -101,6 +102,8 @@ class ClientUserServiceImpl implements ClientUserService {
 	
 	private final UserService userServce;	
 
+	private final PasswordEncoder passwordEncoder;
+
 	@Autowired
     private SessionRegistry sessionRegistry;
 
@@ -168,12 +171,45 @@ class ClientUserServiceImpl implements ClientUserService {
 	@Transactional
 	@Override
 	public void updateInfo(User user, ClientUserDto.update updateDto, SinghaUser authUser) {
-		userRepository.findById(authUser.getUser().getUid()).orElseThrow(() -> new NotFoundException(NotFound.USER));
-		if (!user.getUid().equals(authUser.getUser().getUid())) {
+		// 최신 User 정보 다시 로드
+		User freshUser = userRepository.findById(authUser.getUser().getUid()).orElseThrow(() -> new NotFoundException(NotFound.USER));
+		if (!freshUser.getUid().equals(authUser.getUser().getUid())) {
 			throw new NotFoundException(NotFound.USER);
 		}
-		user = ClientUserMapper.INSTANCE.updateDtoToEntity(updateDto, user);
-		userRepository.save(user);
+		
+		// 비밀번호 변경 로직
+		if (updateDto.getCurrentPassword() != null && !updateDto.getCurrentPassword().isEmpty()) {
+			// 현재 비밀번호 확인 (최신 User 데이터로 검증)
+			if (!passwordEncoder.matches(updateDto.getCurrentPassword(), freshUser.getUserPassword())) {
+				throw new RuntimeException("현재 비밀번호가 일치하지 않습니다.");
+			}
+			
+			// 새 비밀번호 검증
+			if (updateDto.getNewPassword() == null || updateDto.getNewPassword().isEmpty()) {
+				throw new RuntimeException("새 비밀번호를 입력해주세요.");
+			}
+			
+			if (updateDto.getNewPassword().length() < 8 || updateDto.getNewPassword().length() > 20) {
+				throw new RuntimeException("새 비밀번호는 8~20자로 입력해주세요.");
+			}
+			
+			// 새 비밀번호와 새 비밀번호 확인 일치 여부 검증
+			if (updateDto.getNewPasswordCheck() == null || updateDto.getNewPasswordCheck().isEmpty()) {
+				throw new RuntimeException("새 비밀번호 확인을 입력해주세요.");
+			}
+			
+			if (!updateDto.getNewPassword().equals(updateDto.getNewPasswordCheck())) {
+				throw new RuntimeException("새 비밀번호가 일치하지 않습니다.");
+			}
+			
+			// 새 비밀번호 암호화하여 저장
+			// setUserPassword()는 자동으로 암호화하므로, 이미 암호화된 값을 저장하려면 setOriginalUserPassword() 사용
+			freshUser.setOriginalUserPassword(passwordEncoder.encode(updateDto.getNewPassword()));
+		}
+		
+		// 매퍼를 통해 다른 필드들 업데이트 (userPassword는 무시됨)
+		freshUser = ClientUserMapper.INSTANCE.updateDtoToEntity(updateDto, freshUser);
+		userRepository.save(freshUser);
 	}
 
 	@Override

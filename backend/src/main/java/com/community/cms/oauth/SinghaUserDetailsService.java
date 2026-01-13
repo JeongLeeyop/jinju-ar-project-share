@@ -33,9 +33,10 @@ public class SinghaUserDetailsService implements UserDetailsService {
 	@Transactional
 	@Override
 	public UserDetails loadUserByUsername(String userId) throws UsernameNotFoundException {
-		if (loginAttemptService.isBlocked(getClientIP())) {
-            throw new BadCredentialsException("로그인 5회 이상 실패로 1시간동안 로그인이 차단됩니다.");
-        }
+		// 로그인 실패 제한 기능 제거
+		// if (loginAttemptService.isBlocked(getClientIP())) {
+        //     throw new BadCredentialsException("로그인 5회 이상 실패로 1시간동안 로그인이 차단됩니다.");
+        // }
 
 		Optional<User> opUser = userRepository.findByUserId(userId);
 

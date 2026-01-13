@@ -98,7 +98,8 @@ public class CustomAuthenticationProvider implements AuthenticationProvider {
         HashMap<String, Object> details = (HashMap<String, Object>) authentication.getDetails();
         
         String ip = getClientIP();
-        if (loginAttemptService.isBlocked(ip)) throw new BadCredentialsException("로그인 5회 이상 실패로 1시간동안 로그인이 차단됩니다.");
+        // 로그인 실패 제한 기능 제거
+        // if (loginAttemptService.isBlocked(ip)) throw new BadCredentialsException("로그인 5회 이상 실패로 1시간동안 로그인이 차단됩니다.");
         if (details.get("provider_token") != null) {
             OAuth2UserInfo userInfo = getUserInfo(details.get("provider_token"));
             
@@ -136,7 +137,8 @@ public class CustomAuthenticationProvider implements AuthenticationProvider {
         
         if (details.get("provider_token") == null) {
             if (!this.passwordEncoder.matches(password, user.getUserPassword())) {
-                loginAttemptService.loginFailed(ip);
+                // 로그인 실패 제한 기능 제거
+                // loginAttemptService.loginFailed(ip);
                 throw new BadCredentialsException("패스워드가 일치하지않습니다.");
             }
         }

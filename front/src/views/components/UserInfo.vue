@@ -27,6 +27,21 @@
                     <el-input v-model="userInfo.concatNumber" @input="formatPhoneNumber" placeholder="핸드폰 번호 (예: 010-1234-5678)" maxlength="13"/>
                   </div>
                 </el-form-item>
+                <el-form-item prop="currentPassword">
+                  <div class="btn-wr password">
+                    <el-input v-model="userInfo.currentPassword" type="password" placeholder="현재 비밀번호 (변경 시에만 입력)"/>
+                  </div>
+                </el-form-item>
+                <el-form-item prop="newPassword">
+                  <div class="btn-wr password">
+                    <el-input v-model="userInfo.newPassword" type="password" placeholder="새 비밀번호 (변경 시에만 입력)"/>
+                  </div>
+                </el-form-item>
+                <el-form-item prop="newPasswordCheck">
+                  <div class="btn-wr password">
+                    <el-input v-model="userInfo.newPasswordCheck" type="password" placeholder="새 비밀번호 확인 (변경 시에만 입력)"/>
+                  </div>
+                </el-form-item>
                 <el-form-item prop="thumbnail">
                    <div class="txt-box icon-section">
                     <div class="ttl">Icon 등록 (200 X 200)</div>
@@ -136,6 +151,9 @@ private async getUserInfo() {
     privacy2: '',
     privacy3: '',
     iconFileUid: '',
+    currentPassword: '',
+    newPassword: '',
+    newPasswordCheck: '',
   }
 
   private iconImageLimit = 1;
@@ -288,6 +306,55 @@ private async getUserInfo() {
     }
   };
 
+  private validateNewPassword = (rule:any, value:any, callback:any) => {
+    const currentPassword = this.userInfo.currentPassword;
+    const newPassword = this.userInfo.newPassword;
+    const newPasswordCheck = this.userInfo.newPasswordCheck;
+
+    // 비밀번호 변경을 원하는 경우
+    if (currentPassword || newPassword || newPasswordCheck) {
+      // 현재 비밀번호 입력 확인
+      if (!currentPassword) {
+        callback(new Error('현재 비밀번호를 입력해주세요.'));
+        return;
+      }
+      
+      // 새 비밀번호 입력 확인
+      if (!newPassword) {
+        callback(new Error('새 비밀번호를 입력해주세요.'));
+        return;
+      }
+      
+      // 새 비밀번호 길이 확인
+      if (newPassword.length < 8 || newPassword.length > 20) {
+        callback(new Error('새 비밀번호는 8~20자로 입력해주세요.'));
+        return;
+      }
+    }
+    
+    callback();
+  };
+
+  private validateNewPasswordCheck = (rule:any, value:any, callback:any) => {
+    const newPassword = this.userInfo.newPassword;
+    const newPasswordCheck = this.userInfo.newPasswordCheck;
+
+    // 비밀번호 변경을 원하는 경우
+    if (newPassword) {
+      if (!newPasswordCheck) {
+        callback(new Error('새 비밀번호 확인을 입력해주세요.'));
+        return;
+      }
+      
+      if (newPassword !== newPasswordCheck) {
+        callback(new Error('새 비밀번호가 일치하지 않습니다.'));
+        return;
+      }
+    }
+    
+    callback();
+  };
+
   private joinRules = {
     email: [
       { required: true, message: '이메일을 입력해주세요.', trigger: ['change', 'blur'] },
@@ -298,6 +365,15 @@ private async getUserInfo() {
     ],
     concatNumber: [
       { validator: this.validatePhoneNumber, trigger: ['change', 'blur'] },
+    ],
+    currentPassword: [
+      { validator: this.validateNewPassword, trigger: ['change', 'blur'] },
+    ],
+    newPassword: [
+      { validator: this.validateNewPassword, trigger: ['change', 'blur'] },
+    ],
+    newPasswordCheck: [
+      { validator: this.validateNewPasswordCheck, trigger: ['change', 'blur'] },
     ],
   }
 
@@ -314,15 +390,41 @@ private async getUserInfo() {
             this.userInfo.iconFileUid = iconUid;
           }
           
+          // 회원정보 수정 데이터 준비
+          const updateData: any = {
+            actualName: this.userInfo.actualName,
+            email: this.userInfo.email,
+            concatNumber: this.userInfo.concatNumber,
+            iconFileUid: this.userInfo.iconFileUid,
+          };
+          
+          // 비밀번호 변경이 있는 경우에만 포함
+          if (this.userInfo.currentPassword) {
+            updateData.currentPassword = this.userInfo.currentPassword;
+            updateData.newPassword = this.userInfo.newPassword;
+            updateData.newPasswordCheck = this.userInfo.newPasswordCheck;
+          }
+          
           // 회원정보 수정
-          await updateUser(this.userInfo.uid, this.userInfo);
+          await updateUser(this.userInfo.uid, updateData);
           this.$message.success('회원정보가 수정되었습니다.');
+          
+          // 비밀번호가 변경된 경우 재로그인 안내
+          if (this.userInfo.currentPassword) {
+            this.$message.info('비밀번호가 변경되었습니다. 새로운 비밀번호로 다시 로그인해주세요.');
+            // 로그아웃 처리는 별도로 진행
+          }
+          
+          // 모든 password 필드 초기화
+          this.userInfo.currentPassword = '';
+          this.userInfo.newPassword = '';
+          this.userInfo.newPasswordCheck = '';
+          
           this.userModalVisible = false;
           this.$router.go(0);
         } catch (error: any) {
           const message = error.response?.data?.message || '회원정보 수정에 실패했습니다.';
           this.$message.error(message);
-          this.userModalVisible = false;
         } finally {
           this.loading = false;
         }
@@ -407,8 +509,10 @@ private async getUserInfo() {
   .button-wrap {
     display: flex;
     flex-direction: column;
-    gap: 12px;
     margin-bottom: 16px;
+    .el-form-item {
+      margin-bottom: 13px;
+    }
 
     .btn-wr {
       width: 100%;
