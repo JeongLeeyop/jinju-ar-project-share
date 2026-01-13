@@ -261,6 +261,7 @@ import { getChannelDomainDetail } from '@/api/channel';
 import { checkPermissionByUser } from '@/api/channelMemberPermission';
 import { getUserInfo } from '@/api/user';
 import { UserModule } from '@/store/modules/user';
+import { ChannelPermissionModule } from '@/store/modules/channelPermission';
 
 @Component({
   name: 'CommunitySidebar',
@@ -374,30 +375,21 @@ export default class extends Vue {
       // Check if user is the channel creator (for Admin Menu)
       this.isChannelCreator = channelResponse?.data.userUid === currentUserInfo.uid;
 
-      // Check manager permissions (for Manager Menu)
-      // User needs either SPACE_CREATE or OFFLINE_MARKETPLACE_REGISTER permission
-      try {
-        const spaceCreateResponse = await checkPermissionByUser(
-          this.currentChannelUid,
-          'SPACE_CREATE'
-        );
-        const marketplaceOfflineResponse = await checkPermissionByUser(
-          this.currentChannelUid,
-          'OFFLINE_MARKETPLACE_REGISTER'
-        );
-
-        console.log('Permission check results:', {
-          spaceCreate: spaceCreateResponse.data.hasPermission,
-          marketplaceOffline: marketplaceOfflineResponse.data.hasPermission,
-        });
-
-        this.hasManagerPermission = 
-          spaceCreateResponse.data.hasPermission || 
-          marketplaceOfflineResponse.data.hasPermission;
-      } catch (error) {
-        console.error('권한 체크 실패:', error);
-        this.hasManagerPermission = false;
-      }
+      // ✅ ChannelPermissionModule을 사용해서 권한 로드 및 확인
+      await ChannelPermissionModule.loadPermissions(this.currentChannelUid);
+      
+      // 매니저 권한: SPACE_CREATE 또는 OFFLINE_MARKETPLACE_REGISTER 권한이 있거나 채널 관리자인 경우
+      this.hasManagerPermission = 
+        ChannelPermissionModule.isChannelAdmin ||
+        ChannelPermissionModule.canCreateSpace ||
+        ChannelPermissionModule.canRegisterOfflineMarketplace;
+      
+      console.log('Permission check results (using ChannelPermissionModule):', {
+        isChannelAdmin: ChannelPermissionModule.isChannelAdmin,
+        canCreateSpace: ChannelPermissionModule.canCreateSpace,
+        canRegisterOfflineMarketplace: ChannelPermissionModule.canRegisterOfflineMarketplace,
+        hasManagerPermission: this.hasManagerPermission,
+      });
     } catch (error) {
       console.error('채널 정보 조회 실패:', error);
     }
@@ -445,8 +437,44 @@ export default class extends Vue {
     return this.$route.name === 'Marketplace' || this.$route.name === 'OfflineMarketplace';
   }
 
+  // ✅ 글쓰기 버튼 표시 여부 (페이지 + 권한 체크)
   get showWriteButton() {
-    return this.$route.name === 'Marketplace' || this.$route.name === 'OfflineMarketplace' || this.$route.name === 'CommunitySpace' || this.$route.name === 'Lession' || this.$route.name === 'Video' || this.$route.name === 'Calendar';
+    const routeName = this.$route.name;
+    
+    // 권한이 아직 로드되지 않았으면 버튼 숨김
+    if (!ChannelPermissionModule.loaded) {
+      console.log('🔄 권한 로드 중... 버튼 숨김');
+      return false;
+    }
+    
+    // 커뮤니티 공간 페이지에서는 POST_USE (게시판 이용) 권한 체크
+    if (routeName === 'CommunitySpace') {
+      const canCreate = ChannelPermissionModule.canCreatePost;
+      console.log('📝 CommunitySpace 게시판 이용 권한:', canCreate);
+      return canCreate;
+    }
+    
+    // 장터 페이지에서는 MARKETPLACE_USE 권한 체크
+    if (routeName === 'Marketplace') {
+      return ChannelPermissionModule.canUseMarketplace;
+    }
+    
+    // 오프라인 장터 페이지에서는 OFFLINE_MARKETPLACE_REGISTER 권한 체크
+    if (routeName === 'OfflineMarketplace') {
+      return ChannelPermissionModule.canRegisterOfflineMarketplace;
+    }
+    
+    // 강좌 페이지에서는 채널 관리자만 등록 가능 (별도 권한 타입 없음)
+    if (routeName === 'Lession' || routeName === 'Video') {
+      return ChannelPermissionModule.isChannelAdmin;
+    }
+    
+    // 일정 페이지에서는 SCHEDULE_CREATE 권한 체크
+    if (routeName === 'Calendar') {
+      return ChannelPermissionModule.canCreateSchedule;
+    }
+    
+    return false;
   }
 
   private openWriteModal() {

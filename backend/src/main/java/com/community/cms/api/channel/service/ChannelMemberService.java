@@ -9,8 +9,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.community.cms.api.channel.dto.ChannelMemberDto;
+import com.community.cms.api.channel.dto.ChannelMemberPermissionDto;
 import com.community.cms.api.channel.dto.ChannelMemberSearch;
 import com.community.cms.api.channel.dto.mapper.ChannelMemberMapper;
 import com.community.cms.api.channel.repository.ChannelMemberRepository;
@@ -18,6 +20,7 @@ import com.community.cms.api.push_alarm.dto.PushAlarmDto;
 import com.community.cms.api.push_alarm.service.PushAlarmService;
 import com.community.cms.api.user.dto.UserDto;
 import com.community.cms.api.user.dto.mapper.UserMapper;
+import com.community.cms.common.code.ChannelMemberPermissionType;
 import com.community.cms.entity.User;
 import com.community.cms.entity2.ChannelMember;
 import com.community.cms.oauth.SinghaUser;
@@ -49,6 +52,9 @@ class ChannelMemberServiceImpl implements ChannelMemberService {
 
     @Autowired
     private PushAlarmService pushAlarmService;
+
+    @Autowired
+    private ChannelMemberPermissionService permissionService;
 
     @Override
     public Page<ChannelMemberDto.detail> list(SinghaUser authUser, ChannelMemberSearch search, Pageable pageable) {
@@ -103,9 +109,13 @@ class ChannelMemberServiceImpl implements ChannelMemberService {
         return dto;
     }
 
+    @Transactional
     public void approval(ChannelMember channelMember, SinghaUser authUser) {
         channelMember.setApprovalStatus(true);
         channelMemberRepository.save(channelMember);
+
+        // ✅ 기본 권한 부여 (게시글 등록, 수정, 삭제, 장터 이용)
+        grantDefaultPermissions(channelMember, authUser.getUser().getUid());
 
         // 사용자에게
         PushAlarmDto.Add pushAlarmDto = new PushAlarmDto.Add();
@@ -115,6 +125,30 @@ class ChannelMemberServiceImpl implements ChannelMemberService {
         pushAlarmDto.setLink("/channel/" + channelMember.getChannel().getDomain());
         pushAlarmDto.setUserUidList(null);
         pushAlarmService.add(pushAlarmDto);
+    }
+
+    /**
+     * 기본 권한 부여
+     * 새 회원에게 기본 권한(게시판 이용, 장터 이용)을 부여합니다.
+     */
+    private void grantDefaultPermissions(ChannelMember channelMember, String adminUid) {
+        // 기본적으로 부여할 권한 목록
+        ChannelMemberPermissionType[] defaultPermissions = {
+            ChannelMemberPermissionType.POST_USE,        // 게시판 이용 (등록/수정/삭제 통합)
+            ChannelMemberPermissionType.MARKETPLACE_USE  // 장터 이용
+        };
+
+        for (ChannelMemberPermissionType permType : defaultPermissions) {
+            ChannelMemberPermissionDto.CreateRequest request = 
+                new ChannelMemberPermissionDto.CreateRequest(
+                    channelMember.getIdx(),
+                    permType,
+                    true
+                );
+            permissionService.createOrUpdatePermission(request, adminUid);
+        }
+        
+        System.out.println("✅ 기본 권한 부여 완료: 회원 IDX=" + channelMember.getIdx());
     }
 
     /**

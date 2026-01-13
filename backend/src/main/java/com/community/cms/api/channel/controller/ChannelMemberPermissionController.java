@@ -247,6 +247,32 @@ public class ChannelMemberPermissionController {
     }
     
     /**
+     * 현재 사용자의 모든 권한 조회 (채널 기준)
+     * 프론트엔드에서 권한 기반 UI 제어에 사용
+     */
+    @GetMapping("/my-permissions")
+    public ResponseEntity<?> getMyPermissions(
+            @RequestParam String channelUid,
+            @AuthenticationPrincipal SinghaUser userDetails) {
+        try {
+            User user = authenticationUtil.validateAndGetCurrentUser(userDetails);
+            
+            // domain → uid 변환 (channelUid가 domain일 수 있음)
+            String actualChannelUid = getChannelUidByDomainOrUid(channelUid);
+            
+            // 현재 사용자의 모든 권한 조회
+            Map<String, Object> result = permissionService.getAllUserPermissions(user.getUid(), actualChannelUid);
+            
+            return ResponseEntity.ok(result);
+        } catch (RuntimeException e) {
+            log.error("Failed to get my permissions: {}", e.getMessage());
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+    }
+    
+    /**
      * domain 또는 uid를 실제 channel uid로 변환
      */
     private String getChannelUidByDomainOrUid(String domainOrUid) {
@@ -254,5 +280,61 @@ public class ChannelMemberPermissionController {
         return channelRepository.findByDomain(domainOrUid)
                 .map(Channel::getUid)
                 .orElse(domainOrUid);  // domain이 아니면 uid로 간주
+    }
+    
+    /**
+     * 채널의 모든 승인된 회원에게 기본 권한을 일괄 부여
+     * (기존 회원들에게 기본 권한이 없는 경우 사용)
+     */
+    @PostMapping("/grant-default-permissions")
+    public ResponseEntity<?> grantDefaultPermissionsToAllMembers(
+            @RequestParam String channelUid,
+            @AuthenticationPrincipal SinghaUser userDetails) {
+        try {
+            User user = authenticationUtil.validateAndGetCurrentUser(userDetails);
+            
+            // domain → uid 변환
+            String actualChannelUid = getChannelUidByDomainOrUid(channelUid);
+            
+            // 관리자 권한 확인
+            validateChannelAdmin(actualChannelUid, user);
+            
+            // 해당 채널의 모든 승인된 회원 조회 (추방되지 않은 회원만)
+            List<ChannelMember> members = channelMemberRepository.findByChannelUidAndApprovalStatusAndBanned(actualChannelUid, true, false);
+            
+            int grantedCount = 0;
+            
+            // 기본 권한 목록 (게시판 이용, 장터 이용)
+            ChannelMemberPermissionType[] defaultPermissions = {
+                ChannelMemberPermissionType.POST_USE,        // 게시판 이용 (등록/수정/삭제 통합)
+                ChannelMemberPermissionType.MARKETPLACE_USE  // 장터 이용
+            };
+            
+            for (ChannelMember member : members) {
+                for (ChannelMemberPermissionType permType : defaultPermissions) {
+                    ChannelMemberPermissionDto.CreateRequest request = 
+                        new ChannelMemberPermissionDto.CreateRequest(
+                            member.getIdx(),
+                            permType,
+                            true
+                        );
+                    permissionService.createOrUpdatePermission(request, user.getUid());
+                }
+                grantedCount++;
+            }
+            
+            log.info("Granted default permissions to {} members in channel {}", grantedCount, actualChannelUid);
+            
+            Map<String, Object> result = new HashMap<>();
+            result.put("message", grantedCount + "명의 회원에게 기본 권한을 부여했습니다.");
+            result.put("grantedCount", grantedCount);
+            
+            return ResponseEntity.ok(result);
+        } catch (RuntimeException e) {
+            log.error("Failed to grant default permissions: {}", e.getMessage());
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
     }
 }

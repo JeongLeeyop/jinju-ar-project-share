@@ -107,3 +107,34 @@ export const getAllPermissionTypes = () => request({
   url: `${PATH}/types`,
   method: 'get',
 });
+
+/**
+ * 현재 사용자의 권한 응답 인터페이스
+ */
+export interface MyPermissionsResponse {
+  isChannelAdmin: boolean;
+  isMember: boolean;
+  isBanned: boolean;
+  permissions: {
+    POST_CREATE: boolean;
+    POST_UPDATE: boolean;
+    POST_DELETE: boolean;
+    SPACE_CREATE: boolean;
+    MARKETPLACE_USE: boolean;
+    MARKETPLACE_REGISTER: boolean;
+    OFFLINE_MARKETPLACE_REGISTER: boolean;
+    SCHEDULE_PARTICIPATE: boolean;
+    SCHEDULE_CREATE?: boolean;
+    [key: string]: boolean | undefined;
+  };
+}
+
+/**
+ * 현재 사용자의 모든 권한 조회 (채널 기준)
+ * 권한 기반 UI 제어에 사용
+ */
+export const getMyPermissions = (channelUid: string) => request({
+  url: `${PATH}/my-permissions`,
+  method: 'get',
+  params: { channelUid },
+});

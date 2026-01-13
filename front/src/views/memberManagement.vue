@@ -964,14 +964,13 @@ export default class extends Vue {
 
   // 사용 가능한 권한 목록 (백엔드 Enum과 일치하도록 수정)
   private availablePermissions = [
-    { value: 'POST_CREATE', label: '게시글 등록' },
-    { value: 'POST_UPDATE', label: '게시글 수정' },
-    { value: 'POST_DELETE', label: '게시글 삭제' },
+    { value: 'POST_USE', label: '게시판 이용' },
     { value: 'SPACE_CREATE', label: '공간 생성' },
     { value: 'MARKETPLACE_USE', label: '장터 이용' },
     { value: 'MARKETPLACE_REGISTER', label: '장터 등록' },
     { value: 'OFFLINE_MARKETPLACE_REGISTER', label: '오프라인 장터 등록' },
     { value: 'SCHEDULE_PARTICIPATE', label: '일정 참여' },
+    { value: 'SCHEDULE_CREATE', label: '일정 생성' },
   ];
 
   get filteredMembers() {

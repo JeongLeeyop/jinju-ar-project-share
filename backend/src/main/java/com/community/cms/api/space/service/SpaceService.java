@@ -2,11 +2,13 @@ package com.community.cms.api.space.service;
 
 import com.community.cms.api.channel.repository.ChannelMemberRepository;
 import com.community.cms.api.channel.repository.ChannelRepository;
+import com.community.cms.api.channel.service.ChannelMemberPermissionService;
 import com.community.cms.api.space.dto.*;
 import com.community.cms.api.space.repository.SpaceInvitationRepository;
 import com.community.cms.api.space.repository.SpaceMemberRepository;
 import com.community.cms.api.space.repository.SpaceRepository;
 import com.community.cms.api.user.repository.UserRepository;
+import com.community.cms.common.code.ChannelMemberPermissionType;
 import com.community.cms.entity.Space;
 import com.community.cms.entity.SpaceInvitation;
 import com.community.cms.entity.SpaceMember;
@@ -45,6 +47,7 @@ public class SpaceService {
     private final ChannelRepository channelRepository;
     private final ChannelMemberRepository channelMemberRepository;
     private final ActivityLogHelper activityLogHelper;
+    private final ChannelMemberPermissionService permissionService;
 
     /**
      * 공간 생성
@@ -65,6 +68,9 @@ public class SpaceService {
 
         // ✅ channelUid 변환: request에서 받은 값이 domain인지 uid인지 확인하고 실제 uid로 변환
         String actualChannelUid = resolveChannelUid(request.getChannelUid());
+
+        // ✅ 공간 생성 권한 검증 (SPACE_CREATE 권한 필요, 커뮤니티 관리자는 자동 허용)
+        permissionService.validatePermission(adminUid, actualChannelUid, ChannelMemberPermissionType.SPACE_CREATE);
 
         // 공간 생성 제한 확인: 사용자당 게시판 1개, 채팅 1개만 허용
         validateSpaceCreationLimit(actualChannelUid, adminUid, request.getSpaceType());
@@ -461,7 +467,7 @@ public class SpaceService {
                     .filter(dto -> dto != null)
                     .collect(Collectors.toList());
             
-            log.info("공개 공간 멤버 조회: spaceUid={}, spaceType={}, channelUid={}, memberCount={}", 
+            log.info("공개 공간 멤버 조회: spaceUid={}, spaceType={}, channelUid={}, memberCount={", 
                     space.getUid(), space.getSpaceType(), channel.getUid(), members.size());
             
             return members;

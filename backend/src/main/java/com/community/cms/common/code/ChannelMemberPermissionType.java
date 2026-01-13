@@ -5,14 +5,8 @@ package com.community.cms.common.code;
  */
 public enum ChannelMemberPermissionType {
     
-    /** 게시판 이용 - 등록 */
-    POST_CREATE("POST_CREATE", "게시글 등록"),
-    
-    /** 게시판 이용 - 수정 */
-    POST_UPDATE("POST_UPDATE", "게시글 수정"),
-    
-    /** 게시판 이용 - 삭제 */
-    POST_DELETE("POST_DELETE", "게시글 삭제"),
+    /** 게시판 이용 (등록/수정/삭제 통합) */
+    POST_USE("POST_USE", "게시판 이용"),
     
     /** 공간 생성 */
     SPACE_CREATE("SPACE_CREATE", "공간 생성"),

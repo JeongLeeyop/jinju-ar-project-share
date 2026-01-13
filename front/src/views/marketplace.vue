@@ -221,6 +221,8 @@ import {
   OfflineMarketplace 
 } from '@/api/marketplace';
 import { uploadFile } from '@/api/post';
+import { ChannelPermissionModule } from '@/store/modules/channelPermission';
+import { getChannelDomainDetail } from '@/api/channel';
 
 @Component({
   name: 'Marketplace',
@@ -300,8 +302,26 @@ export default class extends Vue {
   }
 
   private async checkPermission() {
-    // TODO: 권한 체크 API 호출
-    this.canWrite = true;
+    // ChannelPermissionModule을 사용해서 권한 로드 및 확인
+    try {
+      // domain → uid 변환
+      const channelResponse = await getChannelDomainDetail(this.channelUid);
+      const channelUid = channelResponse.data.uid;
+      
+      await ChannelPermissionModule.loadPermissions(channelUid);
+      
+      // 장터 등록 권한 확인 (커뮤니티 관리자 또는 MARKETPLACE_REGISTER 권한 필요)
+      this.canWrite = ChannelPermissionModule.canRegisterMarketplace;
+      
+      console.log('Marketplace permission check:', {
+        isChannelAdmin: ChannelPermissionModule.isChannelAdmin,
+        canRegisterMarketplace: ChannelPermissionModule.canRegisterMarketplace,
+        canWrite: this.canWrite,
+      });
+    } catch (error) {
+      console.error('권한 체크 실패:', error);
+      this.canWrite = false;
+    }
   }
 
   // 오프라인 장터 정보 로드

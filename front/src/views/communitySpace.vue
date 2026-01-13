@@ -215,8 +215,8 @@
       @invite="openInviteModal"
     />
 
-    <!-- Floating Write Button (Mobile) -->
-    <button class="write-post-btn-fixed" @click="openWriteModal">
+    <!-- Floating Write Button (Mobile) - 권한이 있는 사용자만 표시 -->
+    <button v-if="canCreatePost" class="write-post-btn-fixed" @click="openWriteModal">
       <span class="btn-text">글 작성하기</span>
       <svg class="btn-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M12 5V19M5 12H19" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -268,6 +268,7 @@ import {
   SpacePost,
   SpacePostComment,
 } from '@/api/spacePost';
+import { ChannelPermissionModule } from '@/store/modules/channelPermission';
 
 interface Participant {
   id: string | number;
@@ -315,16 +316,43 @@ export default class CommunitySpace extends Vue {
   // 초대 모달 관련
   private inviteModalVisible = false;
 
+  // ✅ 권한 체크 (ChannelPermissionModule 사용)
+  get canCreatePost() {
+    // 권한이 로드되지 않았으면 false
+    if (!ChannelPermissionModule.loaded) {
+      return false;
+    }
+    return ChannelPermissionModule.canCreatePost;
+  }
+
+  get canUpdatePost() {
+    if (!ChannelPermissionModule.loaded) {
+      return false;
+    }
+    return ChannelPermissionModule.canUpdatePost;
+  }
+
+  get canDeletePost() {
+    if (!ChannelPermissionModule.loaded) {
+      return false;
+    }
+    return ChannelPermissionModule.canDeletePost;
+  }
+
   // ✅ apiUrl을 computed getter로 변경하여 템플릿에서 접근 가능하도록 수정
   get apiUrl() {
     return process.env.VUE_APP_COMMON_API || '/api';
   }
 
-  mounted() {
+  async mounted() {
     this.spaceId = this.$route.params.spaceId || '';
     
     if (this.spaceId) {
-      this.loadSpaceData();
+      await this.loadSpaceData();
+      // 채널 권한 로드
+      if (this.channelUid) {
+        await ChannelPermissionModule.loadPermissions(this.channelUid);
+      }
       this.loadPosts();
       this.loadParticipants();
     }
@@ -677,6 +705,11 @@ export default class CommunitySpace extends Vue {
   }
 
   private openWriteModal() {
+    // 게시글 작성 권한 체크
+    if (!this.canCreatePost) {
+      this.$message.warning('게시글 등록 권한이 없습니다.');
+      return;
+    }
     // 게시글 작성 모달 열기
     this.editingPost = null;
     this.editingPostUid = '';

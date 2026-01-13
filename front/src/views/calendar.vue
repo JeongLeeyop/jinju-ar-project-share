@@ -485,6 +485,8 @@ import { getCurrentPoint } from '@/api/point';
 import { getUserInfo } from '@/api/user';
 import { ChannelModule } from '@/store/modules/channel';
 import { UserModule } from '@/store/modules/user';
+import { ChannelPermissionModule } from '@/store/modules/channelPermission';
+import { getChannelDomainDetail } from '@/api/channel';
 import request from '@/utils/request';
 import moment from 'moment';
 
@@ -589,9 +591,29 @@ export default class extends Vue {
     return currentChannel.userUid === currentUserUid;
   }
 
+  // ✅ 일정 생성 권한 체크 (ChannelPermissionModule 사용)
+  get canCreateSchedule(): boolean {
+    return ChannelPermissionModule.canCreateSchedule;
+  }
+
+  // ✅ 일정 참여 권한 체크
+  get canParticipateSchedule(): boolean {
+    return ChannelPermissionModule.canParticipateSchedule;
+  }
+
   async mounted() {
     await this.loadCurrentUserInfo();
     await this.loadCurrentPoint();
+    // 채널 권한 로드
+    const domain = this.$route.params.domain;
+    if (domain) {
+      try {
+        const channelResponse = await getChannelDomainDetail(domain as string);
+        await ChannelPermissionModule.loadPermissions(channelResponse.data.uid);
+      } catch (error) {
+        console.error('채널 권한 로드 실패:', error);
+      }
+    }
     this.fetchEventList();
   }
 

@@ -2,11 +2,13 @@ package com.community.cms.api.space.service;
 
 import com.community.cms.api.activity.repository.ActivityRepository;
 import com.community.cms.api.attached_file.repository.AttachedFileRepository;
+import com.community.cms.api.channel.service.ChannelMemberPermissionService;
 import com.community.cms.api.point.dto.PointHistoryDto;
 import com.community.cms.api.point.service.PointService;
 import com.community.cms.api.space.dto.*;
 import com.community.cms.api.space.repository.*;
 import com.community.cms.api.user.repository.UserRepository;
+import com.community.cms.common.code.ChannelMemberPermissionType;
 import com.community.cms.entity.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -37,9 +39,10 @@ public class SpacePostService {
     private final AttachedFileRepository attachedFileRepository;
     private final UserRepository userRepository;
     private final PointService pointService;
+    private final ChannelMemberPermissionService permissionService;
 
     /**
-     * 게시글 ?�성
+     * 게시글 생성
      */
     @Transactional
     public SpacePostDto createPost(String spaceUid, SpacePostCreateRequest request, 
@@ -47,6 +50,9 @@ public class SpacePostService {
         // 공간 존재 확인
         Space space = spaceRepository.findByUidAndIsActiveTrueAndIsDeletedFalse(spaceUid)
                 .orElseThrow(() -> new IllegalArgumentException("공간을 찾을 수 없습니다"));
+
+        // 게시판 이용 권한 검증 (POST_USE 권한 필요)
+        permissionService.validatePermission(userUid, space.getChannelUid(), ChannelMemberPermissionType.POST_USE);
 
         // 멤버 권한 확인 (공개 공간이 아니면 멤버여야 함)
         if (!space.isPublic() && !isSpaceMember(spaceUid, userUid)) {
@@ -318,7 +324,7 @@ public class SpacePostService {
     }
 
     /**
-     * 게시글 ?�정
+     * 게시글 수정
      */
     @Transactional
     public SpacePostDto updatePost(String postUid, SpacePostUpdateRequest request, 
@@ -329,6 +335,9 @@ public class SpacePostService {
         Space space = spaceRepository.findByUidAndIsActiveTrueAndIsDeletedFalse(
                 post.getSpace() != null ? post.getSpace().getUid() : null)
                 .orElseThrow(() -> new IllegalArgumentException("공간을 찾을 수 없습니다"));
+
+        // 게시판 이용 권한 검증 (POST_USE 권한 필요)
+        permissionService.validatePermission(userUid, space.getChannelUid(), ChannelMemberPermissionType.POST_USE);
 
         // 작성자는 수정 가능, 관리자는 전체 수정 가능
         boolean isAdmin = space.getAdminUid().equals(userUid);
@@ -415,7 +424,7 @@ public class SpacePostService {
     }
 
     /**
-     * 게시글 ??�� (?�프????��)
+     * 게시글 삭제 (소프트 삭제)
      */
     @Transactional
     public void deletePost(String postUid, String userUid, String userName) {
@@ -425,6 +434,9 @@ public class SpacePostService {
         Space space = spaceRepository.findByUidAndIsActiveTrueAndIsDeletedFalse(
                 post.getSpace() != null ? post.getSpace().getUid() : null)
                 .orElseThrow(() -> new IllegalArgumentException("공간을 찾을 수 없습니다"));
+
+        // ✅ 게시판 이용 권한 검증 (POST_USE 권한 필요, 커뮤니티 관리자는 자동 허용)
+        permissionService.validatePermission(userUid, space.getChannelUid(), ChannelMemberPermissionType.POST_USE);
 
         // 작성자 또는 관리자만 삭제 가능
         if (!post.getUserUid().equals(userUid) && !space.getAdminUid().equals(userUid)) {
