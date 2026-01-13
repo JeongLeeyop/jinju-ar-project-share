@@ -157,6 +157,14 @@ mounted() {
 @Watch('userModalVisible')
   private onUserModalVisibleChange(val: boolean) {
     this.localModalVisible = val;
+    // 모달이 열릴 때 로그인 폼 초기화 및 로그인 화면으로 이동
+    if (val === true) {
+      this.localActiveStep = 'Login';
+      this.loginForm = {
+        username: '',
+        password: '',
+      };
+    }
 }
 
 @Watch('localModalVisible')
@@ -463,6 +471,11 @@ private loginForm = {
 
   private viewLogin() {
     this.localActiveStep = 'Login';
+    // 로그인 폼 초기화
+    this.loginForm = {
+      username: '',
+      password: '',
+    };
   }
 
   private viewRegister() {
