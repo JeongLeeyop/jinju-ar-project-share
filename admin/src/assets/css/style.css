@@ -202,9 +202,8 @@ legend {
 }
 
 .aside-logo img {
-	width: 80px;
+	width: 200px;
 	height: auto;
-	filter: brightness(0) invert(1);
 }
 
 /* 사이드메뉴 링크 */

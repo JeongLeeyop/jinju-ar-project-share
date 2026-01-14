@@ -115,8 +115,7 @@ import { UserModule } from '@/store/modules/user';
 })
 export default class extends Vue {
   mounted() {
-    if (UserModule.userId === 'master') this.$router.push({ name: 'Shop' });
-    else this.$router.push({ name: 'ManagerOrderList' });
+    this.$router.push({ name: 'CommunityList' });
   }
 }
 </script>

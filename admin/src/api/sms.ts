@@ -1,6 +1,6 @@
 import request from '@/utils/request';
 
-const PATH = '/api/admin/sms';
+const PATH = '/admin/sms';
 
 // SMS 발송
 export const sendSms = (data: any) => request({

@@ -72,6 +72,13 @@ public interface MarketplaceProductRepository extends JpaRepository<MarketplaceP
     // 상태별 상품 수 조회
     long countByStatus(String status);
     
+    // 채널별 상품 수 조회
+    long countByChannelUid(String channelUid);
+    
+    // 채널별 판매완료된 상품의 총 매출 조회
+    @Query(value = "SELECT COALESCE(SUM(price), 0) FROM marketplace_product WHERE channel_uid = :channelUid AND status = 'SOLD_OUT'", nativeQuery = true)
+    Long getTotalSalesByChannelUid(@Param("channelUid") String channelUid);
+    
     // 조회수 증가
     @Modifying
     @Query("UPDATE MarketplaceProduct p SET p.viewCount = p.viewCount + 1 WHERE p.uid = :uid")

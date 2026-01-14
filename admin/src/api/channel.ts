@@ -1,6 +1,6 @@
 import request from '@/utils/request';
 
-const PATH = '/api/admin/channel';
+const PATH = '/admin/channel';
 
 // 커뮤니티 목록 조회
 export const getChannelList = (params: any) => request({

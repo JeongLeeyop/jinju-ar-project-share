@@ -4,13 +4,12 @@
       <div class="tl__box">
         <p class="tl">가입자 목록</p>
         <p class="usernumber">{{ communityName }} - 총 {{ totalElements | parseKrw }}명</p>
+        <el-button type="primary" @click="$router.push({ name: 'CommunityList' })" style="margin-left: auto;">
+          <i class="el-icon-arrow-left"></i> 목록으로
+        </el-button>
       </div>
 
-      <div class="user__tab small">
-        <router-link class="back-btn" :to="{ name: 'CommunityList' }">
-          <i class="el-icon-arrow-left"></i> 목록으로
-        </router-link>
-      </div>
+      <div class="user__tab small"></div>
     </div>
 
     <div v-loading="loading" class="user-content">
@@ -28,24 +27,28 @@
         <el-table-column prop="actualName" label="이름" />
         <el-table-column prop="email" label="이메일" />
         <el-table-column prop="concatNumber" label="연락처" width="140" />
-        <el-table-column label="가입 유형" width="120" align="center">
+        <el-table-column label="권한" width="350">
           <template slot-scope="scope">
-            <el-tag v-if="scope.row.provider === 'KAKAO'" type="warning" effect="dark" size="mini">카카오</el-tag>
-            <el-tag v-else-if="scope.row.provider === 'NAVER'" type="success" effect="dark" size="mini">네이버</el-tag>
-            <el-tag v-else-if="scope.row.provider === 'APPLE'" type="info" effect="dark" size="mini">애플</el-tag>
-            <el-tag v-else type="primary" effect="plain" size="mini">일반</el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column label="권한" width="100" align="center">
-          <template slot-scope="scope">
-            <el-tag :type="scope.row.isAdmin ? 'danger' : 'info'" size="small">
-              {{ scope.row.isAdmin ? '관리자' : '멤버' }}
-            </el-tag>
+            <div class="permissions-list">
+              <el-tag
+                v-for="perm in scope.row.permissions"
+                :key="perm.permissionType"
+                :type="perm.hasPermission ? 'success' : 'info'"
+                size="mini"
+                effect="plain"
+                class="permission-tag"
+              >
+                {{ perm.description }}
+              </el-tag>
+              <span v-if="!scope.row.permissions || scope.row.permissions.length === 0" class="no-permission">
+                권한 없음
+              </span>
+            </div>
           </template>
         </el-table-column>
         <el-table-column label="가입일" width="160" align="center">
           <template slot-scope="scope">
-            {{ scope.row.joinDate | parseDate('YYYY-MM-DD HH:mm') }}
+            {{ scope.row.createDate | parseDate('YYYY-MM-DD HH:mm') }}
           </template>
         </el-table-column>
         <el-table-column label="관리" width="100" align="center">
@@ -125,15 +128,23 @@ export default class CommunityMembers extends Vue {
 </script>
 
 <style scoped>
-.back-btn {
-  font-size: 14px;
-  color: #667eea;
-  background: #fff;
-  padding: 8px 16px;
-  border-radius: 6px;
+.tl__box {
+  display: flex;
+  align-items: center;
+  gap: 15px;
 }
-.back-btn:hover {
-  background: #667eea;
-  color: #fff;
+.permissions-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  justify-content: flex-start;
+  align-items: center;
+}
+.permission-tag {
+  margin: 0;
+}
+.no-permission {
+  color: #999;
+  font-size: 12px;
 }
 </style>

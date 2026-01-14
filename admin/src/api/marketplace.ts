@@ -1,6 +1,6 @@
 import request from '@/utils/request';
 
-const PATH = '/api/admin/marketplace';
+const PATH = '/admin/marketplace';
 
 // 장터 상품 목록 조회
 export const getMarketplaceList = (params: any) => request({

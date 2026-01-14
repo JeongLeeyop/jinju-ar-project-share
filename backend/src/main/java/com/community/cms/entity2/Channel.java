@@ -1,6 +1,7 @@
 package com.community.cms.entity2;
 
 import java.io.Serializable;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -14,6 +15,7 @@ import javax.persistence.OneToMany;
 import javax.persistence.OrderBy;
 import javax.persistence.OrderColumn;
 
+import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.Formula;
 import org.hibernate.annotations.GenericGenerator;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -51,6 +53,10 @@ public class Channel implements Serializable {
     
     // 삭제 상태 (DB에서 직접 관리, false=보임, true=숨김)
     private boolean deleteStatus = false;
+    
+    // 생성일
+    @CreationTimestamp
+    private LocalDateTime createDate;
     
     // private String tags;
     // private String basicInfo;

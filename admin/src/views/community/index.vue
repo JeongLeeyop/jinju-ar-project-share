@@ -51,13 +51,13 @@
         </el-table-column>
         <el-table-column label="장터 상품" width="100" align="center">
           <template slot-scope="scope">
-            {{ scope.row.marketplaceCount || 0 }}개
+            {{ scope.row.marketplaceProductCount || 0 }}개
           </template>
         </el-table-column>
         <el-table-column label="공개여부" width="100" align="center">
           <template slot-scope="scope">
-            <el-tag :type="scope.row.isSecret ? 'danger' : 'success'" size="small">
-              {{ scope.row.isSecret ? '비공개' : '공개' }}
+            <el-tag :type="scope.row.privateStatus ? 'danger' : 'success'" size="small">
+              {{ scope.row.privateStatus ? '비공개' : '공개' }}
             </el-tag>
           </template>
         </el-table-column>
@@ -66,11 +66,19 @@
             {{ scope.row.createDate | parseDate('YYYY-MM-DD HH:mm') }}
           </template>
         </el-table-column>
-        <el-table-column label="관리" width="180" align="center">
+        <el-table-column label="가입자" width="80" align="center">
           <template slot-scope="scope">
-            <router-link class="detail-button" :to="{ name: 'CommunityMembers', params: { uid: scope.row.uid } }">가입자</router-link>
-            <router-link class="detail-button" :to="{ name: 'CommunityDetail', params: { uid: scope.row.uid } }">상세</router-link>
-            <el-button size="mini" type="danger" @click="handleDelete(scope.row)">삭제</el-button>
+            <router-link class="link-button" :to="{ name: 'CommunityMembers', params: { uid: scope.row.uid } }">
+              보기
+            </router-link>
+          </template>
+        </el-table-column>
+        <el-table-column label="관리" width="120" align="center">
+          <template slot-scope="scope">
+            <div class="action-buttons">
+              <router-link class="detail-button" :to="{ name: 'CommunityDetail', params: { uid: scope.row.uid } }">상세</router-link>
+              <el-button size="mini" type="danger" @click="handleDelete(scope.row)">삭제</el-button>
+            </div>
           </template>
         </el-table-column>
       </el-table>
@@ -159,11 +167,43 @@ export default class CommunityIndex extends Vue {
 .link-text:hover {
   text-decoration: underline;
 }
+.link-button {
+  display: inline-block;
+  padding: 5px 12px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 4px;
+  font-size: 12px;
+  text-decoration: none;
+  transition: all 0.3s;
+}
+.link-button:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
 .member-count {
   color: #667eea;
   font-weight: 600;
 }
+.action-buttons {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
 .detail-button {
-  margin-right: 5px;
+  display: inline-block;
+  padding: 5px 10px;
+  background: #667eea;
+  color: white;
+  border-radius: 4px;
+  font-size: 12px;
+  text-decoration: none;
+  transition: all 0.3s;
+  white-space: nowrap;
+}
+.detail-button:hover {
+  background: #5568d3;
 }
 </style>

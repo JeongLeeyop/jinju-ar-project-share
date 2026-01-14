@@ -40,7 +40,7 @@ public class AdminChannelController {
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'CREATOR')")
     public ResponseEntity<Page<ChannelDto.detail>> list(
-            @PageableDefault(size = 10, page = 0, direction = Direction.DESC, sort = {"createDate"}) Pageable pageable,
+            @PageableDefault(size = 10, page = 0) Pageable pageable,
             ChannelSearch search) {
         return ResponseEntity.ok(channelService.adminList(search, pageable));
     }

@@ -50,6 +50,10 @@ public class ChannelDto {
         private Boolean myChannelStatus;
         private Boolean myTodayVisit;
         private String password;
+        private LocalDateTime createDate; // 생성일
+        private Long spaceCount; // 공간 수
+        private Long marketplaceProductCount; // 장터 상품 수
+        private Long totalSales; // 총 매출
         private List<ChannelUseCategoryDto.detail> categoryList = new ArrayList<ChannelUseCategoryDto.detail>();
         private List<ChannelImageDto.detail> iconImageList = new ArrayList<ChannelImageDto.detail>();
         private List<ChannelImageDto.detail> coverImageList = new ArrayList<ChannelImageDto.detail>();

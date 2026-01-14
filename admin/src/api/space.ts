@@ -1,6 +1,6 @@
 import request from '@/utils/request';
 
-const PATH = '/api/admin/space';
+const PATH = '/admin/space';
 
 // 공간 목록 조회
 export const getSpaceList = (params: any) => request({

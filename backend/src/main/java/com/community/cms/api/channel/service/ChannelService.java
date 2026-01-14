@@ -176,6 +176,15 @@ class ChannelServiceImpl implements ChannelService {
 
     @Autowired
     private SessionRegistry sessionRegistry;
+    
+    @Autowired
+    private com.community.cms.api.space.repository.SpaceRepository spaceRepository;
+    
+    @Autowired
+    private com.community.cms.api.marketplace.repository.MarketplaceProductRepository marketplaceProductRepository;
+    
+    @Autowired
+    private com.community.cms.api.channel.repository.ChannelMemberPermissionRepository channelMemberPermissionRepository;
 
     @Override
     public ChannelDto.detail detail(SinghaUser authUser, String uid) {
@@ -494,15 +503,44 @@ class ChannelServiceImpl implements ChannelService {
     
     @Override
     public Page<ChannelDto.detail> adminList(ChannelSearch search, Pageable pageable) {
-        return channelRepository.findAll(pageable)
-                .map(channel -> ChannelMapper.INSTANCE.entityToDetail(channel));
+        return channelRepository.findByDeleteStatusFalse(pageable)
+                .map(channel -> {
+                    ChannelDto.detail dto = ChannelMapper.INSTANCE.entityToDetail(channel);
+                    // 공간 수 조회
+                    dto.setSpaceCount(spaceRepository.countByChannelUidAndIsActiveTrueAndIsDeletedFalse(channel.getUid()));
+                    // 장터 상품 수 조회
+                    dto.setMarketplaceProductCount(marketplaceProductRepository.countByChannelUid(channel.getUid()));
+                    return dto;
+                });
     }
     
     @Override
     public ChannelDto.detail adminDetail(String uid) {
         Channel channel = channelRepository.findByUid(uid)
                 .orElseThrow(() -> new NotFoundException(NotFound.CHANNEL));
-        return ChannelMapper.INSTANCE.entityToDetail(channel);
+        ChannelDto.detail dto = ChannelMapper.INSTANCE.entityToDetail(channel);
+        
+        // 공간 수 조회
+        dto.setSpaceCount(spaceRepository.countByChannelUidAndIsActiveTrueAndIsDeletedFalse(channel.getUid()));
+        
+        // 장터 상품 수 조회
+        dto.setMarketplaceProductCount(marketplaceProductRepository.countByChannelUid(channel.getUid()));
+        
+        // 가입 주수 조회 (승인된 멤버만)
+        long memberCount = channelMemberRepository.countByChannelUidAndApprovalStatus(channel.getUid(), true);
+        dto.setMemberCount((int) memberCount);
+        
+        // 총 매출 조회 (판매완료된 상품)
+        Long totalSales = marketplaceProductRepository.getTotalSalesByChannelUid(channel.getUid());
+        dto.setTotalSales(totalSales != null ? totalSales : 0L);
+        
+        // 개설자 이름 설정
+        Optional<User> creator = userRepository.findById(dto.getUserUid());
+        if (creator.isPresent()) {
+            dto.setCreatorName(creator.get().getActualName());
+        }
+        
+        return dto;
     }
     
     @Override
@@ -510,8 +548,9 @@ class ChannelServiceImpl implements ChannelService {
     public void adminDelete(String uid) {
         Channel channel = channelRepository.findByUid(uid)
                 .orElseThrow(() -> new NotFoundException(NotFound.CHANNEL));
-        clearRelation(channel);
-        channelRepository.delete(channel);
+        // 논리적 삭제: deleteStatus를 true로 변경
+        channel.setDeleteStatus(true);
+        channelRepository.save(channel);
     }
     
     @Override
@@ -523,13 +562,33 @@ class ChannelServiceImpl implements ChannelService {
                     Map<String, Object> dto = new HashMap<>();
                     dto.put("userUid", member.getUserUid());
                     dto.put("channelUid", member.getChannelUid());
+                    dto.put("channelMemberIdx", member.getIdx());
                     dto.put("approvalStatus", member.isApprovalStatus());
                     dto.put("createDate", member.getCreateDate());
+                    
+                    // 사용자 정보
                     User user = userRepository.findByUid(member.getUserUid()).orElse(null);
                     if (user != null) {
-                        dto.put("name", user.getActualName());
+                        dto.put("actualName", user.getActualName());
                         dto.put("email", user.getEmail());
+                        dto.put("concatNumber", user.getConcatNumber());
+                        dto.put("provider", user.getProvider());
                     }
+                    
+                    // 권한 목록
+                    List<Map<String, Object>> permissions = channelMemberPermissionRepository
+                            .findByChannelMemberIdx(member.getIdx())
+                            .stream()
+                            .map(perm -> {
+                                Map<String, Object> permDto = new HashMap<>();
+                                permDto.put("permissionType", perm.getPermissionType());
+                                permDto.put("description", perm.getPermissionType().getDescription());
+                                permDto.put("hasPermission", perm.isHasPermission());
+                                return permDto;
+                            })
+                            .collect(java.util.stream.Collectors.toList());
+                    dto.put("permissions", permissions);
+                    
                     return dto;
                 });
     }

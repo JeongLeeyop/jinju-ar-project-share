@@ -3,9 +3,9 @@
     <div class="user-title">
       <div class="tl__box">
         <p class="tl">커뮤니티 상세</p>
-        <router-link class="back-btn" :to="{ name: 'CommunityList' }">
+        <el-button type="primary" @click="$router.push({ name: 'CommunityList' })">
           <i class="el-icon-arrow-left"></i> 목록으로
-        </router-link>
+        </el-button>
       </div>
     </div>
 
@@ -24,12 +24,12 @@
           </div>
           <div class="info-item">
             <label>관리자</label>
-            <span>{{ community.adminName || '-' }}</span>
+            <span>{{ community.creatorName || '-' }}</span>
           </div>
           <div class="info-item">
             <label>공개여부</label>
-            <el-tag :type="community.isSecret ? 'danger' : 'success'" size="small">
-              {{ community.isSecret ? '비공개' : '공개' }}
+            <el-tag :type="community.privateStatus ? 'danger' : 'success'" size="small">
+              {{ community.privateStatus ? '비공개' : '공개' }}
             </el-tag>
           </div>
           <div class="info-item">
@@ -38,7 +38,7 @@
           </div>
           <div class="info-item full">
             <label>소개</label>
-            <span>{{ community.description || '-' }}</span>
+            <span>{{ community.introduce || '-' }}</span>
           </div>
         </div>
       </div>
@@ -52,15 +52,15 @@
             <div class="stat-label">가입자 수</div>
           </div>
           <div class="stat-card">
-            <div class="stat-value">{{ spaceList.length }}</div>
+            <div class="stat-value">{{ community.spaceCount || 0 }}</div>
             <div class="stat-label">공간 수</div>
           </div>
           <div class="stat-card">
-            <div class="stat-value">{{ marketplaceStats.totalProducts || 0 }}</div>
+            <div class="stat-value">{{ community.marketplaceProductCount || 0 }}</div>
             <div class="stat-label">장터 상품</div>
           </div>
           <div class="stat-card primary">
-            <div class="stat-value">{{ marketplaceStats.totalSales | parseKrw }}원</div>
+            <div class="stat-value">{{ community.totalSales | parseKrw }}원</div>
             <div class="stat-label">총 매출</div>
           </div>
         </div>
@@ -115,8 +115,8 @@
           </el-table-column>
           <el-table-column label="상태" width="100" align="center">
             <template slot-scope="scope">
-              <el-tag :type="scope.row.status === 'SALE' ? 'success' : 'info'" size="small">
-                {{ scope.row.status === 'SALE' ? '판매중' : '판매완료' }}
+              <el-tag :type="getStatusType(scope.row.status)" size="small">
+                {{ getStatusText(scope.row.status) }}
               </el-tag>
             </template>
           </el-table-column>
@@ -181,17 +181,34 @@ export default class CommunityDetail extends Vue {
       this.loading = false;
     }
   }
+
+  private getStatusType(status: string): string {
+    const statusMap: Record<string, string> = {
+      'ACTIVE': 'success',
+      'TRADING': 'warning',
+      'SOLD_OUT': 'info',
+      'HIDDEN': 'danger'
+    };
+    return statusMap[status] || 'info';
+  }
+
+  private getStatusText(status: string): string {
+    const statusMap: Record<string, string> = {
+      'ACTIVE': '판매중',
+      'TRADING': '거래중',
+      'SOLD_OUT': '판매완료',
+      'HIDDEN': '숨김'
+    };
+    return statusMap[status] || status;
+  }
 }
 </script>
 
 <style scoped>
-.back-btn {
-  font-size: 14px;
-  color: #667eea;
-  margin-left: 20px;
-}
-.back-btn:hover {
-  text-decoration: underline;
+.tl__box {
+  display: flex;
+  align-items: center;
+  gap: 15px;
 }
 
 .detail-content {

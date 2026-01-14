@@ -1,6 +1,6 @@
 import request from '@/utils/request';
 
-const PATH = '/api/admin/member';
+const PATH = '/admin/member';
 
 // 회원 목록 조회
 export const getMemberList = (params: any) => request({
