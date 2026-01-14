@@ -85,14 +85,14 @@
 						<ul>
 							<li>
 								<a href="#" class="view_file_download" download="">
-									<strong>진주알 첨부파일.hwp</strong> (322.5K)
+									<strong>웨일리잇 첨부파일.hwp</strong> (322.5K)
 								</a>
 								<br>
 								<span class="board-file-count">DATE : 2023-03-08 15:17:23</span>
 							</li>
 							<li>
 								<a href="#" class="view_file_download" download="">
-									<strong>진주알 첨부파일.pdf</strong> (2.9M)
+									<strong>웨일리잇 첨부파일.pdf</strong> (2.9M)
 								</a>
 								<br>
 								<span class="board-file-count">DATE : 2023-03-08 15:17:23</span>

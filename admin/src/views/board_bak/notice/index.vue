@@ -46,11 +46,11 @@
 		<el-dialog title="공지사항" class="board-detail" :visible.sync="dialogTableVisible">
 			<div class="board-wr">
 				<div class="board-header">
-				<div class="board-ttl">진주알 공지사항입니다.</div>
+				<div class="board-ttl">웨일리잇 공지사항입니다.</div>
 					<ul class="board-header-list">
 						<li>
 							<div class="ttl">작성자</div>
-							<div class="con"><span class="sv_member">진주알</span></div>
+							<div class="con"><span class="sv_member">웨일리잇</span></div>
 						</li>
 						<li>
 							<div class="ttl">작성일</div>
@@ -64,10 +64,10 @@
 				</div>
 				<div class="board-content">
 					<div class="board-img"></div>
-					<p>진주알 공지사항입니다.</p>
-					<p>진주알 공지사항입니다.</p>
-					<p>진주알 공지사항입니다.</p>
-					<p>진주알 공지사항입니다.</p>
+					<p>웨일리잇 공지사항입니다.</p>
+					<p>웨일리잇 공지사항입니다.</p>
+					<p>웨일리잇 공지사항입니다.</p>
+					<p>웨일리잇 공지사항입니다.</p>
 					<ul>
 						<li class="board-button-wr">
 							<router-link class="board-button btn01" :to="{ name: 'BoardNoticeEdit' }">
@@ -81,14 +81,14 @@
 						<ul>
 							<li>
 								<a href="#" class="view_file_download" download="">
-									<strong>진주알 첨부파일.hwp</strong> (322.5K)
+									<strong>웨일리잇 첨부파일.hwp</strong> (322.5K)
 								</a>
 								<br>
 								<span class="board-file-count">DATE : 2023-03-08 15:17:23</span>
 							</li>
 							<li>
 								<a href="#" class="view_file_download" download="">
-									<strong>진주알 첨부파일.pdf</strong> (2.9M)
+									<strong>웨일리잇 첨부파일.pdf</strong> (2.9M)
 								</a>
 								<br>
 								<span class="board-file-count">DATE : 2023-03-08 15:17:23</span>

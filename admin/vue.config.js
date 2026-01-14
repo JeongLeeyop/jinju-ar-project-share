@@ -7,10 +7,9 @@ function resolve(dir) {
 }
 
 module.exports = {
-  publicPath: process.env.NODE_ENV === 'production' ? '/adm' : '/',
+  publicPath: process.env.NODE_ENV === 'production' ? '/ws-management' : '/',
   outputDir: 'dist',
   transpileDependencies: ['vue-daum-postcode', 'vue-js-modal'],
-  lintOnSave: false,
   devServer: {
     disableHostCheck: true,
     port: devPort,

@@ -155,14 +155,12 @@
           <!-- Domain -->
           <div class="form-group">
             <label class="form-label">커뮤니티 도메인(영문)</label>
-            <p class="form-hint">*영문 소문자, 숫자, 특수문자(-, _)만 사용 가능하며, 대문자는 자동으로 소문자로 변환됩니다.</p>
             <el-form-item prop="domain">
               <input
                 type="text"
                 class="form-input"
-                placeholder="커뮤니티 도메인 명을 영문으로 작성해주세요 (예: my-community)"
+                placeholder="커뮤니티 도메인 명을 영문으로 작성해주세요"
                 v-model="form.domain"
-                @input="handleDomainInput"
                 maxlength="30"
                 :readonly="form.uid ? true : false"
               />
@@ -319,11 +317,6 @@ export default class extends Vue {
     });
   }
 
-  private handleDomainInput(event: any) {
-    // 대문자를 소문자로 자동 변환
-    this.form.domain = event.target.value.toLowerCase();
-  }
-
   private validateDomain = (rule: any, value: any, callback: any) => {
     if (value === '') {
       callback(new Error('도메인을 입력하세요.'));
@@ -332,7 +325,7 @@ export default class extends Vue {
     } else {
       const regUserId = /^[a-z0-9_-]{3,19}$/g;
       if (!regUserId.test(value)) {
-        callback(new Error('영문 소문자, 숫자, 특수문자(-, _)로 4~20자로 입력하세요.'));
+        callback(new Error('영문, 숫자, 특수문자(-, _)로 4~20자로 입력하세요.'));
       } else {
         checkDomain(value).then((res) => {
           if (!res.data) callback(new Error('이미 사용 중인 도메인입니다.'));
