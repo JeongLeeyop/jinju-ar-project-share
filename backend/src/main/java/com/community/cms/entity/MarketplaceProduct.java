@@ -38,6 +38,9 @@ public class MarketplaceProduct {
     
     @Transient
     private String channelName;  // 조인 결과 저장용
+    
+    @Transient
+    private String iconFileUid;  // 첫 번째 이미지 fileUid
 
     @Column(name = "offline_marketplace_uid")
     private String offlineMarketplaceUid;  // NULL이면 메인 장터

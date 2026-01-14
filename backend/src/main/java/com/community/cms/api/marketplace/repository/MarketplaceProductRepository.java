@@ -80,6 +80,10 @@ public interface MarketplaceProductRepository extends JpaRepository<MarketplaceP
     @Query(value = "SELECT COALESCE(SUM(price), 0) FROM marketplace_product WHERE channel_uid = :channelUid AND status = 'SOLD_OUT'", nativeQuery = true)
     Long getTotalSalesByChannelUid(@Param("channelUid") String channelUid);
     
+    // 전체 판매완료된 상품의 총 매출 조회 (delete_status=false인 채널만)
+    @Query(value = "SELECT COALESCE(SUM(mp.price), 0) FROM marketplace_product mp INNER JOIN channel c ON mp.channel_uid = c.uid WHERE mp.status = 'SOLD_OUT' AND c.delete_status = 0", nativeQuery = true)
+    Long getTotalSales();
+    
     // 조회수 증가
     @Modifying
     @Query("UPDATE MarketplaceProduct p SET p.viewCount = p.viewCount + 1 WHERE p.uid = :uid")

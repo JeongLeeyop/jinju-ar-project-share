@@ -20,7 +20,7 @@
             <el-option label="판매중" value="ACTIVE"></el-option>
             <el-option label="거래중" value="TRADING"></el-option>
             <el-option label="판매완료" value="SOLD_OUT"></el-option>
-            <el-option label="숨김" value="HIDDEN"></el-option>
+            <!-- <el-option label="숨김" value="HIDDEN"></el-option> -->
           </el-select>
           <el-input placeholder="상품명 검색" v-model="listQuery.keyword" class="search" @keyup.enter.native="handleSearch()" />
           <el-button @click="handleSearch()"><img src="~@/assets/images/search.png" alt=""></el-button>
@@ -72,9 +72,9 @@
             {{ getNumber(scope.$index) }}
           </template>
         </el-table-column>
-        <el-table-column label="이미지" width="80" align="center">
+        <el-table-column label="이미지" width="150" align="center">
           <template slot-scope="scope">
-            <img v-if="scope.row.thumbnailUrl" :src="scope.row.thumbnailUrl" class="product-thumb" />
+            <img v-if="scope.row.iconFileUid" :src="`${apiUrl}/attached-file/${scope.row.iconFileUid}`" class="product-thumb" />
             <div v-else class="no-image"><i class="el-icon-picture"></i></div>
           </template>
         </el-table-column>
@@ -125,6 +125,7 @@ export default class MarketplaceIndex extends Vue {
   private marketplaceList: any[] = [];
   private channelList: any[] = [];
   private totalElements = 0;
+  private apiUrl = process.env.VUE_APP_BASE_API;
   private stats = {
     totalProducts: 0,
     saleCount: 0,

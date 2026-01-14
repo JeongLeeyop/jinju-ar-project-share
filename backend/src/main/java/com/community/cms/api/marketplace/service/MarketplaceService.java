@@ -13,10 +13,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import com.community.cms.entity.MarketplaceProduct;
+import com.community.cms.entity.MarketplaceProductImage;
 import com.community.cms.entity.QMarketplaceProduct;
 import com.community.cms.entity2.Channel;
 import com.community.cms.entity2.QChannel;
 import com.community.cms.api.marketplace.repository.MarketplaceProductRepository;
+import com.community.cms.api.marketplace.repository.MarketplaceProductImageRepository;
 import com.community.cms.api.channel.repository.ChannelRepository;
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.jpa.JPAExpressions;
@@ -30,6 +32,7 @@ import lombok.extern.slf4j.Slf4j;
 public class MarketplaceService {
 
     private final MarketplaceProductRepository productRepository;
+    private final MarketplaceProductImageRepository productImageRepository;
     private final ChannelRepository channelRepository;
 
     /**
@@ -66,11 +69,20 @@ public class MarketplaceService {
         
         Page<MarketplaceProduct> products = productRepository.findAll(builder, pageable);
         
-        // channelName 채우기
+        // channelName과 첫 번째 이미지 채우기
         List<MarketplaceProduct> productsWithChannel = products.getContent().stream()
             .map(p -> {
+                // channelName 설정
                 channelRepository.findByUid(p.getChannelUid())
                     .ifPresent(c -> p.setChannelName(c.getName()));
+                
+                // 첫 번째 이미지 설정 (display_order 기준)
+                List<MarketplaceProductImage> images = productImageRepository
+                    .findByProductUidOrderByDisplayOrderAsc(p.getUid());
+                if (!images.isEmpty()) {
+                    p.setIconFileUid(images.get(0).getFileUid());
+                }
+                
                 return p;
             })
             .collect(Collectors.toList());
@@ -97,10 +109,50 @@ public class MarketplaceService {
      * 장터 통계 조회
      */
     public Map<String, Object> getStats() {
+        QMarketplaceProduct product = QMarketplaceProduct.marketplaceProduct;
+        QChannel channel = QChannel.channel;
+        
+        // delete_status=false인 채널의 상품만 계산
+        BooleanBuilder baseBuilder = new BooleanBuilder();
+        baseBuilder.and(product.channelUid.in(
+            JPAExpressions
+                .select(channel.uid)
+                .from(channel)
+                .where(channel.deleteStatus.eq(false))
+        ));
+        
+        long totalProducts = productRepository.count(baseBuilder);
+        
+        // 판매중 (ACTIVE)
+        BooleanBuilder activeBuilder = new BooleanBuilder();
+        activeBuilder.and(product.channelUid.in(
+            JPAExpressions
+                .select(channel.uid)
+                .from(channel)
+                .where(channel.deleteStatus.eq(false))
+        ));
+        activeBuilder.and(product.status.eq("ACTIVE"));
+        long saleCount = productRepository.count(activeBuilder);
+        
+        // 판매완료 (SOLD_OUT)
+        BooleanBuilder soldBuilder = new BooleanBuilder();
+        soldBuilder.and(product.channelUid.in(
+            JPAExpressions
+                .select(channel.uid)
+                .from(channel)
+                .where(channel.deleteStatus.eq(false))
+        ));
+        soldBuilder.and(product.status.eq("SOLD_OUT"));
+        long soldCount = productRepository.count(soldBuilder);
+        
+        // 판매완료된 상품의 총 매출 (delete_status=false인 채널만)
+        Long totalSales = productRepository.getTotalSales();
+        
         Map<String, Object> stats = new HashMap<>();
-        stats.put("totalProducts", productRepository.count());
-        stats.put("sellingProducts", productRepository.countByStatus("SELLING"));
-        stats.put("soldProducts", productRepository.countByStatus("SOLD"));
+        stats.put("totalProducts", totalProducts);
+        stats.put("saleCount", saleCount);
+        stats.put("soldCount", soldCount);
+        stats.put("totalSales", totalSales != null ? totalSales : 0L);
         return stats;
     }
 
