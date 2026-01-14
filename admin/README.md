@@ -1,4 +1,4 @@
-# weilyeat
+# jinjuar
 
 ## Project setup
 ```

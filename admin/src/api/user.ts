@@ -98,3 +98,32 @@ export const getTeacherList = (institutionUid: string) => request({
   url: `${PATH}/institution/${institutionUid}/teacher`,
   method: 'get',
 });
+
+// Admin 회원관리용 API
+export const getUserDetail = (uid: string) => request({
+  url: `${PATH}/${uid}`,
+  method: 'get',
+});
+
+export const getUserPointHistory = (uid: string, params: any) => request({
+  url: `${PATH}/${uid}/point/history`,
+  method: 'get',
+  params: {
+    ...params,
+    page: params.page - 1,
+  },
+});
+
+export const getUserActivity = (uid: string, params: any) => request({
+  url: `${PATH}/${uid}/activity`,
+  method: 'get',
+  params: {
+    ...params,
+    page: params.page - 1,
+  },
+});
+
+export const getUserChannels = (uid: string) => request({
+  url: `${PATH}/${uid}/channels`,
+  method: 'get',
+});

@@ -1,5 +1,5 @@
 [{"id":0,"orderNum":"p1234567","reviewField":"맞춤식단","reviewText":"식단후기 글작성하였습니다.","reviewFile":0,"reviewRate":4,"userName":"홍길동","reviewDay":"2022-01-01"},
-{"id":1,"orderNum":"","reviewField":"","reviewText":"↳ 식단후기 글작성하였습니다.","reviewFile": 0,"reviewRate":4,"userName":"웨일리잇 영양사","reviewDay":"2022-01-01"},
+{"id":1,"orderNum":"","reviewField":"","reviewText":"↳ 식단후기 글작성하였습니다.","reviewFile": 0,"reviewRate":4,"userName":"진주알 영양사","reviewDay":"2022-01-01"},
 {"id":2,"orderNum":"p1234567","reviewField":"저탄고지","reviewText":"식단후기 글작성하였습니다.","reviewFile":0,"reviewRate":4,"userName":"홍길동","reviewDay":"2022-01-01"},
 {"id":3,"orderNum":"p1234567","reviewField":"다이어트","reviewText":"식단후기 글작성하였습니다.","reviewFile":0,"reviewRate":4,"userName":"홍길동","reviewDay":"2022-01-01"},
 {"id":4,"orderNum":"p1234567","reviewField":"미량영양소","reviewText":"식단후기 글작성하였습니다.","reviewFile":1,"reviewRate":4,"userName":"홍길동","reviewDay":"2022-01-01"},
