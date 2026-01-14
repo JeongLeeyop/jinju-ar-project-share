@@ -23,7 +23,7 @@
           <div class="participant-avatar">
             <img 
               v-if="hasAvatar(participant)" 
-              :src="`${apiUrl}/attached-file/${participant.avatar}`" 
+              :src="`${participant.avatar}`" 
               :alt="participant.name"
               class="avatar-image"
             />

@@ -405,11 +405,14 @@ export default class extends Vue {
 
     // EventBus: 포인트 갱신 이벤트 리스닝
     EventBus.$on(EVENTS.POINTS_UPDATED, this.refreshUserPoints);
+    // EventBus: 로그인 모달 열기 이벤트 리스닝
+    EventBus.$on(EVENTS.OPEN_LOGIN_MODAL, this.handleLoginModal);
   }
 
   beforeDestroy() {
     // EventBus 리스너 제거
     EventBus.$off(EVENTS.POINTS_UPDATED, this.refreshUserPoints);
+    EventBus.$off(EVENTS.OPEN_LOGIN_MODAL, this.handleLoginModal);
   }
 
   /**

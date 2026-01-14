@@ -153,27 +153,21 @@
         </button>
       </div>
     </el-dialog>
-
-    <div class="component-container">
-      <div class="component">
-        <UserModal :userModalVisible="userModalVisible" @close="userModalVisible = false;"/>
-      </div>
-    </div>
   </div>
 </template>
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import { getChannelList, getChannelCategory, canCreateChannel } from '@/api/channel';
-import UserModal from '@/views/components/userModal.vue';
 import Pagination from '@/components/Pagination/index.vue';
 import { UserModule } from '@/store/modules/user';
 import { ChannelModule } from '@/store/modules/channel';
+import { EventBus, EVENTS } from '@/utils/eventBus';
 
 @Component({
   name: '',
   components: {
-    Pagination, UserModal,
+    Pagination,
   },
 })
 
@@ -205,8 +199,6 @@ export default class extends Vue {
       this.loading = false;
     });
   }
-
-  private userModalVisible = false;
 
   private filterVisible = false;
 
@@ -273,7 +265,8 @@ export default class extends Vue {
 
   private async handleChannelCreate() {
     if (!UserModule.isLogin) {
-      this.userModalVisible = true;
+      // 헤더의 로그인 모달 열기
+      EventBus.$emit(EVENTS.OPEN_LOGIN_MODAL);
     } else {
       // 커뮤니티 생성 가능 여부 확인
       try {
