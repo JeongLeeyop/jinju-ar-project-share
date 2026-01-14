@@ -3,7 +3,17 @@ import jwtDecode from 'jwt-decode';
 
 // User
 const tokenKey = 'access_token';
-export const getTokenDecode = () => jwtDecode(cookies.get(tokenKey) || '');
+export const getTokenDecode = () => {
+  const token = cookies.get(tokenKey);
+  if (!token) {
+    return null;
+  }
+  try {
+    return jwtDecode(token);
+  } catch (e) {
+    return null;
+  }
+};
 export const getToken = () => cookies.get(tokenKey);
 export const setToken = (token: string) => cookies.set(tokenKey, token);
 export const removeToken = () => cookies.remove(tokenKey);

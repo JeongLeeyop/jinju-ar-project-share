@@ -205,21 +205,9 @@ export function resetRouter() {
   (router as any).matcher = (newRouter as any).matcher;
 }
 
-router.beforeEach((to: Route, from: Route, next: any) => {
-  if (to.name !== 'Login') {
-    UserModule.GetUserInfo();
-    next();
-  } else {
-    next();
-  }
-});
-
 router.afterEach(async (to: Route, from: Route) => {
   const pageTitle = '진주알 관리자페이지';
   document.title = pageTitle;
-  const { roles } = UserModule;
-  await PermissionModule.GenerateRoutes(roles);
-  await router.addRoutes(PermissionModule.routes);
 });
 
 export default router;

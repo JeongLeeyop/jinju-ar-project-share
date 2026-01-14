@@ -70,10 +70,8 @@ export default class extends Vue {
         UserModule.Login(this.loginForm).then(async () => {
           this.loading = false;
           await UserModule.GetUserInfo();
-          if (UserModule.userId === 'master') this.$router.push({ name: 'Shop' });
-          else if (UserModule.userId === 'board' || UserModule.userId === 'board01') this.$router.push({ name: 'Post' });
-          else this.$router.push({ name: 'ManagerOrderList' });
-          // this.$router.push({ name: 'Home' });
+          const redirect = this.$route.query.redirect as string;
+          this.$router.push({ path: redirect || '/' }).catch(() => {});
         }).catch(() => {
           this.loading = false;
         });

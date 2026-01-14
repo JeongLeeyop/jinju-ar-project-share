@@ -229,11 +229,10 @@ export default class extends Vue {
       this.sending = true;
       try {
         await sendSms({
-          ...this.smsForm,
-          receivers: this.selectedUsers.map((u) => ({
-            phone: u.phone,
-            name: u.username,
-          })),
+          receivers: this.selectedUsers.map((u) => u.phone),
+          message: this.smsForm.content,
+          title: this.smsForm.title,
+          msgType: this.smsForm.messageType,
         });
         this.$message.success('문자가 발송되었습니다.');
         this.smsForm.content = '';

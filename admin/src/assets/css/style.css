@@ -13,53 +13,60 @@
 /* 메인 로그인 폼 */
 .main {
 	height: 100vh;
-	background: url("~@/assets/images/bg.png") no-repeat center;
+	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 	background-size: cover;
 	width: 100%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
 }
 
 .main-wrap {
 	width: 100%;
-	max-width: 500px;
+	max-width: 480px;
 	margin: 0 auto;
 }
 
 .main-logo {
-	padding: 173px 0 0 0;
+	text-align: center;
+	margin-bottom: 40px;
 }
 
 .main-logo img {
-	width: 184px;
-	height: 204px;
+	width: 500px;
+	filter: drop-shadow(0 4px 20px rgba(0, 0, 0, 0.15));
 }
 
 .login-wrap {
-	margin: 40px 0 0 0;
+	background: rgba(255, 255, 255, 0.95);
+	border-radius: 24px;
+	box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+	overflow: hidden;
+	backdrop-filter: blur(10px);
 }
 
 .login-title {
-	background-color: #2d303b;
+	background: linear-gradient(135deg, rgba(102, 126, 234, 0.9) 0%, rgba(118, 75, 162, 0.9) 100%);
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	padding: 30px 0;
-	border-radius: 30px 30px 0 0;
+	padding: 32px 0;
 }
 
 .login-title p {
 	font-weight: bold;
 	font-family: "Gmarket_Sans_Bold";
-	font-size: 20px;
+	font-size: 24px;
 	color: #fff;
+	letter-spacing: 2px;
+	margin: 0;
 }
 
 /* 로그인 폼 */
 
 .login-form__inner {
 	background-color: #fff;
-	height: 369px;
-	border-radius: 0 0 20px 20px;
-	padding: 25px 40px;
+	padding: 40px;
 }
 
 legend {
@@ -73,47 +80,71 @@ legend {
 }
 
 .input-box__login {
-	border-bottom: 1px solid #ddd;
-	padding: 5px 0;
-	margin: 20px 0 25px;
+	border-bottom: 2px solid #e8e8e8;
+	padding: 8px 0;
+	margin: 0 0 30px;
 	display: flex;
 	align-items: center;
+	transition: border-color 0.3s ease;
+}
+
+.input-box__login:focus-within {
+	border-bottom-color: #667eea;
 }
 
 .input-box__login label {
-	width: 5%;
+	width: 50px;
 	font-weight: bold;
+	font-size: 14px;
+	color: #667eea;
 }
 
 .input-box__login .el-input {
-	width: calc(100% - 30px);
+	width: calc(100% - 50px);
 }
 
 .input-box__login .el-input__inner {
 	border: none;
-	font-size: 16px;
-	height: 30px;
-	padding: 0 25px;
-	margin: 0 5px;
+	font-size: 15px;
+	height: 36px;
+	padding: 0 15px;
+	background: transparent;
+}
+
+.input-box__login .el-input__inner:focus {
+	background: transparent;
 }
 
 .input-box__login .el-input__inner::placeholder {
-	font-size: 16px;
-	color: rgba(0, 0, 0, 0.55);
-	font-weight: bold;
+	font-size: 14px;
+	color: rgba(0, 0, 0, 0.4);
+	font-weight: normal;
 }
 
 /* 로그인 버튼 */
 
 .login-submit {
-	background: #58c0d6;
-	border-radius: 10px;
+	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+	border-radius: 12px;
 	width: 100%;
 	border: none;
-	font-size: 20px;
-	font-weight: b;
+	font-size: 18px;
+	font-weight: bold;
 	color: #fff;
-	padding: 20px 0;
+	padding: 16px 0;
+	cursor: pointer;
+	margin-top: 20px;
+	transition: all 0.3s ease;
+	box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+}
+
+.login-submit:hover {
+	transform: translateY(-2px);
+	box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.login-submit:active {
+	transform: translateY(0);
 }
 
 /* 아이디 비번 저장 */

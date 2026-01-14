@@ -52,7 +52,7 @@ class User extends VuexModule implements IUserState {
     const { username, password } = userInfo;
     await login({ username, password }).then((res) => {
       setToken(res.data.access_token);
-      this.SET_TOKEN(res.data.access_token);
+      this.context.commit('SET_TOKEN', res.data.access_token);
     }).catch((error : any) => {
       /* eslint-disable */
       const data = error.response.data;
@@ -64,30 +64,43 @@ class User extends VuexModule implements IUserState {
   @Action
   public ResetToken() {
     removeToken();
-    this.SET_TOKEN('');
-    this.SET_USER_ID('');
-    this.SET_ROLES([]);
+    this.context.commit('SET_TOKEN', '');
+    this.context.commit('SET_USER_ID', '');
+    this.context.commit('SET_ROLES', []);
   }
 
   @Action
   public async GetUserInfo() {
     if (this.token === '') {
       this.ResetToken();
-      router.push({ name: 'Login' });
+      if (router.currentRoute.name !== 'Login') {
+        router.push({ name: 'Login' }).catch(() => {});
+      }
+      throw Error('Token is empty');
     }
     // tokenCheck(this.token).catch(() => {
     //   throw Error('Verification failed, please Login again.');
     // });
-    const data: any = await getTokenDecode();
-    const whiteRoles = ['ROLE_ADMIN', 'ROLE_SHOP_ADMIN', 'ROLE_BOARD'];
+    const data: any = getTokenDecode();
+    if (!data) {
+      this.ResetToken();
+      if (router.currentRoute.name !== 'Login') {
+        router.push({ name: 'Login' }).catch(() => {});
+      }
+      throw Error('Invalid token');
+    }
+    const whiteRoles = ['ROLE_ADMIN', 'ROLE_SHOP_ADMIN', 'ROLE_BOARD', 'ROLE_CREATOR'];
     let hasRole = false;
-    hasRole = data.authorities.some((role: any) => whiteRoles.indexOf(role) > -1);
+    hasRole = data.authorities?.some((role: any) => whiteRoles.indexOf(role) > -1) || false;
     if (!data.authorities || data.authorities.length <= 0 || !hasRole) {
       this.ResetToken();
-      router.push({ name: 'Login' });
+      if (router.currentRoute.name !== 'Login') {
+        router.push({ name: 'Login' }).catch(() => {});
+      }
+      throw Error('No valid role');
     }
-    this.SET_ROLES(data.authorities);
-    this.SET_USER_ID(data.user_name);
+    this.context.commit('SET_ROLES', data.authorities);
+    this.context.commit('SET_USER_ID', data.user_name);
   }
 
   @Action
@@ -98,9 +111,9 @@ class User extends VuexModule implements IUserState {
     removeToken();
 
     // Reset visited views and cached views
-    this.SET_TOKEN('');
-    this.SET_ROLES([]);
-    this.SET_USER_ID('');
+    this.context.commit('SET_TOKEN', '');
+    this.context.commit('SET_ROLES', []);
+    this.context.commit('SET_USER_ID', '');
   }
 }
 
