@@ -69,8 +69,11 @@ public class AdminMarketplaceController {
      */
     @GetMapping("/stats")
     @PreAuthorize("hasAnyRole('ADMIN', 'CREATOR')")
-    public ResponseEntity<?> getStats() {
-        return ResponseEntity.ok(marketplaceService.getStats());
+    public ResponseEntity<?> getStats(
+            @RequestParam(required = false) String channelUid,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String keyword) {
+        return ResponseEntity.ok(marketplaceService.getStats(channelUid, status, keyword));
     }
 
     /**

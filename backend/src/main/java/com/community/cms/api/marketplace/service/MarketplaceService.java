@@ -106,13 +106,13 @@ public class MarketplaceService {
     }
 
     /**
-     * 장터 통계 조회
+     * 장터 통계 조회 (필터 적용)
      */
-    public Map<String, Object> getStats() {
+    public Map<String, Object> getStats(String channelUid, String status, String keyword) {
         QMarketplaceProduct product = QMarketplaceProduct.marketplaceProduct;
         QChannel channel = QChannel.channel;
         
-        // delete_status=false인 채널의 상품만 계산
+        // 기본 빌더: delete_status=false인 채널의 상품만
         BooleanBuilder baseBuilder = new BooleanBuilder();
         baseBuilder.and(product.channelUid.in(
             JPAExpressions
@@ -121,38 +121,58 @@ public class MarketplaceService {
                 .where(channel.deleteStatus.eq(false))
         ));
         
+        // 채널 필터
+        if (StringUtils.hasText(channelUid)) {
+            baseBuilder.and(product.channelUid.eq(channelUid));
+        }
+        
+        // 키워드 검색
+        if (StringUtils.hasText(keyword)) {
+            baseBuilder.and(product.title.containsIgnoreCase(keyword));
+        }
+        
+        // 총 상품 수 (필터 적용)
         long totalProducts = productRepository.count(baseBuilder);
         
-        // 판매중 (ACTIVE)
-        BooleanBuilder activeBuilder = new BooleanBuilder();
-        activeBuilder.and(product.channelUid.in(
-            JPAExpressions
-                .select(channel.uid)
-                .from(channel)
-                .where(channel.deleteStatus.eq(false))
-        ));
-        activeBuilder.and(product.status.eq("ACTIVE"));
-        long saleCount = productRepository.count(activeBuilder);
+        // 판매중 (ACTIVE) - 필터링
+        BooleanBuilder activeBuilder = new BooleanBuilder(baseBuilder);
+        if (StringUtils.hasText(status)) {
+            // status 필터가 있으면 해당 status만 계산
+            if ("ACTIVE".equals(status)) {
+                activeBuilder.and(product.status.eq("ACTIVE"));
+            }
+        } else {
+            activeBuilder.and(product.status.eq("ACTIVE"));
+        }
+        long saleCount = StringUtils.hasText(status) && !"ACTIVE".equals(status) ? 0 : productRepository.count(activeBuilder);
         
-        // 판매완료 (SOLD_OUT)
-        BooleanBuilder soldBuilder = new BooleanBuilder();
-        soldBuilder.and(product.channelUid.in(
-            JPAExpressions
-                .select(channel.uid)
-                .from(channel)
-                .where(channel.deleteStatus.eq(false))
-        ));
-        soldBuilder.and(product.status.eq("SOLD_OUT"));
-        long soldCount = productRepository.count(soldBuilder);
+        // 판매완료 (SOLD_OUT) - 필터링
+        BooleanBuilder soldBuilder = new BooleanBuilder(baseBuilder);
+        if (StringUtils.hasText(status)) {
+            // status 필터가 있으면 해당 status만 계산
+            if ("SOLD_OUT".equals(status)) {
+                soldBuilder.and(product.status.eq("SOLD_OUT"));
+            }
+        } else {
+            soldBuilder.and(product.status.eq("SOLD_OUT"));
+        }
+        long soldCount = StringUtils.hasText(status) && !"SOLD_OUT".equals(status) ? 0 : productRepository.count(soldBuilder);
         
-        // 판매완료된 상품의 총 매출 (delete_status=false인 채널만)
-        Long totalSales = productRepository.getTotalSales();
+        // 판매완료된 상품의 총 매출 (필터 적용)
+        BooleanBuilder salesBuilder = new BooleanBuilder(baseBuilder);
+        salesBuilder.and(product.status.eq("SOLD_OUT"));
+        
+        // 직접 계산 (필터링된 결과에서 price 합계)
+        List<MarketplaceProduct> soldProducts = (List<MarketplaceProduct>) productRepository.findAll(salesBuilder);
+        Long totalSales = soldProducts.stream()
+            .mapToLong(p -> p.getPrice() != null ? p.getPrice() : 0)
+            .sum();
         
         Map<String, Object> stats = new HashMap<>();
         stats.put("totalProducts", totalProducts);
         stats.put("saleCount", saleCount);
         stats.put("soldCount", soldCount);
-        stats.put("totalSales", totalSales != null ? totalSales : 0L);
+        stats.put("totalSales", totalSales);
         return stats;
     }
 

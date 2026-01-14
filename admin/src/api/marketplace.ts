@@ -26,9 +26,10 @@ export const getMarketplaceSales = (params: any) => request({
 });
 
 // 장터 통계 조회
-export const getMarketplaceStats = () => request({
+export const getMarketplaceStats = (params?: any) => request({
   url: `${PATH}/stats`,
   method: 'get',
+  params,
 });
 
 // 커뮤니티별 장터 조회

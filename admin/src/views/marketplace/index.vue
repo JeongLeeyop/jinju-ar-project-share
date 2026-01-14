@@ -167,7 +167,11 @@ export default class MarketplaceIndex extends Vue {
 
   private async getStats() {
     try {
-      const { data } = await getMarketplaceStats();
+      const { data } = await getMarketplaceStats({
+        channelUid: this.listQuery.channelUid,
+        status: this.listQuery.status,
+        keyword: this.listQuery.keyword,
+      });
       this.stats = data;
     } catch (error) {
       console.error(error);
@@ -190,6 +194,7 @@ export default class MarketplaceIndex extends Vue {
   private handleSearch() {
     this.listQuery.page = 1;
     this.getMarketplaceList();
+    this.getStats();
   }
 
   private getNumber(index: number) {
