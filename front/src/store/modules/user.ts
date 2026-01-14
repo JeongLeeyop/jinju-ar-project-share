@@ -69,10 +69,9 @@ class User extends VuexModule implements IUserState {
       this.SET_TOKEN(res.data.access_token);
     }).catch((error : any) => {
       /* eslint-disable */
-      const data = error.response.data;
-      Message.error('로그인에 실패하셨습니다.');
-      // Message.error(data.error_description || data.message);
+      Message.error('이메일 혹은 비밀번호를 확인해주세요.');
       /* eslint-enable */
+      throw error;
     });
   }
 
