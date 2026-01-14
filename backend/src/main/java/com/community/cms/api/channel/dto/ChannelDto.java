@@ -54,6 +54,8 @@ public class ChannelDto {
         private Long spaceCount; // 공간 수
         private Long marketplaceProductCount; // 장터 상품 수
         private Long totalSales; // 총 매출
+        private LocalDateTime joinDate; // 가입일 (회원상세용)
+        private Boolean isAdmin; // 관리자 여부 (회원상세용)
         private List<ChannelUseCategoryDto.detail> categoryList = new ArrayList<ChannelUseCategoryDto.detail>();
         private List<ChannelImageDto.detail> iconImageList = new ArrayList<ChannelImageDto.detail>();
         private List<ChannelImageDto.detail> coverImageList = new ArrayList<ChannelImageDto.detail>();

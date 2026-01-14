@@ -39,6 +39,7 @@ public class SpaceDto {
     
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private LocalDateTime joinDate;  // 가입일 (회원상세용)
     
     // 현재 사용자 관련 정보
     @JsonProperty("isAdmin")

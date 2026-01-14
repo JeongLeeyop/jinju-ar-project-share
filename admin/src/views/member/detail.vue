@@ -3,9 +3,9 @@
     <div class="user-title">
       <div class="tl__box">
         <p class="tl">회원 상세</p>
-        <router-link class="back-btn" :to="{ name: 'MemberList' }">
+        <el-button type="primary" @click="$router.push({ name: 'MemberList' })" class="back-btn">
           <i class="el-icon-arrow-left"></i> 목록으로
-        </router-link>
+        </el-button>
       </div>
     </div>
 
@@ -27,28 +27,28 @@
             <span>{{ member.concatNumber || '-' }}</span>
           </div>
           <div class="info-item">
-            <label>생년월일</label>
-            <span>{{ member.birth || '-' }}</span>
-          </div>
-          <div class="info-item">
-            <label>성별</label>
-            <span>{{ member.gender === 0 ? '남자' : '여자' }}</span>
-          </div>
-          <div class="info-item">
-            <label>가입유형</label>
-            <el-tag v-if="member.provider === 'KAKAO'" type="warning" effect="dark" size="small">카카오</el-tag>
-            <el-tag v-else-if="member.provider === 'NAVER'" type="success" effect="dark" size="small">네이버</el-tag>
-            <el-tag v-else-if="member.provider === 'APPLE'" type="info" effect="dark" size="small">애플</el-tag>
-            <el-tag v-else type="primary" effect="plain" size="small">일반</el-tag>
+            <label>보유 포인트</label>
+            <span class="point">{{ member.point | parseKrw }}P</span>
           </div>
           <div class="info-item">
             <label>가입일</label>
             <span>{{ member.createDate | parseDate('YYYY-MM-DD HH:mm:ss') }}</span>
           </div>
-          <div class="info-item">
-            <label>보유 포인트</label>
-            <span class="point">{{ member.point | parseKrw }}P</span>
-          </div>
+          <!-- <div class="info-item">
+            <label>생년월일</label>
+            <span>{{ member.birth || '-' }}</span>
+          </div> -->
+          <!-- <div class="info-item">
+            <label>성별</label>
+            <span>{{ member.gender === 0 ? '남자' : '여자' }}</span>
+          </div> -->
+          <!-- <div class="info-item">
+            <label>가입유형</label>
+            <el-tag v-if="member.provider === 'KAKAO'" type="warning" effect="dark" size="small">카카오</el-tag>
+            <el-tag v-else-if="member.provider === 'NAVER'" type="success" effect="dark" size="small">네이버</el-tag>
+            <el-tag v-else-if="member.provider === 'APPLE'" type="info" effect="dark" size="small">애플</el-tag>
+            <el-tag v-else type="primary" effect="plain" size="small">일반</el-tag>
+          </div> -->
         </div>
       </div>
 
@@ -110,7 +110,7 @@
       </div>
 
       <!-- 포인트 히스토리 -->
-      <div class="detail-section">
+      <!-- <div class="detail-section">
         <h3 class="section-title"><i class="el-icon-coin"></i> 포인트 히스토리</h3>
         <el-table
           :data="pointHistory"
@@ -147,7 +147,7 @@
         <div v-if="pointHistory.length === 0" class="empty-message">
           포인트 내역이 없습니다.
         </div>
-      </div>
+      </div> -->
 
       <!-- 활동 내역 -->
       <div class="detail-section">
@@ -163,7 +163,7 @@
               {{ scope.row.createDate | parseDate('YYYY-MM-DD HH:mm:ss') }}
             </template>
           </el-table-column>
-          <el-table-column label="활동유형" width="120" align="center">
+          <el-table-column label="활동유형" width="200" align="center">
             <template slot-scope="scope">
               <el-tag :type="getActivityType(scope.row.activityType)" size="small">
                 {{ getActivityText(scope.row.activityType) }}
@@ -208,8 +208,8 @@ export default class MemberDetail extends Vue {
   private pointTotalElements = 0;
   private activityTotalElements = 0;
 
-  private pointQuery = { page: 1, size: 5 };
-  private activityQuery = { page: 1, size: 5 };
+  private pointQuery = { page: 1, size: 12 };
+  private activityQuery = { page: 1, size: 12 };
 
   created() {
     this.loadData();
@@ -300,12 +300,7 @@ export default class MemberDetail extends Vue {
 
 <style scoped>
 .back-btn {
-  font-size: 14px;
-  color: #667eea;
   margin-left: 20px;
-}
-.back-btn:hover {
-  text-decoration: underline;
 }
 
 .detail-content {
@@ -358,17 +353,17 @@ export default class MemberDetail extends Vue {
 }
 
 .point {
-  color: #667eea;
+  color: #409EFF;
   font-weight: 700;
   font-size: 18px;
 }
 
-.point-plus {
-  color: #67c23a;
-  font-weight: 600;
+.back-btn {
+  padding: 12px 20px !important;
+  font-size: 12px;
+  border-radius: 3px;
 }
-
-.point-minus {
+point-minus {
   color: #f56c6c;
   font-weight: 600;
 }

@@ -1135,7 +1135,14 @@ public class SpaceService {
         List<SpaceDto> result = new ArrayList<>();
         for (SpaceMember member : members) {
             spaceRepository.findById(member.getSpaceUid())
-                    .map(space -> SpaceDto.fromEntity(space, userUid))
+                    .map(space -> {
+                        SpaceDto dto = SpaceDto.fromEntity(space, userUid);
+                        dto.setJoinDate(member.getJoinedAt());
+                        // channelName 설정
+                        channelRepository.findByUid(space.getChannelUid())
+                            .ifPresent(channel -> dto.setChannelName(channel.getName()));
+                        return dto;
+                    })
                     .ifPresent(result::add);
         }
         return result;

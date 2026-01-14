@@ -58,10 +58,12 @@
             {{ scope.row.createDate | parseDate('YYYY-MM-DD HH:mm') }}
           </template>
         </el-table-column>
-        <el-table-column label="관리" width="120" align="center">
+        <el-table-column label="관리" width="150" align="center">
           <template slot-scope="scope">
-            <router-link class="detail-button" :to="{ name: 'MemberDetail', params: { uid: scope.row.uid } }">상세</router-link>
-            <el-button size="mini" type="danger" @click="handleDelete(scope.row)">탈퇴</el-button>
+            <div style="display: flex; gap: 5px; justify-content: center;">
+              <el-button size="small" @click="$router.push({ name: 'MemberDetail', params: { uid: scope.row.uid } })" class="action-button">상세</el-button>
+              <!-- <el-button size="small" type="danger" @click="handleDelete(scope.row)" class="action-button">탈퇴</el-button> -->
+            </div>
           </template>
         </el-table-column>
       </el-table>
@@ -144,21 +146,26 @@ export default class MemberIndex extends Vue {
 
 <style scoped>
 .link-text {
-  color: #667eea;
+  color: #409EFF;
   font-weight: 500;
 }
 .link-text:hover {
   text-decoration: underline;
 }
 .count-badge {
-  background: #667eea;
+  background: #409EFF;
   color: #fff;
   padding: 2px 10px;
   border-radius: 12px;
   font-size: 12px;
 }
 .point {
-  color: #667eea;
+  color: #409EFF;
   font-weight: 600;
+}
+.action-button {
+  padding: 6px 12px !important;
+  font-size: 12px;
+  border-radius: 3px;
 }
 </style>

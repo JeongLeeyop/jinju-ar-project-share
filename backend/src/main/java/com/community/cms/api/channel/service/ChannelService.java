@@ -614,7 +614,12 @@ class ChannelServiceImpl implements ChannelService {
         List<ChannelDto.detail> result = new ArrayList<>();
         for (ChannelMember member : memberList) {
             channelRepository.findByUid(member.getChannelUid())
-                    .map(channel -> ChannelMapper.INSTANCE.entityToDetail(channel))
+                    .map(channel -> {
+                        ChannelDto.detail dto = ChannelMapper.INSTANCE.entityToDetail(channel);
+                        dto.setJoinDate(member.getCreateDate());
+                        dto.setIsAdmin(channel.getUserUid().equals(userUid));
+                        return dto;
+                    })
                     .ifPresent(result::add);
         }
         return result;

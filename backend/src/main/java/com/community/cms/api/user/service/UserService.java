@@ -29,6 +29,7 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import com.community.cms.api.post.repository.PostRepository;
+import com.community.cms.api.channel.repository.ChannelRepository;
 import com.community.cms.api.user.dto.UserDto;
 import com.community.cms.api.user.dto.mapper.UserMapper;
 import com.community.cms.api.user.dto.search.UserSearch;
@@ -71,13 +72,22 @@ class UserServiceImpl implements UserService {
 	private final UserRepository userRepository;
 	private final UserRoleRepository userRoleRepository;
 	private final PostRepository postRepository;
+	private final ChannelRepository channelRepository;
 	private final TokenStore tokenStore;
 	private final UserFcmTokenRepository userFcmTokenRepository;
 
 	@Override
 	public Page<UserDto.Page> list(UserSearch userSearch, Pageable pageable) {
 		Page<UserDto.Page> userList = userRepository.findAll(userSearch.search(), pageable)
-				.map(data -> UserMapper.INSTANCE.entityToPageDto(data));
+				.map(data -> {
+					UserDto.Page dto = UserMapper.INSTANCE.entityToPageDto(data);
+					// 가입 커뮤니티 개수
+					long channelCount = channelRepository.countByUserUid(data.getUid());
+					dto.setChannelCount((int) channelCount);
+					// 포인트
+					dto.setPoint(data.getPoint() != null ? data.getPoint() : 0);
+					return dto;
+				});
 		return userList;
 	}
 

@@ -45,6 +45,7 @@ public class UserDto {
         private Integer shopIdx;
         private List<String> roles = new ArrayList<String>();
         private LocalDateTime createDate;
+        private Integer point = 0;  // 포인트
 
         public void setRoles(List<UserRole> userRoles) {
             this.roles = new ArrayList<String>();
@@ -82,6 +83,8 @@ public class UserDto {
         private String provider;
         private List<String> roles = new ArrayList<String>();
         private LocalDateTime createDate;
+        private Integer channelCount = 0;  // 가입 커뮤니티 개수
+        private Integer point = 0;  // 포인트
 
         public void setRoles(List<UserRole> userRoles) {
             this.roles = new ArrayList<String>();
