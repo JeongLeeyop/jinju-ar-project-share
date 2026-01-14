@@ -71,7 +71,7 @@ export default class extends Vue {
           this.loading = false;
           await UserModule.GetUserInfo();
           const redirect = this.$route.query.redirect as string;
-          this.$router.push({ path: redirect || '/' }).catch(() => {});
+          this.$router.push({ path: redirect || '/community' }).catch(() => {});
         }).catch(() => {
           this.loading = false;
         });
