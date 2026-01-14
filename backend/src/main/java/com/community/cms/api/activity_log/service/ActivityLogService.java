@@ -237,4 +237,19 @@ public class ActivityLogService {
             throw new RuntimeException("활동 로그 삭제 실패", e);
         }
     }
+    
+    /**
+     * 사용자 활동 로그 조회 (관리자용 - 페이지네이션 지원)
+     */
+    @Transactional(readOnly = true)
+    public Page<ActivityLogDto.DetailResDto> getUserActivityLog(String userUid, Pageable pageable) {
+        try {
+            Page<ActivityLog> activityPage = activityLogRepository.findByUserUidOrderByCreatedAtDesc(
+                    userUid, pageable);
+            return activityPage.map(ActivityLogDto.DetailResDto::fromEntity);
+        } catch (Exception e) {
+            log.error("Failed to get user activity log: {}", e.getMessage(), e);
+            throw new RuntimeException("사용자 활동 로그 조회 실패", e);
+        }
+    }
 }

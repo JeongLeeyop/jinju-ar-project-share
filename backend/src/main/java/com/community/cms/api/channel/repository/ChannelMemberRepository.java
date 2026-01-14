@@ -70,4 +70,14 @@ public interface ChannelMemberRepository extends JpaRepository<ChannelMember, In
      * @return 승인되고 추방되지 않은 멤버 페이지
      */
     Page<ChannelMember> findByChannelUidAndApprovalStatusAndBanned(String channelUid, boolean approvalStatus, boolean banned, Pageable pageable);
+    
+    /**
+     * 사용자의 가입 채널 목록 조회
+     */
+    List<ChannelMember> findByUserUid(String userUid);
+    
+    /**
+     * 채널 멤버 목록 조회 (페이지네이션)
+     */
+    Page<ChannelMember> findByChannelUid(String channelUid, Pageable pageable);
 }

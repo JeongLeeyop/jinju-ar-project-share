@@ -125,4 +125,9 @@ public interface SpaceRepository extends JpaRepository<Space, String> {
      */
     long countByChannelUidAndAdminUidAndSpaceTypeAndIsActiveTrueAndIsDeletedFalse(
         String channelUid, String adminUid, Space.SpaceType spaceType);
+    
+    /**
+     * 채널별 모든 공간 조회 (관리자용, 페이징)
+     */
+    Page<Space> findByChannelUid(String channelUid, Pageable pageable);
 }

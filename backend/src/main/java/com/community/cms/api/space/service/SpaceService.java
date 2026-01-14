@@ -972,4 +972,83 @@ public class SpaceService {
         // 3. 둘 다 실패하면 예외
         throw new IllegalArgumentException("채널을 찾을 수 없습니다: " + channelUidOrDomain);
     }
+    
+    // ============ 관리자용 메서드 ============
+    
+    /**
+     * 관리자용 공간 목록 조회
+     */
+    public Page<SpaceDto> adminList(String channelUid, String spaceType, String keyword, Pageable pageable) {
+        Page<Space> spaces;
+        if (channelUid != null && !channelUid.isEmpty()) {
+            spaces = spaceRepository.findByChannelUid(channelUid, pageable);
+        } else {
+            spaces = spaceRepository.findAll(pageable);
+        }
+        return spaces.map(space -> SpaceDto.fromEntity(space, null));
+    }
+    
+    /**
+     * 관리자용 공간 상세 조회
+     */
+    public SpaceDto adminDetail(String uid) {
+        Space space = spaceRepository.findById(uid)
+                .orElseThrow(() -> new IllegalArgumentException("공간을 찾을 수 없습니다."));
+        return SpaceDto.fromEntity(space, null);
+    }
+    
+    /**
+     * 관리자용 채널별 공간 목록 조회
+     */
+    public Page<SpaceDto> adminListByChannel(String channelUid, Pageable pageable) {
+        Page<Space> spaces = spaceRepository.findByChannelUid(channelUid, pageable);
+        return spaces.map(space -> SpaceDto.fromEntity(space, null));
+    }
+    
+    /**
+     * 공간 멤버 목록 조회
+     */
+    public Page<Map<String, Object>> getSpaceMembers(String uid, Pageable pageable) {
+        Space space = spaceRepository.findById(uid)
+                .orElseThrow(() -> new IllegalArgumentException("공간을 찾을 수 없습니다."));
+        
+        Page<SpaceMember> members = spaceMemberRepository.findBySpaceUid(uid, pageable);
+        return members.map(member -> {
+            Map<String, Object> dto = new HashMap<>();
+            dto.put("spaceUid", member.getSpaceUid());
+            dto.put("userUid", member.getUserUid());
+            dto.put("joinedAt", member.getJoinedAt());
+            
+            userRepository.findById(member.getUserUid()).ifPresent(user -> {
+                dto.put("name", user.getActualName());
+                dto.put("email", user.getEmail());
+            });
+            
+            return dto;
+        });
+    }
+    
+    /**
+     * 관리자용 공간 삭제
+     */
+    @Transactional
+    public void adminDelete(String uid) {
+        Space space = spaceRepository.findById(uid)
+                .orElseThrow(() -> new IllegalArgumentException("공간을 찾을 수 없습니다."));
+        spaceRepository.delete(space);
+    }
+    
+    /**
+     * 사용자가 속한 공간 목록 조회
+     */
+    public List<SpaceDto> getUserSpaces(String userUid) {
+        List<SpaceMember> members = spaceMemberRepository.findByUserUid(userUid);
+        List<SpaceDto> result = new ArrayList<>();
+        for (SpaceMember member : members) {
+            spaceRepository.findById(member.getSpaceUid())
+                    .map(space -> SpaceDto.fromEntity(space, userUid))
+                    .ifPresent(result::add);
+        }
+        return result;
+    }
 }

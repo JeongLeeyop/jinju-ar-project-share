@@ -64,6 +64,9 @@ import com.community.cms.oauth.SinghaUser;
 
 import lombok.AllArgsConstructor;
 
+import java.util.Map;
+import java.util.HashMap;
+
 public interface ChannelService {
     ChannelDto.detail detail(SinghaUser authUser, String uid);
 
@@ -94,6 +97,24 @@ public interface ChannelService {
     
     // 커뮤니티 생성 가능 여부 확인 (최대 3개)
     Boolean canCreateChannel(SinghaUser authUser);
+    
+    // 관리자용 커뮤니티 목록 조회
+    Page<ChannelDto.detail> adminList(ChannelSearch search, Pageable pageable);
+    
+    // 관리자용 커뮤니티 상세 조회
+    ChannelDto.detail adminDetail(String uid);
+    
+    // 관리자용 커뮤니티 삭제
+    void adminDelete(String uid);
+    
+    // 커뮤니티 멤버 목록 조회
+    Page<Map<String, Object>> getChannelMembers(String uid, Pageable pageable);
+    
+    // 커뮤니티 통계 조회
+    Map<String, Object> getChannelStats();
+    
+    // 사용자의 가입 커뮤니티 목록 조회
+    List<ChannelDto.detail> getUserChannels(String userUid);
 }
 
 @Service
@@ -469,5 +490,67 @@ class ChannelServiceImpl implements ChannelService {
         }
         long count = channelRepository.countByUserUid(authUser.getUser().getUid());
         return count < MAX_CHANNEL_COUNT;
+    }
+    
+    @Override
+    public Page<ChannelDto.detail> adminList(ChannelSearch search, Pageable pageable) {
+        return channelRepository.findAll(pageable)
+                .map(channel -> ChannelMapper.INSTANCE.entityToDetail(channel));
+    }
+    
+    @Override
+    public ChannelDto.detail adminDetail(String uid) {
+        Channel channel = channelRepository.findByUid(uid)
+                .orElseThrow(() -> new NotFoundException(NotFound.CHANNEL));
+        return ChannelMapper.INSTANCE.entityToDetail(channel);
+    }
+    
+    @Override
+    @Transactional
+    public void adminDelete(String uid) {
+        Channel channel = channelRepository.findByUid(uid)
+                .orElseThrow(() -> new NotFoundException(NotFound.CHANNEL));
+        clearRelation(channel);
+        channelRepository.delete(channel);
+    }
+    
+    @Override
+    public Page<Map<String, Object>> getChannelMembers(String uid, Pageable pageable) {
+        Channel channel = channelRepository.findByUid(uid)
+                .orElseThrow(() -> new NotFoundException(NotFound.CHANNEL));
+        return channelMemberRepository.findByChannelUid(channel.getUid(), pageable)
+                .map(member -> {
+                    Map<String, Object> dto = new HashMap<>();
+                    dto.put("userUid", member.getUserUid());
+                    dto.put("channelUid", member.getChannelUid());
+                    dto.put("approvalStatus", member.isApprovalStatus());
+                    dto.put("createDate", member.getCreateDate());
+                    User user = userRepository.findByUid(member.getUserUid()).orElse(null);
+                    if (user != null) {
+                        dto.put("name", user.getActualName());
+                        dto.put("email", user.getEmail());
+                    }
+                    return dto;
+                });
+    }
+    
+    @Override
+    public Map<String, Object> getChannelStats() {
+        Map<String, Object> stats = new HashMap<>();
+        stats.put("totalChannels", channelRepository.count());
+        stats.put("totalMembers", channelMemberRepository.count());
+        return stats;
+    }
+    
+    @Override
+    public List<ChannelDto.detail> getUserChannels(String userUid) {
+        List<ChannelMember> memberList = channelMemberRepository.findByUserUid(userUid);
+        List<ChannelDto.detail> result = new ArrayList<>();
+        for (ChannelMember member : memberList) {
+            channelRepository.findByUid(member.getChannelUid())
+                    .map(channel -> ChannelMapper.INSTANCE.entityToDetail(channel))
+                    .ifPresent(result::add);
+        }
+        return result;
     }
 }

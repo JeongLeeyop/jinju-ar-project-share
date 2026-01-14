@@ -73,4 +73,21 @@ public interface UserRepository extends JpaRepository<User, String>, QuerydslPre
             @Param("spaceUid") String spaceUid, 
             @Param("adminUid") String adminUid,
             @Param("search") String search);
+    
+    /**
+     * 닉네임 또는 전화번호로 검색 (SMS 발송용)
+     */
+    List<User> findByActualNameContainingOrConcatNumberContaining(String actualName, String concatNumber);
+    
+    /**
+     * UID 목록으로 사용자 조회
+     */
+    List<User> findAllByUidIn(List<String> uids);
+    
+    /**
+     * SMS 발송용 회원 목록 조회
+     */
+    @Query("SELECT u FROM User u WHERE u.concatNumber IS NOT NULL AND u.concatNumber != '' " +
+           "AND (:keyword IS NULL OR u.actualName LIKE %:keyword% OR u.concatNumber LIKE %:keyword%)")
+    Page<User> findMembersForSms(@Param("keyword") String keyword, Pageable pageable);
 }

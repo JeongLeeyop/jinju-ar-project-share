@@ -183,25 +183,28 @@ legend {
 
 /* 사이드메뉴 */
 .aside {
-	width: 220px;
+	width: 240px;
 	float: left;
-	box-shadow: 1px 0 5px 0px rgb(0 0 0 / 10%);
-	margin: 0 2px 0 0;
-	background-color: #fff;
+	box-shadow: 2px 0 20px rgba(102, 126, 234, 0.15);
+	margin: 0;
+	background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+	min-height: 100vh;
 }
 
 .aside-logo {
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	background-color: #2d303b;
+	background: rgba(255, 255, 255, 0.1);
 	position: relative;
-	height: 195px;
+	height: 120px;
+	border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .aside-logo img {
-	width: 102px;
-	height: 113px;
+	width: 80px;
+	height: auto;
+	filter: brightness(0) invert(1);
 }
 
 /* 사이드메뉴 링크 */
@@ -209,12 +212,64 @@ legend {
 .aside-content {
 	display: flex;
 	flex-direction: column;
-	height: calc(100vh - 195px);
-	overflow-y: scroll;
+	height: calc(100vh - 120px);
+	overflow-y: auto;
+	padding: 15px 0;
+}
+
+.aside-content::-webkit-scrollbar {
+	width: 4px;
+}
+
+.aside-content::-webkit-scrollbar-thumb {
+	background: rgba(255, 255, 255, 0.3);
+	border-radius: 4px;
+}
+
+.aside .el-menu {
+	background: transparent;
+	border: none;
+}
+
+.aside .el-submenu__title,
+.aside .el-menu-item {
+	color: rgba(255, 255, 255, 0.85) !important;
+	font-size: 14px;
+	height: 48px;
+	line-height: 48px;
+	transition: all 0.3s ease;
+}
+
+.aside .el-submenu__title:hover,
+.aside .el-menu-item:hover {
+	background: rgba(255, 255, 255, 0.1) !important;
+}
+
+.aside .el-menu-item.is-active {
+	background: rgba(255, 255, 255, 0.2) !important;
+	color: #fff !important;
+	font-weight: 600;
+	border-left: 3px solid #fff;
+}
+
+.aside .el-submenu__title i,
+.aside .el-menu-item i {
+	color: rgba(255, 255, 255, 0.7);
+}
+
+.aside .el-submenu .el-menu-item {
+	padding-left: 50px !important;
+	font-size: 13px;
+	height: 42px;
+	line-height: 42px;
+}
+
+.aside .el-submenu__icon-arrow {
+	color: rgba(255, 255, 255, 0.5);
 }
 
 .aside-btn {
-	margin: 20px 10px;
+	margin: auto 15px 20px;
 	display: flex;
 	justify-content: center;
 	align-items: center;
@@ -222,31 +277,46 @@ legend {
 }
 
 .aside-btn a {
-	font-size: 14px;
-	background-color: #e5e5e5;
-	border-radius: 5px;
-	padding: 12px 10px;
+	font-size: 13px;
+	background: rgba(255, 255, 255, 0.15);
+	color: #fff;
+	border-radius: 8px;
+	padding: 10px 15px;
+	transition: all 0.3s ease;
+}
+
+.aside-btn a:hover {
+	background: rgba(255, 255, 255, 0.25);
 }
 
 .aside-btn button {
-	font-size: 14px;
-	background-color: #e5e5e5;
-	border-radius: 5px;
-	padding: 10px 10px;
+	font-size: 13px;
+	background: rgba(255, 255, 255, 0.15);
+	color: #fff;
+	border-radius: 8px;
+	padding: 10px 15px;
 	border: none;
+	cursor: pointer;
+	transition: all 0.3s ease;
+}
+
+.aside-btn button:hover {
+	background: rgba(255, 255, 255, 0.25);
 }
 
 .aside-btn img {
 	width: 15px;
 	height: 15px;
+	filter: brightness(0) invert(1);
 }
 
 /* 메인화면 */
 
 .content-wrap {
-	width: calc(100vw - 195px) !important;
-	overflow: hidden;
+	width: calc(100vw - 240px) !important;
+	overflow-y: auto;
 	max-height: 100vh;
+	background-color: #f8f9fe;
 }
 
 .home {
@@ -393,42 +463,52 @@ legend {
 /* 회원관리 */
 .user-search-wr {width: 5%;}
 .user-search-wr button.el-button.el-button--default {
-    background-color: #58c0d6;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 }
 
 .user-wrap {
-	width: calc(100% - 222px);
-	background-color: #f3f2f4;
-	padding: 30px 60px;
+	width: calc(100% - 240px);
+	background-color: #f8f9fe;
+	padding: 30px 40px;
 	float: left;
+	min-height: 100vh;
 }
 
 .user-title {
 	display: flex;
 	justify-content: space-between;
-	    flex-wrap: wrap;
+	flex-wrap: wrap;
+	margin-bottom: 20px;
 }
 
 
 .tl__box {
 	display: flex;
 	align-items: center;
-	grid-gap: 5px;
+	grid-gap: 12px;
 }
 
 .user-title .tl {
-	font-size: 30px;
-	font-weight: 500;
+	font-size: 28px;
+	font-weight: 700;
+	color: #303133;
 }
 
 .user-title .usernumber {
 	font-size: 13px;
-	font-weight: bold;
-	background-color: #fff;
+	font-weight: 600;
+	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+	color: #fff;
 	border-radius: 20px;
-	padding: 0 15px;
-	border: 20px;
-	line-height: 30px;
+	padding: 4px 16px;
+	line-height: 22px;
+}
+
+.user-content {
+	background: #fff;
+	border-radius: 12px;
+	padding: 20px;
+	box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
 }
 
 .user__tab {

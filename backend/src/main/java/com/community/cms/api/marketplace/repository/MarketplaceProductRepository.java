@@ -66,6 +66,12 @@ public interface MarketplaceProductRepository extends JpaRepository<MarketplaceP
     Page<MarketplaceProduct> findByChannelUidAndCategoryOrderByCreatedAtDesc(
             String channelUid, String category, Pageable pageable);
     
+    // 채널별 상품 목록 (관리자용)
+    Page<MarketplaceProduct> findByChannelUid(String channelUid, Pageable pageable);
+    
+    // 상태별 상품 수 조회
+    long countByStatus(String status);
+    
     // 조회수 증가
     @Modifying
     @Query("UPDATE MarketplaceProduct p SET p.viewCount = p.viewCount + 1 WHERE p.uid = :uid")

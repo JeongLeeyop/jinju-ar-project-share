@@ -2,6 +2,8 @@ package com.community.cms.api.space.repository;
 
 import com.community.cms.entity.SpaceMember;
 import com.community.cms.entity.SpaceMember.SpaceMemberId;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -33,6 +35,11 @@ public interface SpaceMemberRepository extends JpaRepository<SpaceMember, SpaceM
      * 사용자별 가입 공간 목록 조회
      */
     List<SpaceMember> findByUserUidOrderByJoinedAtDesc(String userUid);
+    
+    /**
+     * 사용자별 가입 공간 목록 조회
+     */
+    List<SpaceMember> findByUserUid(String userUid);
 
     /**
      * 공간별 멤버 수 조회
@@ -48,4 +55,9 @@ public interface SpaceMemberRepository extends JpaRepository<SpaceMember, SpaceM
      * 공간별 멤버 조회
      */
     List<SpaceMember> findBySpaceUid(String spaceUid);
+    
+    /**
+     * 공간별 멤버 조회 (페이지네이션)
+     */
+    Page<SpaceMember> findBySpaceUid(String spaceUid, Pageable pageable);
 }

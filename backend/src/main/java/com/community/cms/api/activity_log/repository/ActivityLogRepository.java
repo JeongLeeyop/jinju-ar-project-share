@@ -87,4 +87,9 @@ public interface ActivityLogRepository extends JpaRepository<ActivityLog, Long> 
      */
     @Query("SELECT a FROM ActivityLog a WHERE a.createdAt < :beforeDate")
     List<ActivityLog> findOldActivities(@Param("beforeDate") LocalDateTime beforeDate);
+    
+    /**
+     * 특정 유저의 활동 로그 조회 (관리자용)
+     */
+    Page<ActivityLog> findByUserUidOrderByCreatedAtDesc(String userUid, Pageable pageable);
 }
