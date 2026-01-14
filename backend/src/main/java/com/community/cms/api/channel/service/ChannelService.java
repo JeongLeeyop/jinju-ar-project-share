@@ -288,6 +288,7 @@ class ChannelServiceImpl implements ChannelService {
 
         // 기본레벨 세팅
         List<ChannelLevelDefault> levelList = channelLevelDefaultRepository.findAllByUseYnOrderByLevel(true);
+        ChannelLevel firstLevel = null; // 첫 번째 레벨 저장용
         for (ChannelLevelDefault levelDefault : levelList) {
             ChannelLevel level = new ChannelLevel();
             level.setChannelUid(entity.getUid());
@@ -297,6 +298,11 @@ class ChannelServiceImpl implements ChannelService {
             level.setName(levelDefault.getName());
 
             level = channelLevelRepository.save(level);
+            
+            // 첫 번째 레벨(레벨 1) 저장
+            if (firstLevel == null || levelDefault.getLevel() < firstLevel.getLevel()) {
+                firstLevel = level;
+            }
 
             List<ChannelLevelSettingDefault> settingList = channelLevelSettingDefaultRepository
                     .findAllByUseYnAndLevel(true, levelDefault.getLevel());
@@ -309,6 +315,17 @@ class ChannelServiceImpl implements ChannelService {
                 channelLevelSettingRepository.save(setting);
             }
         }
+        
+        // ✅ 채널 생성자를 ChannelMember에 자동 추가 (최고관리자로 등록)
+        ChannelMember creatorMember = new ChannelMember();
+        creatorMember.setUserUid(user.getUid());
+        creatorMember.setChannelUid(entity.getUid());
+        creatorMember.setApprovalStatus(true); // 자동 승인
+        creatorMember.setBanned(false);
+        if (firstLevel != null) {
+            creatorMember.setChannelLevelIdx(firstLevel.getIdx());
+        }
+        channelMemberRepository.save(creatorMember);
     }
 
     @Transactional

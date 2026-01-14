@@ -400,6 +400,9 @@ export default class extends Vue {
       // ✅ ChannelPermissionModule을 사용해서 권한 로드 및 확인
       await ChannelPermissionModule.loadPermissions(this.currentChannelUid);
       
+      // 채널 생성자(최고관리자) 여부 설정
+      this.isChannelCreator = ChannelPermissionModule.isChannelAdmin || this.isChannelAdmin;
+      
       // 매니저 권한: SPACE_CREATE 또는 OFFLINE_MARKETPLACE_REGISTER 권한이 있거나 채널 관리자인 경우
       this.hasManagerPermission = 
         ChannelPermissionModule.isChannelAdmin ||
@@ -408,10 +411,14 @@ export default class extends Vue {
       
       console.log('Permission check results (using ChannelPermissionModule):', {
         isChannelAdmin: ChannelPermissionModule.isChannelAdmin,
+        isChannelCreator: this.isChannelCreator,
         canCreateSpace: ChannelPermissionModule.canCreateSpace,
         canRegisterOfflineMarketplace: ChannelPermissionModule.canRegisterOfflineMarketplace,
         hasManagerPermission: this.hasManagerPermission,
       });
+      
+      // 캐시 저장
+      this.savePermissionsToCache();
     } catch (error) {
       console.error('권한 정보 조회 실패:', error);
     }

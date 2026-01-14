@@ -319,8 +319,8 @@ private loginForm = {
   private foundEmail: string = '';
 
   private loginRules = {
-    username: [{ required: true, message: '아이디를 입력하세요.', trigger: 'blur' }],
-    password: [{ required: true, message: '비밀번호를 입력하세요.', trigger: 'blur' }],
+    username: [{ required: true, message: '이메일을 입력하세요.', trigger: 'blur' }],
+    password: [{ required: true, message: '이름을 입력하세요.', trigger: 'blur' }],
   }
 
   private findPasswordRules = {
