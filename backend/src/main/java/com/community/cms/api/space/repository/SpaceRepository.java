@@ -5,6 +5,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.querydsl.QuerydslPredicateExecutor;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
@@ -16,7 +17,7 @@ import java.util.Optional;
  * 공간 데이터 접근을 위한 Repository
  */
 @Repository
-public interface SpaceRepository extends JpaRepository<Space, String> {
+public interface SpaceRepository extends JpaRepository<Space, String>, QuerydslPredicateExecutor<Space> {
 
     /**
      * 채널의 모든 공간 조회 (삭제되지 않은 것만)

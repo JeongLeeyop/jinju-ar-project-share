@@ -35,6 +35,9 @@ public class MarketplaceProduct {
 
     @Column(name = "channel_uid", nullable = false)
     private String channelUid;
+    
+    @Transient
+    private String channelName;  // 조인 결과 저장용
 
     @Column(name = "offline_marketplace_uid")
     private String offlineMarketplaceUid;  // NULL이면 메인 장터

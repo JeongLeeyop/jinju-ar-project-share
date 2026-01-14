@@ -17,9 +17,10 @@
             ></el-option>
           </el-select>
           <el-select v-model="listQuery.status" placeholder="상태" clearable @change="handleSearch">
-            <el-option label="판매중" value="SALE"></el-option>
-            <el-option label="예약중" value="RESERVED"></el-option>
-            <el-option label="판매완료" value="SOLD"></el-option>
+            <el-option label="판매중" value="ACTIVE"></el-option>
+            <el-option label="거래중" value="TRADING"></el-option>
+            <el-option label="판매완료" value="SOLD_OUT"></el-option>
+            <el-option label="숨김" value="HIDDEN"></el-option>
           </el-select>
           <el-input placeholder="상품명 검색" v-model="listQuery.keyword" class="search" @keyup.enter.native="handleSearch()" />
           <el-button @click="handleSearch()"><img src="~@/assets/images/search.png" alt=""></el-button>
@@ -30,28 +31,28 @@
     <!-- 통계 카드 -->
     <div class="stats-row">
       <div class="stat-card">
-        <div class="stat-icon"><i class="el-icon-goods"></i></div>
+        <!-- <div class="stat-icon"><i class="el-icon-goods"></i></div> -->
         <div class="stat-info">
           <div class="stat-value">{{ stats.totalProducts | parseKrw }}</div>
           <div class="stat-label">총 상품 수</div>
         </div>
       </div>
       <div class="stat-card">
-        <div class="stat-icon sale"><i class="el-icon-sell"></i></div>
+        <!-- <div class="stat-icon sale"><i class="el-icon-sell"></i></div> -->
         <div class="stat-info">
           <div class="stat-value">{{ stats.saleCount | parseKrw }}</div>
           <div class="stat-label">판매중</div>
         </div>
       </div>
       <div class="stat-card">
-        <div class="stat-icon sold"><i class="el-icon-check"></i></div>
+        <!-- <div class="stat-icon sold"><i class="el-icon-check"></i></div> -->
         <div class="stat-info">
           <div class="stat-value">{{ stats.soldCount | parseKrw }}</div>
           <div class="stat-label">판매완료</div>
         </div>
       </div>
       <div class="stat-card primary">
-        <div class="stat-icon"><i class="el-icon-money"></i></div>
+        <!-- <div class="stat-icon"><i class="el-icon-money"></i></div> -->
         <div class="stat-info">
           <div class="stat-value">{{ stats.totalSales | parseKrw }}원</div>
           <div class="stat-label">총 거래액</div>
@@ -196,18 +197,20 @@ export default class MarketplaceIndex extends Vue {
 
   private getStatusType(status: string) {
     const types: any = {
-      SALE: 'success',
-      RESERVED: 'warning',
-      SOLD: 'info',
+      ACTIVE: 'success',
+      TRADING: 'warning',
+      SOLD_OUT: 'info',
+      HIDDEN: 'danger',
     };
     return types[status] || 'info';
   }
 
   private getStatusText(status: string) {
     const texts: any = {
-      SALE: '판매중',
-      RESERVED: '예약중',
-      SOLD: '판매완료',
+      ACTIVE: '판매중',
+      TRADING: '거래중',
+      SOLD_OUT: '판매완료',
+      HIDDEN: '숨김',
     };
     return texts[status] || status;
   }
@@ -280,15 +283,15 @@ export default class MarketplaceIndex extends Vue {
 }
 
 .product-thumb {
-  width: 50px;
-  height: 50px;
+  width: 80px;
+  height: 80px;
   object-fit: cover;
   border-radius: 6px;
 }
 
 .no-image {
-  width: 50px;
-  height: 50px;
+  width: 80px;
+  height: 80px;
   background: #f5f7fa;
   border-radius: 6px;
   display: flex;

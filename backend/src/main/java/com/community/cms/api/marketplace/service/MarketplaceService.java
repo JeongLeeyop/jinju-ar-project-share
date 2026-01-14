@@ -4,13 +4,22 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import com.community.cms.entity.MarketplaceProduct;
+import com.community.cms.entity.QMarketplaceProduct;
+import com.community.cms.entity2.Channel;
+import com.community.cms.entity2.QChannel;
 import com.community.cms.api.marketplace.repository.MarketplaceProductRepository;
+import com.community.cms.api.channel.repository.ChannelRepository;
+import com.querydsl.core.BooleanBuilder;
+import com.querydsl.jpa.JPAExpressions;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,15 +30,52 @@ import lombok.extern.slf4j.Slf4j;
 public class MarketplaceService {
 
     private final MarketplaceProductRepository productRepository;
+    private final ChannelRepository channelRepository;
 
     /**
      * 관리자용 상품 목록 조회
      */
     public Page<MarketplaceProduct> adminList(String channelUid, String status, String keyword, Pageable pageable) {
-        if (channelUid != null && !channelUid.isEmpty()) {
-            return productRepository.findByChannelUid(channelUid, pageable);
+        QMarketplaceProduct product = QMarketplaceProduct.marketplaceProduct;
+        QChannel channel = QChannel.channel;
+        
+        BooleanBuilder builder = new BooleanBuilder();
+        
+        // delete_status=false인 채널의 상품만 조회
+        builder.and(product.channelUid.in(
+            JPAExpressions
+                .select(channel.uid)
+                .from(channel)
+                .where(channel.deleteStatus.eq(false))
+        ));
+        
+        // 채널 필터
+        if (StringUtils.hasText(channelUid)) {
+            builder.and(product.channelUid.eq(channelUid));
         }
-        return productRepository.findAll(pageable);
+        
+        // 상태 필터
+        if (StringUtils.hasText(status)) {
+            builder.and(product.status.eq(status));
+        }
+        
+        // 키워드 검색 (상품명)
+        if (StringUtils.hasText(keyword)) {
+            builder.and(product.title.containsIgnoreCase(keyword));
+        }
+        
+        Page<MarketplaceProduct> products = productRepository.findAll(builder, pageable);
+        
+        // channelName 채우기
+        List<MarketplaceProduct> productsWithChannel = products.getContent().stream()
+            .map(p -> {
+                channelRepository.findByUid(p.getChannelUid())
+                    .ifPresent(c -> p.setChannelName(c.getName()));
+                return p;
+            })
+            .collect(Collectors.toList());
+        
+        return new PageImpl<>(productsWithChannel, pageable, products.getTotalElements());
     }
 
     /**

@@ -13,12 +13,17 @@ import com.community.cms.entity.Space;
 import com.community.cms.entity.SpaceInvitation;
 import com.community.cms.entity.SpaceMember;
 import com.community.cms.entity.User;
+import com.community.cms.entity.QSpace;
 import com.community.cms.entity2.Channel;
 import com.community.cms.entity2.ChannelMember;
+import com.community.cms.entity2.QChannel;
 import com.community.cms.util.ActivityLogHelper;
+import com.querydsl.core.BooleanBuilder;
+import com.querydsl.jpa.JPAExpressions;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -976,16 +981,75 @@ public class SpaceService {
     // ============ 관리자용 메서드 ============
     
     /**
-     * 관리자용 공간 목록 조회
+     * 관리자용 공간 목록 조회 (검색 및 필터링)
      */
     public Page<SpaceDto> adminList(String channelUid, String spaceType, String keyword, Pageable pageable) {
         Page<Space> spaces;
-        if (channelUid != null && !channelUid.isEmpty()) {
-            spaces = spaceRepository.findByChannelUid(channelUid, pageable);
+        
+        // 검색 조건 빌드
+        if ((channelUid != null && !channelUid.isEmpty()) || 
+            (spaceType != null && !spaceType.isEmpty()) || 
+            (keyword != null && !keyword.isEmpty())) {
+            
+            QSpace qSpace = QSpace.space;
+            QChannel qChannel = QChannel.channel;
+            BooleanBuilder builder = new BooleanBuilder();
+            
+            // 삭제되지 않은 커뮤니티만
+            builder.and(JPAExpressions
+                .selectOne()
+                .from(qChannel)
+                .where(qChannel.uid.eq(qSpace.channelUid)
+                    .and(qChannel.deleteStatus.eq(false)))
+                .exists());
+            
+            // 활성 상태이고 삭제되지 않은 공간만
+            builder.and(qSpace.isActive.eq(true));
+            builder.and(qSpace.isDeleted.eq(false));
+            
+            // 커뮤니티 필터
+            if (channelUid != null && !channelUid.isEmpty()) {
+                builder.and(qSpace.channelUid.eq(channelUid));
+            }
+            
+            // 타입 필터
+            if (spaceType != null && !spaceType.isEmpty()) {
+                builder.and(qSpace.spaceType.stringValue().eq(spaceType));
+            }
+            
+            // 키워드 검색 (공간명)
+            if (keyword != null && !keyword.isEmpty()) {
+                builder.and(qSpace.name.containsIgnoreCase(keyword));
+            }
+            
+            spaces = spaceRepository.findAll(builder, pageable);
         } else {
-            spaces = spaceRepository.findAll(pageable);
+            // 조건 없을 때: 삭제되지 않은 커뮤니티의 활성 공간만
+            QSpace qSpace = QSpace.space;
+            QChannel qChannel = QChannel.channel;
+            BooleanBuilder builder = new BooleanBuilder();
+            
+            builder.and(JPAExpressions
+                .selectOne()
+                .from(qChannel)
+                .where(qChannel.uid.eq(qSpace.channelUid)
+                    .and(qChannel.deleteStatus.eq(false)))
+                .exists());
+            
+            builder.and(qSpace.isActive.eq(true));
+            builder.and(qSpace.isDeleted.eq(false));
+            
+            spaces = spaceRepository.findAll(builder, pageable);
         }
-        return spaces.map(space -> SpaceDto.fromEntity(space, null));
+        
+        return spaces.map(space -> {
+            SpaceDto dto = SpaceDto.fromEntity(space, null);
+            // 커뮤니티 이름 설정
+            channelRepository.findByUid(space.getChannelUid()).ifPresent(channel -> {
+                dto.setChannelName(channel.getName());
+            });
+            return dto;
+        });
     }
     
     /**
@@ -1006,26 +1070,51 @@ public class SpaceService {
     }
     
     /**
-     * 공간 멤버 목록 조회
+     * 공간 멤버 목록 조회 (관리자 포함)
      */
     public Page<Map<String, Object>> getSpaceMembers(String uid, Pageable pageable) {
         Space space = spaceRepository.findById(uid)
                 .orElseThrow(() -> new IllegalArgumentException("공간을 찾을 수 없습니다."));
         
-        Page<SpaceMember> members = spaceMemberRepository.findBySpaceUid(uid, pageable);
-        return members.map(member -> {
+        // 모든 멤버 조회
+        List<SpaceMember> allMembers = spaceMemberRepository.findBySpaceUidOrderByJoinedAtDesc(uid);
+        
+        // 공간 생성자(관리자)가 멤버 목록에 없으면 추가
+        boolean adminExists = allMembers.stream()
+                .anyMatch(m -> m.getUserUid().equals(space.getAdminUid()));
+        
+        if (!adminExists && space.getAdminUid() != null) {
+            // 관리자를 멤버 목록 맨 앞에 추가
+            SpaceMember adminMember = new SpaceMember();
+            adminMember.setSpaceUid(uid);
+            adminMember.setUserUid(space.getAdminUid());
+            adminMember.setJoinedAt(space.getCreatedAt());
+            allMembers.add(0, adminMember);
+        }
+        
+        // 페이징 처리
+        int start = (int) pageable.getOffset();
+        int end = Math.min((start + pageable.getPageSize()), allMembers.size());
+        List<SpaceMember> pagedMembers = allMembers.subList(start, end);
+        
+        // DTO 변환
+        List<Map<String, Object>> dtoList = pagedMembers.stream().map(member -> {
             Map<String, Object> dto = new HashMap<>();
             dto.put("spaceUid", member.getSpaceUid());
             dto.put("userUid", member.getUserUid());
-            dto.put("joinedAt", member.getJoinedAt());
+            dto.put("joinDate", member.getJoinedAt());
+            dto.put("isAdmin", member.getUserUid().equals(space.getAdminUid()));
             
             userRepository.findById(member.getUserUid()).ifPresent(user -> {
-                dto.put("name", user.getActualName());
+                dto.put("actualName", user.getActualName());
                 dto.put("email", user.getEmail());
+                dto.put("concatNumber", user.getConcatNumber());
             });
             
             return dto;
-        });
+        }).collect(Collectors.toList());
+        
+        return new PageImpl<>(dtoList, pageable, allMembers.size());
     }
     
     /**

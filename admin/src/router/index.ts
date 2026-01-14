@@ -152,7 +152,7 @@ export const asyncRoutes: RouteConfig[] = [
           roles: ['ROLE_ADMIN', 'ROLE_CREATOR'],
         },
       },
-      {
+      /* {
         path: 'sales',
         name: 'MarketplaceSales',
         component: () => import('@/views/marketplace/sales.vue'),
@@ -160,7 +160,7 @@ export const asyncRoutes: RouteConfig[] = [
           title: '매출 현황',
           roles: ['ROLE_ADMIN', 'ROLE_CREATOR'],
         },
-      },
+      }, */
     ],
   },
   /* 회원 관리 */
@@ -194,7 +194,7 @@ export const asyncRoutes: RouteConfig[] = [
     ],
   },
   /* 문자 전송 */
-  {
+  /* {
     path: '/sms',
     component: () => import('@/layout/default.vue'),
     meta: {
@@ -221,7 +221,7 @@ export const asyncRoutes: RouteConfig[] = [
         },
       },
     ],
-  },
+  }, */
   /* 최고관리자 메뉴 START */
   {
     path: '/user',

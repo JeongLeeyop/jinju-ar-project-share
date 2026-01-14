@@ -19,6 +19,7 @@ public class SpaceDto {
 
     private String uid;
     private String channelUid;
+    private String channelName;  // 소속 커뮤니티 이름
     private String name;
     private String description;
     private String spaceType;

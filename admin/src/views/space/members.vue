@@ -4,13 +4,12 @@
       <div class="tl__box">
         <p class="tl">공간 가입자 목록</p>
         <p class="usernumber">{{ spaceName }} - 총 {{ totalElements | parseKrw }}명</p>
+        <el-button type="primary" @click="$router.push({ name: 'SpaceList' })" style="margin-left: auto;">
+          <i class="el-icon-arrow-left"></i> 목록으로
+        </el-button>
       </div>
 
-      <div class="user__tab small">
-        <router-link class="back-btn" :to="{ name: 'SpaceList' }">
-          <i class="el-icon-arrow-left"></i> 목록으로
-        </router-link>
-      </div>
+      <div class="user__tab small"></div>
     </div>
 
     <div v-loading="loading" class="user-content">
@@ -117,15 +116,24 @@ export default class SpaceMembers extends Vue {
 </script>
 
 <style scoped>
-.back-btn {
-  font-size: 14px;
-  color: #667eea;
-  background: #fff;
-  padding: 8px 16px;
-  border-radius: 6px;
+.tl__box {
+  display: flex;
+  align-items: center;
+  gap: 15px;
 }
-.back-btn:hover {
-  background: #667eea;
-  color: #fff;
+.detail-button {
+  display: inline-block;
+  padding: 6px 12px;
+  background: #409EFF;
+  color: white;
+  border-radius: 3px;
+  font-size: 12px;
+  text-decoration: none;
+  transition: all 0.3s;
+  white-space: nowrap;
+  border: none;
+}
+.detail-button:hover {
+  background: #66b1ff;
 }
 </style>

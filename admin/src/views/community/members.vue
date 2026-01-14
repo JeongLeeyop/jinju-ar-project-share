@@ -147,4 +147,19 @@ export default class CommunityMembers extends Vue {
   color: #999;
   font-size: 12px;
 }
+.detail-button {
+  display: inline-block;
+  padding: 6px 12px;
+  background: #409EFF;
+  color: white;
+  border-radius: 3px;
+  font-size: 12px;
+  text-decoration: none;
+  transition: all 0.3s;
+  white-space: nowrap;
+  border: none;
+}
+.detail-button:hover {
+  background: #66b1ff;
+}
 </style>

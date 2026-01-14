@@ -6,6 +6,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.querydsl.QuerydslPredicateExecutor;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
@@ -16,7 +17,7 @@ import java.util.Optional;
  * 장터 상품 Repository
  */
 @Repository
-public interface MarketplaceProductRepository extends JpaRepository<MarketplaceProduct, Long> {
+public interface MarketplaceProductRepository extends JpaRepository<MarketplaceProduct, Long>, QuerydslPredicateExecutor<MarketplaceProduct> {
     
     Optional<MarketplaceProduct> findByUid(String uid);
     
