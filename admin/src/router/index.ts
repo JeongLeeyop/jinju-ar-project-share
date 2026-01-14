@@ -1082,7 +1082,7 @@ export function resetRouter() {
 }
 
 router.afterEach(async (to: Route, from: Route) => {
-  const pageTitle = '웨일리잇 관리자페이지';
+  const pageTitle = '진주알 관리자페이지';
   document.title = pageTitle;
 });
 
