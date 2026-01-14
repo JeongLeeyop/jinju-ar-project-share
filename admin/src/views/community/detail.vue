@@ -76,7 +76,7 @@
           :data="spaceList"
           border
           style="width: 100%"
-          :header-cell-style="{ background: '#667eea', color: '#fff', padding: '10px 0' }"
+          :header-cell-style="{ background: '#F2F6FC', color: '#606266', padding: '10px 0' }"
         >
           <el-table-column prop="name" label="공간명" />
           <el-table-column label="타입" width="100" align="center">
@@ -105,7 +105,7 @@
           :data="marketplaceList"
           border
           style="width: 100%"
-          :header-cell-style="{ background: '#667eea', color: '#fff', padding: '10px 0' }"
+          :header-cell-style="{ background: '#F2F6FC', color: '#606266', padding: '10px 0' }"
         >
           <el-table-column prop="title" label="상품명" />
           <el-table-column prop="price" label="가격" width="120" align="right">
@@ -228,21 +228,26 @@ export default class CommunityDetail extends Vue {
   font-weight: 600;
   margin-bottom: 20px;
   padding-bottom: 10px;
-  border-bottom: 2px solid #667eea;
+  border-bottom: 2px solid #DCDFE6;
   display: flex;
   align-items: center;
 }
 
 .section-title i {
   margin-right: 8px;
-  color: #667eea;
+  color: #409EFF;
 }
 
 .view-all {
   margin-left: auto;
   font-size: 14px;
-  color: #667eea;
+  color: #409EFF;
   font-weight: normal;
+  text-decoration: none;
+}
+
+.view-all:hover {
+  color: #66b1ff;
 }
 
 .info-grid {
@@ -278,15 +283,17 @@ export default class CommunityDetail extends Vue {
 }
 
 .stat-card {
-  background: linear-gradient(135deg, #f5f7fa 0%, #e4e7ed 100%);
-  border-radius: 10px;
+  background: #F5F7FA;
+  border-radius: 8px;
   padding: 20px;
   text-align: center;
+  border: 1px solid #EBEEF5;
 }
 
 .stat-card.primary {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #409EFF;
   color: #fff;
+  border-color: #409EFF;
 }
 
 .stat-value {
@@ -298,5 +305,22 @@ export default class CommunityDetail extends Vue {
 .stat-label {
   font-size: 14px;
   opacity: 0.8;
+}
+
+.detail-button {
+  display: inline-block;
+  padding: 6px 12px;
+  background: #409EFF;
+  color: white;
+  border-radius: 3px;
+  font-size: 12px;
+  text-decoration: none;
+  transition: all 0.3s;
+  white-space: nowrap;
+  border: none;
+}
+
+.detail-button:hover {
+  background: #66b1ff;
 }
 </style>

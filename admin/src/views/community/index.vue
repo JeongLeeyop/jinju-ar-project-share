@@ -11,7 +11,7 @@
           <el-select v-model="listQuery.searchType" placeholder="검색조건">
             <el-option label="커뮤니티명" value="name"></el-option>
             <el-option label="도메인" value="domain"></el-option>
-            <el-option label="관리자" value="adminName"></el-option>
+            <!-- <el-option label="관리자" value="adminName"></el-option> -->
           </el-select>
           <el-input placeholder="검색어 입력" v-model="listQuery.searchValue" class="search" @keyup.enter.native="handleSearch()" />
           <el-button @click="handleSearch()"><img src="~@/assets/images/search.png" alt=""></el-button>
@@ -68,16 +68,16 @@
         </el-table-column>
         <el-table-column label="가입자" width="80" align="center">
           <template slot-scope="scope">
-            <router-link class="link-button" :to="{ name: 'CommunityMembers', params: { uid: scope.row.uid } }">
+            <router-link class="action-button" :to="{ name: 'CommunityMembers', params: { uid: scope.row.uid } }">
               보기
             </router-link>
           </template>
         </el-table-column>
-        <el-table-column label="관리" width="120" align="center">
+        <el-table-column label="관리" width="150" align="center">
           <template slot-scope="scope">
             <div class="action-buttons">
-              <router-link class="detail-button" :to="{ name: 'CommunityDetail', params: { uid: scope.row.uid } }">상세</router-link>
-              <el-button size="mini" type="danger" @click="handleDelete(scope.row)">삭제</el-button>
+              <router-link class="action-button" :to="{ name: 'CommunityDetail', params: { uid: scope.row.uid } }">상세</router-link>
+              <a class="action-button danger" @click="handleDelete(scope.row)">삭제</a>
             </div>
           </template>
         </el-table-column>
@@ -161,7 +161,7 @@ export default class CommunityIndex extends Vue {
 
 <style scoped>
 .link-text {
-  color: #667eea;
+  color: #409EFF;
   font-weight: 500;
 }
 .link-text:hover {
@@ -169,21 +169,20 @@ export default class CommunityIndex extends Vue {
 }
 .link-button {
   display: inline-block;
-  padding: 5px 12px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 6px 12px;
+  background: #409EFF;
   color: white;
-  border-radius: 4px;
+  border-radius: 3px;
   font-size: 12px;
   text-decoration: none;
   transition: all 0.3s;
+  border: none;
 }
 .link-button:hover {
-  opacity: 0.9;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+  background: #66b1ff;
 }
 .member-count {
-  color: #667eea;
+  color: #409EFF;
   font-weight: 600;
 }
 .action-buttons {
@@ -192,18 +191,30 @@ export default class CommunityIndex extends Vue {
   justify-content: center;
   gap: 8px;
 }
-.detail-button {
+
+.action-button {
   display: inline-block;
-  padding: 5px 10px;
-  background: #667eea;
+  padding: 6px 12px;
+  background: #409EFF;
   color: white;
-  border-radius: 4px;
+  border-radius: 3px;
   font-size: 12px;
   text-decoration: none;
   transition: all 0.3s;
   white-space: nowrap;
+  border: none;
+  cursor: pointer;
 }
-.detail-button:hover {
-  background: #5568d3;
+
+.action-button:hover {
+  background: #66b1ff;
+}
+
+.action-button.danger {
+  background: #F56C6C;
+}
+
+.action-button.danger:hover {
+  background: #f78989;
 }
 </style>

@@ -232,7 +232,7 @@ export default class MarketplaceIndex extends Vue {
 }
 
 .stat-card.primary {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #409EFF;
   color: #fff;
 }
 
@@ -240,7 +240,7 @@ export default class MarketplaceIndex extends Vue {
   width: 50px;
   height: 50px;
   border-radius: 12px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #409EFF;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -257,11 +257,11 @@ export default class MarketplaceIndex extends Vue {
 }
 
 .stat-icon.sale {
-  background: linear-gradient(135deg, #67c23a 0%, #5daf34 100%);
+  background: #67C23A;
 }
 
 .stat-icon.sold {
-  background: linear-gradient(135deg, #909399 0%, #606266 100%);
+  background: #909399;
 }
 
 .stat-info {

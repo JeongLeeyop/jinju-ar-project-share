@@ -282,7 +282,7 @@ export default class SmsIndex extends Vue {
 }
 
 .remain-card {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #409EFF;
   color: #fff;
   border-radius: 12px;
   padding: 20px 30px;
@@ -334,7 +334,7 @@ export default class SmsIndex extends Vue {
 
 .panel-title i {
   margin-right: 8px;
-  color: #667eea;
+  color: #409EFF;
 }
 
 .search-box {
@@ -419,25 +419,25 @@ export default class SmsIndex extends Vue {
   width: 100%;
   padding: 15px;
   font-size: 16px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #409EFF;
   border: none;
 }
 
 .send-btn:hover {
-  opacity: 0.9;
+  background: #66b1ff;
 }
 
 .history-btn {
   background: #fff;
-  color: #667eea;
+  color: #409EFF;
   padding: 10px 20px;
   border-radius: 8px;
   font-weight: 500;
-  border: 1px solid #667eea;
+  border: 1px solid #409EFF;
 }
 
 .history-btn:hover {
-  background: #667eea;
+  background: #409EFF;
   color: #fff;
 }
 </style>

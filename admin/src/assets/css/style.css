@@ -496,7 +496,7 @@ legend {
 .user-title .usernumber {
 	font-size: 13px;
 	font-weight: 600;
-	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+	background: rgb(102, 126, 234);
 	color: #fff;
 	border-radius: 20px;
 	padding: 4px 16px;
@@ -681,7 +681,7 @@ legend {
 .user__tab.small .el-button {
 	padding: 12px;
 	width: 11%;
-	background-color: #58c0d6;
+	background-color: #409EFF;
 	height: 45px;
 }
 
@@ -805,7 +805,7 @@ legend {
 }
 
 .el-pagination.is-background .el-pager li:not(.disabled).active {
-	background-color: #58c0d6 !important;
+	background-color: #409EFF !important;
 	color: #fff !important;
 }
 

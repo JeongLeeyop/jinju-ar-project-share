@@ -503,15 +503,22 @@ class ChannelServiceImpl implements ChannelService {
     
     @Override
     public Page<ChannelDto.detail> adminList(ChannelSearch search, Pageable pageable) {
-        return channelRepository.findByDeleteStatusFalse(pageable)
-                .map(channel -> {
-                    ChannelDto.detail dto = ChannelMapper.INSTANCE.entityToDetail(channel);
-                    // 공간 수 조회
-                    dto.setSpaceCount(spaceRepository.countByChannelUidAndIsActiveTrueAndIsDeletedFalse(channel.getUid()));
-                    // 장터 상품 수 조회
-                    dto.setMarketplaceProductCount(marketplaceProductRepository.countByChannelUid(channel.getUid()));
-                    return dto;
-                });
+        // 검색 조건이 있을 경우 Predicate 사용, 없을 경우 deleteStatus=false만 조회
+        Page<Channel> channelPage;
+        if (search != null && search.getSearchValue() != null && !search.getSearchValue().isEmpty()) {
+            channelPage = channelRepository.findAll(search.search(), pageable);
+        } else {
+            channelPage = channelRepository.findByDeleteStatusFalse(pageable);
+        }
+        
+        return channelPage.map(channel -> {
+            ChannelDto.detail dto = ChannelMapper.INSTANCE.entityToDetail(channel);
+            // 공간 수 조회
+            dto.setSpaceCount(spaceRepository.countByChannelUidAndIsActiveTrueAndIsDeletedFalse(channel.getUid()));
+            // 장터 상품 수 조회
+            dto.setMarketplaceProductCount(marketplaceProductRepository.countByChannelUid(channel.getUid()));
+            return dto;
+        });
     }
     
     @Override

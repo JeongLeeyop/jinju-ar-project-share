@@ -366,12 +366,12 @@ export default class extends Vue {
   width: 60px;
   height: 60px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #409EFF;
   display: flex;
   align-items: center;
   justify-content: center;
   margin-right: 20px;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 4px 12px rgba(64, 158, 255, 0.3);
 }
 
 .user-avatar i {
@@ -503,8 +503,8 @@ export default class extends Vue {
 }
 
 .answer.likert-answer {
-  background: linear-gradient(135deg, #e8f5e8, #f0f8f0);
-  border: 1px solid #d4edda;
+  background: #F0F9FF;
+  border: 1px solid #D1E7FF;
   font-weight: 600;
 }
 

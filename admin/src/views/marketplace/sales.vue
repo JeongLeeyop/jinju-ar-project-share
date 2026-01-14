@@ -232,7 +232,7 @@ export default class MarketplaceSales extends Vue {
 }
 
 .stat-card.large.primary {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #409EFF;
   color: #fff;
 }
 
@@ -267,11 +267,11 @@ export default class MarketplaceSales extends Vue {
 }
 
 .stat-card.large .stat-icon.blue {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #409EFF;
 }
 
 .stat-card.large .stat-icon.green {
-  background: linear-gradient(135deg, #67c23a 0%, #5daf34 100%);
+  background: #67C23A;
 }
 
 .sales-section {
@@ -292,7 +292,7 @@ export default class MarketplaceSales extends Vue {
 
 .section-title i {
   margin-right: 8px;
-  color: #667eea;
+  color: #409EFF;
 }
 
 .rank {
@@ -308,13 +308,13 @@ export default class MarketplaceSales extends Vue {
 }
 
 .rank.top {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #409EFF;
   color: #fff;
 }
 
 .amount {
   font-weight: 600;
-  color: #667eea;
+  color: #409EFF;
 }
 
 .percentage {

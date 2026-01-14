@@ -214,7 +214,7 @@ export default class SmsHistory extends Vue {
   width: 50px;
   height: 50px;
   border-radius: 12px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #409EFF;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -227,11 +227,11 @@ export default class SmsHistory extends Vue {
 }
 
 .stat-card.success .stat-icon {
-  background: linear-gradient(135deg, #67c23a 0%, #5daf34 100%);
+  background: #67C23A;
 }
 
 .stat-card.danger .stat-icon {
-  background: linear-gradient(135deg, #f56c6c 0%, #e04545 100%);
+  background: #F56C6C;
 }
 
 .stat-info {

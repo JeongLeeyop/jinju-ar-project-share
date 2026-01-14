@@ -17,6 +17,7 @@ import com.querydsl.core.types.dsl.StringTemplate;
 import com.querydsl.jpa.JPAExpressions;
 import com.community.cms.common.search.SearchDefault;
 import com.community.cms.entity2.QChannel;
+import com.community.cms.entity.QUser;
 
 import lombok.Data;
 
@@ -70,6 +71,19 @@ public class ChannelSearch{
             case "name":
                 builder.and(channel.name.contains(searchValue));
                 break;
+            case "domain":
+                builder.and(channel.domain.contains(searchValue));
+                break;
+            case "adminName":
+                // User 엔티티와 조인하여 actualName 검색
+                QUser user = QUser.user;
+                builder.and(JPAExpressions
+                    .selectOne()
+                    .from(user)
+                    .where(user.uid.eq(channel.userUid)
+                        .and(user.actualName.contains(searchValue)))
+                    .exists());
+                break;
             case "introduce":
                 builder.and(channel.introduce.contains(searchValue));
                 break;
@@ -89,8 +103,10 @@ public class ChannelSearch{
             }
         }
 
-        int allIndex = categoryUid.indexOf("all");
-        if(allIndex < 0) builder.and(channel.categoryList.any().categoryUid.in(categoryUid));
+        if(StringUtils.hasText(categoryUid)) {
+            int allIndex = categoryUid.indexOf("all");
+            if(allIndex < 0) builder.and(channel.categoryList.any().categoryUid.in(categoryUid));
+        }
 
         if (myFlag) {
         //    builder.and(Channel.channelUserList.any().userUid.eq(userUid));
