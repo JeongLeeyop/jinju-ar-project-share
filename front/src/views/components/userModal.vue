@@ -20,9 +20,30 @@
                 <br>회원 가입 후, 커뮤니티에 참여가 가능합니다.
             </div>
             <div class="button-wrap">
-                <el-form-item prop="actualName"><div class="btn-wr name"><el-input v-model="joinForm.actualName" placeholder="성함"/></div></el-form-item>
-                <el-form-item prop="email"><div class="btn-wr email"><el-input @input="removeSpaceFormData" v-model="joinForm.email" placeholder="이메일"/></div></el-form-item>
-                <el-form-item prop="concatNumber"><div class="btn-wr phone"><el-input v-model="joinForm.concatNumber" @input="formatPhoneNumber" placeholder="핸드폰 번호 (예: 010-1234-5678)" maxlength="13"/></div></el-form-item>
+                <el-form-item prop="email">
+                  <div class="btn-wr email">
+                    <el-input @input="handleEmailInput" v-model="joinForm.email" placeholder="이메일"/>
+                    <span v-if="joinDuplicateCheckStatus.email === 'checking'" class="status-text checking">...</span>
+                    <span v-if="joinDuplicateCheckStatus.email === 'duplicate'" class="status-text error">이미 사용중인 이메일입니다</span>
+                    <span v-if="joinDuplicateCheckStatus.email === 'available'" class="status-text success">사용 가능</span>
+                  </div>
+                </el-form-item>
+                <el-form-item prop="actualName">
+                  <div class="btn-wr name">
+                    <el-input v-model="joinForm.actualName" @input="handleNameInput" placeholder="성함"/>
+                    <span v-if="joinDuplicateCheckStatus.name === 'checking'" class="status-text checking">...</span>
+                    <span v-if="joinDuplicateCheckStatus.name === 'duplicate'" class="status-text error">이미 등록된 정보입니다</span>
+                    <span v-if="joinDuplicateCheckStatus.name === 'available'" class="status-text success">사용 가능</span>
+                  </div>
+                </el-form-item>
+                <el-form-item prop="concatNumber">
+                  <div class="btn-wr phone">
+                    <el-input v-model="joinForm.concatNumber" @input="formatPhoneNumber" placeholder="핸드폰 번호 (예: 010-1234-5678)" maxlength="13"/>
+                    <span v-if="joinDuplicateCheckStatus.phone === 'checking'" class="status-text checking">...</span>
+                    <span v-if="joinDuplicateCheckStatus.phone === 'duplicate'" class="status-text error">이미 등록된 정보입니다</span>
+                    <span v-if="joinDuplicateCheckStatus.phone === 'available'" class="status-text success">사용 가능</span>
+                  </div>
+                </el-form-item>
                 <el-form-item prop="userPassword"><div class="btn-wr password"><el-input @input="removeSpaceFormData" v-model="joinForm.userPassword" type="password" placeholder="패스워드"/></div></el-form-item>
                 <el-form-item prop="passwordCheck"><div class="btn-wr password"><el-input @input="removeSpaceFormData" v-model="joinForm.passwordCheck" type="password" placeholder="패스워드 확인"/></div></el-form-item>
                 <el-form-item prop="iconFileUid">
@@ -182,6 +203,7 @@ import {
   getUserInfo,
   requestTempPassword,
   findEmail,
+  checkNameAndPhoneDuplicate,
 } from '@/api/user';
 import { UserModule } from '@/store/modules/user';
 import { ChannelModule } from '@/store/modules/channel';
@@ -270,6 +292,15 @@ private loginForm = {
     privacy3: '',
     iconFileUid: '',
   }
+
+  private joinDuplicateCheckStatus = {
+    email: '', // 'checking', 'duplicate', 'available'
+    name: '', // 'checking', 'duplicate', 'available'
+    phone: '', // 'checking', 'duplicate', 'available'
+  };
+
+  private joinCheckDuplicateTimer: number | null = null;
+  private joinCheckEmailTimer: number | null = null;
 
   private iconPreviewUrl: string = '';
 
@@ -406,10 +437,154 @@ private loginForm = {
     });
   }
 
+  // 이메일 입력 핸들러
+  private handleEmailInput() {
+    // 공백 제거
+    this.joinForm.email = this.joinForm.email.replace(/\s/g, '');
+    this.checkJoinDuplicateEmail();
+  }
+
+  // 이메일 중복 체크
+  private async checkJoinDuplicateEmail() {
+    // debounce 초기화
+    if (this.joinCheckEmailTimer) {
+      clearTimeout(this.joinCheckEmailTimer);
+    }
+
+    // 이메일이 입력되지 않은 경우
+    if (!this.joinForm.email) {
+      this.joinDuplicateCheckStatus.email = '';
+      return;
+    }
+
+    // 이메일 형식 검증
+    const regEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!regEmail.test(this.joinForm.email)) {
+      this.joinDuplicateCheckStatus.email = '';
+      return;
+    }
+
+    this.joinDuplicateCheckStatus.email = 'checking';
+
+    this.joinCheckEmailTimer = window.setTimeout(async () => {
+      try {
+        const response = await userIdCheck(this.joinForm.email);
+        // userIdCheck는 사용 가능하면 true, 이미 사용중이면 false 반환
+        if (response.data === true) {
+          this.joinDuplicateCheckStatus.email = 'available';
+        } else {
+          this.joinDuplicateCheckStatus.email = 'duplicate';
+        }
+      } catch (error: any) {
+        this.joinDuplicateCheckStatus.email = '';
+        console.error('이메일 중복 확인 오류:', error);
+      }
+    }, 500);
+  }
+
+  private async checkJoinDuplicateNameAndPhone() {
+    console.log('checkJoinDuplicateNameAndPhone called', {
+      name: this.joinForm.actualName,
+      phone: this.joinForm.concatNumber
+    });
+    
+    // debounce 초기화
+    if (this.joinCheckDuplicateTimer) {
+      clearTimeout(this.joinCheckDuplicateTimer);
+    }
+
+    // 이름과 전화번호 모두 입력된 경우에만 체크
+    if (!this.joinForm.actualName || !this.joinForm.concatNumber) {
+      this.joinDuplicateCheckStatus = { email: this.joinDuplicateCheckStatus.email, name: '', phone: '' };
+      console.log('Skip check: missing fields');
+      return;
+    }
+
+    // 전화번호 형식 검증
+    const phoneWithoutDash = this.joinForm.concatNumber.replace(/-/g, '');
+    const regPhone = /^01([0|1|6|7|8|9])-?([0-9]{3,4})-?([0-9]{4})$/;
+    console.log('Phone validation:', {
+      original: this.joinForm.concatNumber,
+      withoutDash: phoneWithoutDash,
+      testResult: regPhone.test(phoneWithoutDash),
+      phoneLength: phoneWithoutDash.length
+    });
+    
+    if (!regPhone.test(phoneWithoutDash)) {
+      this.joinDuplicateCheckStatus = { email: this.joinDuplicateCheckStatus.email, name: this.joinDuplicateCheckStatus.name, phone: '' };
+      console.log('Skip check: invalid phone format');
+      return;
+    }
+
+    this.joinDuplicateCheckStatus = { email: this.joinDuplicateCheckStatus.email, name: 'checking', phone: 'checking' };
+    console.log('Starting duplicate check... will check in 500ms');
+
+    this.joinCheckDuplicateTimer = window.setTimeout(async () => {
+      try {
+        console.log('Making API call...');
+        const response = await checkNameAndPhoneDuplicate({
+          actualName: this.joinForm.actualName,
+          concatNumber: this.joinForm.concatNumber,
+        });
+        
+        console.log('=== API 응답 전체 ===');
+        console.log('response.data:', response.data);
+        console.log('response.data.duplicate:', response.data.duplicate);
+        console.log('==================');
+        
+        // Java에서 isDuplicate 필드는 JSON으로 직렬화 시 "duplicate"로 변환됨
+        const isDuplicate = response.data.duplicate;
+        if (isDuplicate === true) {
+          console.log('→ 중복 있음! duplicate 설정');
+          // Vue 반응성을 위해 객체 전체를 새로 할당
+          this.joinDuplicateCheckStatus = {
+            email: this.joinDuplicateCheckStatus.email,
+            name: 'duplicate',
+            phone: 'duplicate'
+          };
+        } else {
+          console.log('→ 중복 없음! available 설정');
+          this.joinDuplicateCheckStatus = {
+            email: this.joinDuplicateCheckStatus.email,
+            name: 'available',
+            phone: 'available'
+          };
+        }
+        
+        console.log('최종 status:', this.joinDuplicateCheckStatus);
+      } catch (error: any) {
+        this.joinDuplicateCheckStatus = { email: this.joinDuplicateCheckStatus.email, name: '', phone: '' };
+        console.error('중복 확인 오류:', error);
+      }
+    }, 500); // 500ms debounce
+  }
+
   private async handleRegister() {
     /* TODO 회원가입 로직 */
     (this.$refs.joinForm as ElForm).validate(async (valid: boolean) => {
       if (valid) {
+        // 이메일 중복 체크
+        if (this.joinDuplicateCheckStatus.email === 'duplicate') {
+          this.$message.warning('이미 사용중인 이메일입니다.');
+          return;
+        }
+        
+        if (this.joinDuplicateCheckStatus.email === 'checking') {
+          this.$message.warning('이메일 중복 확인 중입니다. 잠시만 기다려주세요.');
+          return;
+        }
+        
+        // 이름+전화번호 중복 체크
+        if (this.joinDuplicateCheckStatus.name === 'duplicate' || this.joinDuplicateCheckStatus.phone === 'duplicate') {
+          this.$message.warning('이미 등록된 이름과 전화번호입니다.');
+          return;
+        }
+        
+        if (this.joinDuplicateCheckStatus.name === 'checking' || this.joinDuplicateCheckStatus.phone === 'checking') {
+          this.$message.warning('중복 확인 중입니다. 잠시만 기다려주세요.');
+          return;
+        }
+
         this.loading = true;
         
         try {
@@ -445,7 +620,16 @@ private loginForm = {
     this.joinForm.passwordCheck = this.joinForm.passwordCheck.replace(/(\s*)/g, '');
   }
 
+  private handleNameInput() {
+    console.log('handleNameInput called');
+    // 이름 입력 시 중복 체크 트리거
+    this.$nextTick(() => {
+      this.checkJoinDuplicateNameAndPhone();
+    });
+  }
+
   private formatPhoneNumber() {
+    console.log('formatPhoneNumber called');
     // 숫자만 추출
     let numbers = this.joinForm.concatNumber.replace(/[^\d]/g, '');
     
@@ -462,6 +646,11 @@ private loginForm = {
     } else {
       this.joinForm.concatNumber = numbers.slice(0, 3) + '-' + numbers.slice(3, 7) + '-' + numbers.slice(7);
     }
+    
+    // 중복 체크 트리거
+    this.$nextTick(() => {
+      this.checkJoinDuplicateNameAndPhone();
+    });
   }
 
   private formatFindPasswordPhone() {
@@ -612,6 +801,14 @@ private loginForm = {
     this.findEmailForm.concatNumber = '';
     this.foundEmail = '';
     this.localActiveStep = 'FindEmail';
+  }
+
+  @Watch('joinForm.actualName')
+  @Watch('joinForm.concatNumber')
+  private onJoinNameOrPhoneChange() {
+    console.log('onJoinNameOrPhoneChange called via Watch');
+    // 이름이나 전화번호가 변경되면 중복체크 실행
+    this.checkJoinDuplicateNameAndPhone();
   }
 
   private async handleSendTempPassword() {
@@ -819,6 +1016,7 @@ private loginForm = {
 
     .btn-wr {
       width: 100%;
+      position: relative;
 
       input {
         width: 100%;
@@ -840,6 +1038,28 @@ private loginForm = {
 
         &:focus {
           border-color: #073DFF;
+        }
+      }
+
+      .status-text {
+        position: absolute;
+        right: 16px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 12px;
+        font-weight: 500;
+        pointer-events: none;
+
+        &.checking {
+          color: #666;
+        }
+
+        &.error {
+          color: #F56C6C;
+        }
+
+        &.success {
+          color: #67C23A;
         }
       }
     }

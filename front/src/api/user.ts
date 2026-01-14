@@ -75,6 +75,12 @@ export const userIdCheck = (userId: string) => request({
   method: 'get',
 });
 
+export const checkNameAndPhoneDuplicate = (data: { actualName: string; concatNumber: string; currentUserUid?: string }) => request({
+  url: `${PATH}/check-duplicate`,
+  method: 'post',
+  data,
+});
+
 export const getInstitutionUserList = (institutionUid: string) => request({
   url: `${PATH}/institution/${institutionUid}`,
   method: 'get',

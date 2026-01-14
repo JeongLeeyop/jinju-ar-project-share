@@ -23,7 +23,7 @@
           <div class="participant-avatar">
             <img 
               v-if="hasAvatar(participant)" 
-              :src="participant.avatar" 
+              :src="`${apiUrl}/attached-file/${participant.avatar}`" 
               :alt="participant.name"
               class="avatar-image"
             />
@@ -77,6 +77,10 @@ export default class extends Vue {
   // 아바타 이미지가 있으면 사용, 없으면 기본 SVG 사용
   private hasAvatar(participant: Participant): boolean {
     return !!(participant.avatar && participant.avatar.trim());
+  }
+
+  get apiUrl() {
+    return process.env.VUE_APP_COMMON_API || '/api';
   }
 }
 </script>

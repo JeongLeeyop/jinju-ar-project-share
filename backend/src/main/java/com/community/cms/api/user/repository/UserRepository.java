@@ -39,6 +39,11 @@ public interface UserRepository extends JpaRepository<User, String>, QuerydslPre
     Optional<User> findByActualNameAndConcatNumber(String actualName, String concatNumber);
 
     /**
+     * 이름과 전화번호로 사용자 목록 조회 (중복 체크용)
+     */
+    List<User> findAllByActualNameAndConcatNumber(String actualName, String concatNumber);
+
+    /**
      * 이메일(아이디)과 전화번호로 사용자 조회 (임시 비밀번호 발급용)
      */
     Optional<User> findByUserIdAndConcatNumber(String userId, String concatNumber);

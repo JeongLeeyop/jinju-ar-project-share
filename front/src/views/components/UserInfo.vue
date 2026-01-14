@@ -12,19 +12,25 @@
             </div>
             <div class="title">회원정보 수정</div>
             <div class="button-wrap">
+                <el-form-item prop="email">
+                  <div class="btn-wr email">
+                    <el-input v-model="userInfo.userId" disabled placeholder="이메일 (아이디)"/>
+                  </div>
+                </el-form-item>
                 <el-form-item prop="actualName">
                   <div class="btn-wr name">
                     <el-input v-model="userInfo.actualName" placeholder="성함"/>
-                  </div>
-                </el-form-item>
-                <el-form-item prop="email">
-                  <div class="btn-wr email">
-                    <el-input v-model="userInfo.email" @input="removeSpaceFormData" placeholder="이메일"/>
+                    <span v-if="duplicateCheckStatus.name === 'checking'" class="status-text checking">...</span>
+                    <span v-if="duplicateCheckStatus.name === 'duplicate'" class="status-text error">이미 등록된 정보입니다</span>
+                    <span v-if="duplicateCheckStatus.name === 'available'" class="status-text success">사용 가능</span>
                   </div>
                 </el-form-item>
                 <el-form-item prop="concatNumber">
                   <div class="btn-wr phone">
                     <el-input v-model="userInfo.concatNumber" @input="formatPhoneNumber" placeholder="핸드폰 번호 (예: 010-1234-5678)" maxlength="13"/>
+                    <span v-if="duplicateCheckStatus.phone === 'checking'" class="status-text checking">...</span>
+                    <span v-if="duplicateCheckStatus.phone === 'duplicate'" class="status-text error">이미 등록된 정보입니다</span>
+                    <span v-if="duplicateCheckStatus.phone === 'available'" class="status-text success">사용 가능</span>
                   </div>
                 </el-form-item>
                 <el-form-item prop="currentPassword">
@@ -93,6 +99,7 @@ import {
   userIdCheck,
   updateUser,
   getUserInfo,
+  checkNameAndPhoneDuplicate,
 } from '@/api/user';
 import { UserModule } from '@/store/modules/user';
 import { ChannelModule } from '@/store/modules/channel';
@@ -136,6 +143,9 @@ private async getUserInfo() {
             if (!this.userInfo.concatNumber) {
               this.userInfo.concatNumber = '';
             }
+            // 원본 이름과 전화번호 저장 (변경 여부 확인용)
+            this.originalActualName = this.userInfo.actualName || '';
+            this.originalConcatNumber = this.userInfo.concatNumber || '';
         });
     }
 }
@@ -155,6 +165,17 @@ private async getUserInfo() {
     newPassword: '',
     newPasswordCheck: '',
   }
+
+  private duplicateCheckStatus = {
+    name: '', // 'checking', 'duplicate', 'available'
+    phone: '', // 'checking', 'duplicate', 'available'
+  };
+
+  private checkDuplicateTimer: number | null = null;
+
+  // 원본 이름과 전화번호 (변경 여부 확인용)
+  private originalActualName: string = '';
+  private originalConcatNumber: string = '';
 
   private iconImageLimit = 1;
 
@@ -358,12 +379,12 @@ private async getUserInfo() {
   private joinRules = {
     email: [
       { required: true, message: '이메일을 입력해주세요.', trigger: ['change', 'blur'] },
-      { validator: this.validateUserId, trigger: 'blur' },
     ],
     actualName: [
       { required: true, message: '성명을 입력하세요.', trigger: ['change', 'blur'] },
     ],
     concatNumber: [
+      { required: true, message: '전화번호를 입력해주세요.', trigger: ['change', 'blur'] },
       { validator: this.validatePhoneNumber, trigger: ['change', 'blur'] },
     ],
     currentPassword: [
@@ -377,10 +398,75 @@ private async getUserInfo() {
     ],
   }
 
+  private async checkDuplicateNameAndPhone() {
+    // debounce 초기화
+    if (this.checkDuplicateTimer) {
+      clearTimeout(this.checkDuplicateTimer);
+    }
+
+    // 이름과 전화번호 모두 입력된 경우에만 체크
+    if (!this.userInfo.actualName || !this.userInfo.concatNumber) {
+      this.duplicateCheckStatus.name = '';
+      this.duplicateCheckStatus.phone = '';
+      return;
+    }
+
+    // 전화번호 형식 검증
+    const regPhone = /^01([0|1|6|7|8|9])-?([0-9]{3,4})-?([0-9]{4})$/;
+    if (!regPhone.test(this.userInfo.concatNumber.replace(/-/g, ''))) {
+      this.duplicateCheckStatus.phone = '';
+      return;
+    }
+
+    // 원본과 동일하면 중복 체크 불필요 (자기 자신의 정보)
+    if (this.userInfo.actualName === this.originalActualName && 
+        this.userInfo.concatNumber === this.originalConcatNumber) {
+      this.duplicateCheckStatus.name = 'available';
+      this.duplicateCheckStatus.phone = 'available';
+      return;
+    }
+    this.duplicateCheckStatus.name = 'checking';
+    this.duplicateCheckStatus.phone = 'checking';
+
+    this.checkDuplicateTimer = window.setTimeout(async () => {
+      try {
+        const response = await checkNameAndPhoneDuplicate({
+          actualName: this.userInfo.actualName,
+          concatNumber: this.userInfo.concatNumber,
+          currentUserUid: this.userInfo.uid,
+        });
+        
+        // Java에서 isDuplicate 필드는 JSON으로 직렬화 시 "duplicate"로 변환됨
+        if (response.data.duplicate) {
+          this.duplicateCheckStatus.name = 'duplicate';
+          this.duplicateCheckStatus.phone = 'duplicate';
+        } else {
+          this.duplicateCheckStatus.name = 'available';
+          this.duplicateCheckStatus.phone = 'available';
+        }
+      } catch (error: any) {
+        this.duplicateCheckStatus.name = '';
+        this.duplicateCheckStatus.phone = '';
+        console.error('중복 확인 오류:', error);
+      }
+    }, 500); // 500ms debounce
+  }
+
   private async handleUserUpdate() {
     /* TODO 회원정보 수정 로직 */
     (this.$refs.userInfo as ElForm).validate(async (valid: boolean) => {
       if (valid) {
+        // 이름+전화번호 중복 체크
+        if (this.duplicateCheckStatus.name === 'duplicate' || this.duplicateCheckStatus.phone === 'duplicate') {
+          this.$message.warning('이미 등록된 이름과 전화번호입니다.');
+          return;
+        }
+        
+        if (this.duplicateCheckStatus.name === 'checking' || this.duplicateCheckStatus.phone === 'checking') {
+          this.$message.warning('중복 확인 중입니다. 잠시만 기다려주세요.');
+          return;
+        }
+
         this.loading = true;
         
         try {
@@ -436,6 +522,13 @@ private async getUserInfo() {
     if (this.userInfo.email) {
       this.userInfo.email = this.userInfo.email.replace(/(\s*)/g, '');
     }
+  }
+
+  @Watch('userInfo.actualName')
+  @Watch('userInfo.concatNumber')
+  private onNameOrPhoneChange() {
+    // 이름이나 전화번호가 변경되면 중복체크 실행
+    this.checkDuplicateNameAndPhone();
   }
 
   private formatPhoneNumber() {
@@ -516,6 +609,7 @@ private async getUserInfo() {
 
     .btn-wr {
       width: 100%;
+      position: relative;
 
       input {
         width: 100%;
@@ -537,6 +631,34 @@ private async getUserInfo() {
 
         &:focus {
           border-color: #073DFF;
+        }
+
+        &:disabled {
+          background: #F5F5F5;
+          color: #999;
+          cursor: not-allowed;
+        }
+      }
+
+      .status-text {
+        position: absolute;
+        right: 16px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 12px;
+        font-weight: 500;
+        pointer-events: none;
+
+        &.checking {
+          color: #666;
+        }
+
+        &.error {
+          color: #F56C6C;
+        }
+
+        &.success {
+          color: #67C23A;
         }
       }
     }

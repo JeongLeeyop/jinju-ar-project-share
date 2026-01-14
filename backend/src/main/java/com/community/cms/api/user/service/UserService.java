@@ -8,6 +8,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import javax.transaction.Transactional;
 
@@ -53,6 +54,7 @@ public interface UserService {
 	void delete(User user);
 	Boolean userIdCheck(String userId);
 	Boolean userEmailCheck(String email);
+	boolean checkNameAndPhoneDuplicate(String actualName, String concatNumber, String currentUserUid);
 	void setEnabled(String userUid, boolean enable);
     List<UserDto.Detail> listByRole(String roleUid);
 	void addShopAdmin(String userId, String userPassword, Integer shopIdx);
@@ -155,6 +157,40 @@ class UserServiceImpl implements UserService {
 	@Override
 	public Boolean userEmailCheck(String email) {
 		return userRepository.findByEmail(email).isEmpty();
+	}
+
+	@Override
+	public boolean checkNameAndPhoneDuplicate(String actualName, String concatNumber, String currentUserUid) {
+		System.out.println("=== checkNameAndPhoneDuplicate START ===");
+		System.out.println("Input - actualName: " + actualName + ", concatNumber: " + concatNumber + ", currentUserUid: " + currentUserUid);
+		
+		List<User> existingUsers = userRepository.findAllByActualNameAndConcatNumber(actualName, concatNumber);
+		System.out.println("Found users count: " + existingUsers.size());
+		existingUsers.forEach(user -> {
+			System.out.println("  - User UID: " + user.getUid() + ", Name: " + user.getActualName() + ", Phone: " + user.getConcatNumber());
+		});
+		
+		// 조회된 사용자가 없으면 중복 아님
+		if (existingUsers.isEmpty()) {
+			System.out.println("Result: false (no users found)");
+			System.out.println("=== checkNameAndPhoneDuplicate END ===");
+			return false;
+		}
+		
+		// 현재 사용자 UID가 제공된 경우, 본인을 제외한 다른 사용자가 있는지 확인
+		if (currentUserUid != null) {
+			// 본인이 아닌 다른 사용자가 있으면 중복
+			boolean hasOtherUsers = existingUsers.stream()
+				.anyMatch(user -> !user.getUid().equals(currentUserUid));
+			System.out.println("Result: " + hasOtherUsers + " (excluding current user)");
+			System.out.println("=== checkNameAndPhoneDuplicate END ===");
+			return hasOtherUsers;
+		}
+		
+		// 현재 사용자 UID가 없는 경우(회원가입), 한 명이라도 있으면 중복
+		System.out.println("Result: true (registration mode - users exist)");
+		System.out.println("=== checkNameAndPhoneDuplicate END ===");
+		return true;
 	}
 
 	private List<UserRole> setRoles(String userUid, List<String> roles) {

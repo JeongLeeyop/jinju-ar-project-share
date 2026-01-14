@@ -278,4 +278,24 @@ public class UserDto {
         @NotNull(message = "상점 고유값을 입력하세요.")
         private Integer shopIdx;
     }
+
+    @Data
+    public static class DuplicateCheckRequest {
+        @NotBlank(message = "이름을 입력하세요.")
+        private String actualName;
+        
+        @NotBlank(message = "전화번호를 입력하세요.")
+        private String concatNumber;
+        
+        private String currentUserUid;
+    }
+
+    @Data
+    public static class DuplicateCheckResponse {
+        private boolean isDuplicate;
+        
+        public DuplicateCheckResponse(boolean isDuplicate) {
+            this.isDuplicate = isDuplicate;
+        }
+    }
 }

@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.community.cms.api.user.dto.ClientUserDto;
+import com.community.cms.api.user.dto.UserDto;
 import com.community.cms.api.user.exception.UserNotFoundException;
 import com.community.cms.api.user.service.ClientUserService;
 import com.community.cms.api.user.service.UserService;
@@ -46,6 +47,16 @@ public class ClientUserController {
 		boolean isExistId = userService.userIdCheck(userId);
         return ResponseEntity.ok(isExistId);
     }
+	
+	@PostMapping("/check-duplicate")
+	public ResponseEntity<UserDto.DuplicateCheckResponse> checkDuplicate(@RequestBody @Valid UserDto.DuplicateCheckRequest request) {
+		boolean isDuplicate = userService.checkNameAndPhoneDuplicate(
+			request.getActualName(),
+			request.getConcatNumber(),
+			request.getCurrentUserUid()
+		);
+		return ResponseEntity.ok(new UserDto.DuplicateCheckResponse(isDuplicate));
+	}
 	
 	@PostMapping
 	public ResponseEntity join(@Valid @RequestBody ClientUserDto.join dto) {

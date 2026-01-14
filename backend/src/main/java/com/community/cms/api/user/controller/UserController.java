@@ -46,6 +46,17 @@ public class UserController {
         return ResponseEntity.ok(userService.userIdCheck(userId));
     }
 
+    @PreAuthorize("permitAll()")
+    @PostMapping("/check-duplicate")
+    public ResponseEntity<UserDto.DuplicateCheckResponse> checkDuplicate(@RequestBody @Valid UserDto.DuplicateCheckRequest request) {
+        boolean isDuplicate = userService.checkNameAndPhoneDuplicate(
+            request.getActualName(),
+            request.getConcatNumber(),
+            request.getCurrentUserUid()
+        );
+        return ResponseEntity.ok(new UserDto.DuplicateCheckResponse(isDuplicate));
+    }
+
     @GetMapping("{uid}")
     public ResponseEntity<UserDto.Detail> detail(@PathVariable("uid") User user) {
         if (user == null)
