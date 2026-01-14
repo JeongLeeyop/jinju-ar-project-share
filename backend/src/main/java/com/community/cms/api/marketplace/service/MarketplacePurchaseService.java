@@ -83,7 +83,8 @@ public class MarketplacePurchaseService {
         int totalPrice = product.getPrice() * request.getQuantity();
 
         // 포인트 차감
-        deductPoints(buyerUid, product.getChannelUid(), totalPrice, productUid);
+        deductPoints(buyerUid, product.getChannelUid(), totalPrice, productUid, 
+                    "온라인 장터 상품 구매: " + product.getTitle());
 
         // 재고 감소
         product.setStockQuantity(product.getStockQuantity() - request.getQuantity());
@@ -144,7 +145,8 @@ public class MarketplacePurchaseService {
 
         // 구매자 포인트 차감
         deductPoints(purchase.getBuyerUid(), product.getChannelUid(), 
-                     request.getPointAmount(), productUid);
+                     request.getPointAmount(), productUid,
+                     "오프라인 장터 상품 구매: " + product.getTitle());
 
         // 구매 내역 업데이트
         purchase.setBuyerContact(request.getBuyerContact());
@@ -212,7 +214,8 @@ public class MarketplacePurchaseService {
 
         // 포인트 차감 (나눔 상품이 아닐 경우만)
         if (totalPrice > 0) {
-            deductPoints(buyerUid, product.getChannelUid(), totalPrice, productUid);
+            deductPoints(buyerUid, product.getChannelUid(), totalPrice, productUid,
+                        "오프라인 장터 상품 구매: " + product.getTitle());
         }
 
         // 재고 감소
@@ -278,7 +281,8 @@ public class MarketplacePurchaseService {
 
         // 포인트 차감 (나눔 상품이 아닐 경우만)
         if (request.getDeductPoints() > 0) {
-            deductPoints(buyer.getUid(), product.getChannelUid(), request.getDeductPoints(), productUid);
+            deductPoints(buyer.getUid(), product.getChannelUid(), request.getDeductPoints(), productUid,
+                        "오프라인 장터 상품 구매 (이름/연락처 입력): " + product.getTitle());
         }
 
         // 상품 상태를 품절로 변경 (구매 확정과 동일하게)
@@ -493,7 +497,8 @@ public class MarketplacePurchaseService {
 
         // 포인트 차감 (나눔 상품이 아닐 경우)
         if (purchase.getTotalPrice() > 0) {
-            deductPoints(buyerUid, product.getChannelUid(), purchase.getTotalPrice(), purchase.getProductUid());
+            deductPoints(buyerUid, product.getChannelUid(), purchase.getTotalPrice(), purchase.getProductUid(),
+                        "온라인 장터 거래 완료: " + product.getTitle());
         }
 
         // 재고 감소
@@ -556,7 +561,8 @@ public class MarketplacePurchaseService {
 
         // 포인트 차감 (나눔 상품이 아닐 경우)
         if (purchase.getTotalPrice() > 0) {
-            deductPoints(purchase.getBuyerUid(), product.getChannelUid(), purchase.getTotalPrice(), purchase.getProductUid());
+            deductPoints(purchase.getBuyerUid(), product.getChannelUid(), purchase.getTotalPrice(), purchase.getProductUid(),
+                        "온라인 장터 거래 확정: " + product.getTitle());
         }
 
         // 재고 감소
@@ -768,7 +774,7 @@ public class MarketplacePurchaseService {
     /**
      * 포인트 차감 (user 테이블의 전역 포인트 사용)
      */
-    private void deductPoints(String userUid, String channelUid, int amount, String productUid) {
+    private void deductPoints(String userUid, String channelUid, int amount, String productUid, String description) {
         User user = userRepository.findById(userUid)
                 .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다"));
 
@@ -790,7 +796,7 @@ public class MarketplacePurchaseService {
                 .pointType("MARKETPLACE")
                 .pointAmount(-amount)  // 음수로 차감
                 .currentBalance(newBalance)
-                .description("장터 상품 구매")
+                .description(description)  // 상세한 설명
                 .referenceId(productUid)
                 .build();
 
@@ -800,8 +806,8 @@ public class MarketplacePurchaseService {
         user.setPoint(newBalance);
         userRepository.save(user);
 
-        log.info("Points deducted: {} from user {} ({}P -> {}P)", 
-                 amount, userUid, currentBalance, newBalance);
+        log.info("Points deducted: {} from user {} ({}P -> {}P) - {}", 
+                 amount, userUid, currentBalance, newBalance, description);
     }
 
     /**
