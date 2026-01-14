@@ -1325,6 +1325,7 @@ export default class extends Vue {
   display: flex;
   flex-direction: column;
   gap: 20px;
+  padding:20px;
 }
 
 .modal-close-btn {
@@ -1346,6 +1347,7 @@ export default class extends Vue {
 }
 
 .modal-title {
+  padding:20px;
   color: #222;
   font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
   font-size: 20px;

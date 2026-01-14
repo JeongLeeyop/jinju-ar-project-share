@@ -2127,8 +2127,7 @@ export default class extends Vue {
 
 // 액션 버튼
 .action-btn {
-  height: 36px;
-  padding: 16px;
+  padding: 13px;
   border: none;
   border-radius: 6px;
   font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
@@ -2138,6 +2137,7 @@ export default class extends Vue {
   transition: all 0.2s;
 
   &.primary {
+    line-height:5px;
     background: #073DFF;
     color: #FFF;
 
@@ -2150,6 +2150,7 @@ export default class extends Vue {
     background: #F5F5F5;
     color: #666;
     border: 1px solid #CECECE;
+    line-height:5px;
 
     &:hover {
       background: #E0E0E0;
@@ -2222,6 +2223,8 @@ export default class extends Vue {
 }
 
 .pending-message {
+  padding: 20px;
+  margin: 20px 0;
   background: #F8F9FA;
   border-radius: 8px;
   text-align:left;

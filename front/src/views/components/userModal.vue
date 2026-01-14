@@ -99,10 +99,10 @@
             </div>
             <div class="button-wrap">
                 <el-form-item prop="username">
-                <div class="btn-wr email"><el-input placeholder="이메일 주소" @input="removeSpaceFormData" v-model="loginForm.username"/></div>
+                <div class="btn-wr email"><el-input placeholder="이메일 주소" @input="removeSpaceFormData" @keyup.enter.native="handleLogin" v-model="loginForm.username"/></div>
                 </el-form-item>
                 <el-form-item prop="password">
-                <div class="btn-wr password"><el-input placeholder="패스워드" @input="removeSpaceFormData" v-model="loginForm.password" type="password"/></div>
+                <div class="btn-wr password"><el-input placeholder="패스워드" @input="removeSpaceFormData" @keyup.enter.native="handleLogin" v-model="loginForm.password" type="password"/></div>
                 </el-form-item>
             </div>
             <div class="txt2"><a @click="viewFindPassword()">비밀번호를 잊으셨나요?</a></div>

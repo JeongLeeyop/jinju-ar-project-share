@@ -8,7 +8,8 @@
       <!-- Profile Card -->
       <div class="profile-card">
         <div class="profile-avatar">
-          <svg width="100" height="100" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <img v-if="userIconFileUid" :src="`${apiUrl}/attached-file/${userIconFileUid}`" alt="프로필 이미지" class="profile-avatar-img">
+          <svg v-else width="100" height="100" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
             <circle cx="50" cy="50" r="50" fill="#D9D9D9" />
             <mask id="mask0_profile" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="0" y="0" width="100"
               height="100">
@@ -104,6 +105,7 @@ import { Component, Vue } from 'vue-property-decorator';
 import { ChannelModule } from '@/store/modules/channel';
 import { UserModule } from '@/store/modules/user';
 import { getCurrentPoint, getPointHistory, PointHistory } from '@/api/point';
+import { getUserInfo } from '@/api/user';
 import CommunitySidebar from './components/communitySidebar.vue';
 import UserInfo from './components/UserInfo.vue';
 
@@ -131,6 +133,7 @@ export default class extends Vue {
   private channelUid = ChannelModule.selectedChannel?.uid || 'default';
   private page = 0;
   private size = 100;
+  private userIconFileUid = '';
 
   private periods = [
     { label: '1개월', value: '1month' },
@@ -141,13 +144,31 @@ export default class extends Vue {
   private historyData: HistoryItem[] = [];
   private backendHistory: PointHistory[] = [];
 
+  get apiUrl() {
+    return '/api';
+  }
+
   get userName() {
     return UserModule.actualName || '사용자';
   }
 
   async mounted() {
     this.initializeDates();
+    await this.loadUserInfo();
     await this.loadPointData();
+  }
+
+  // 사용자 정보 로드
+  private async loadUserInfo() {
+    try {
+      const response = await getUserInfo();
+      if (response.data && response.data.iconFileUid) {
+        this.userIconFileUid = response.data.iconFileUid;
+      }
+    } catch (error) {
+      console.error('Failed to load user info:', error);
+      // 사용자 정보 로드 실패는 무시 (프로필 이미지만 영향)
+    }
   }
 
   // 초기 날짜 설정 (기본 1개월)
@@ -290,6 +311,12 @@ export default class extends Vue {
     width: 100%;
     height: 100%;
   }
+}
+
+.profile-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .profile-info {

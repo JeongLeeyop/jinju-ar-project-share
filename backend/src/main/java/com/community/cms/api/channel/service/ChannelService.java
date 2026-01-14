@@ -300,7 +300,7 @@ class ChannelServiceImpl implements ChannelService {
     @Override
     public void add(SinghaUser authUser, ChannelDto.add addDto) {
         // 최대 커뮤니티 생성 개수 검증
-        long channelCount = channelRepository.countByUserUid(authUser.getUser().getUid());
+        long channelCount = channelRepository.countByUserUidAndDeleteStatusFalse(authUser.getUser().getUid());
         if (channelCount >= MAX_CHANNEL_COUNT) {
             throw new RuntimeException("커뮤니티는 최대 " + MAX_CHANNEL_COUNT + "개까지만 생성할 수 있습니다.");
         }

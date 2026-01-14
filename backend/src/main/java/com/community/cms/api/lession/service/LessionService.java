@@ -11,6 +11,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import com.community.cms.api.channel.repository.ChannelRepository;
 import com.community.cms.api.lession.dto.LessionDto;
 import com.community.cms.api.lession.dto.LessionSearch;
 import com.community.cms.api.lession.dto.mapper.LessionMapper;
@@ -45,6 +46,7 @@ class LessionServiceImpl implements LessionService {
     
     private final LessionRepository lessionRepository;
     private final UserRepository userRepository;
+    private final ChannelRepository channelRepository;
     
     @Autowired
     PushAlarmService pushAlarmService;
@@ -109,13 +111,44 @@ class LessionServiceImpl implements LessionService {
     @Transactional
     @Override
     public void update(SinghaUser authUser, Lession lession, LessionDto.update updateDto) {
+        // 사용자 조회
+        User user = userRepository.findById(authUser.getUser().getUid())
+                .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다"));
+
+        // 채널 정보 조회
+        com.community.cms.entity2.Channel channel = channelRepository.findByUid(lession.getChannelUid())
+                .orElseThrow(() -> new RuntimeException("채널을 찾을 수 없습니다"));
+
+        // 권한 체크: 커뮤니티 관리자만 강좌 수정 가능
+        boolean isChannelAdmin = channel.getUserUid() != null && channel.getUserUid().equals(user.getUid());
+
+        if (!isChannelAdmin) {
+            throw new RuntimeException("강좌 수정 권한이 없습니다. 커뮤니티 관리자만 수정할 수 있습니다");
+        }
+
         lessionFileRepository.deleteByLessionUid(updateDto.getUid());
         lession = LessionMapper.INSTANCE.updateDtoToEntity(updateDto, lession);
-		lessionRepository.save(lession);
+        lessionRepository.save(lession);
     }
     
+    @Transactional
     @Override
     public void delete(SinghaUser authUser, Lession lession) {
-		lessionRepository.delete(lession);
+        // 사용자 조회
+        User user = userRepository.findById(authUser.getUser().getUid())
+                .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다"));
+
+        // 채널 정보 조회
+        com.community.cms.entity2.Channel channel = channelRepository.findByUid(lession.getChannelUid())
+                .orElseThrow(() -> new RuntimeException("채널을 찾을 수 없습니다"));
+
+        // 권한 체크: 커뮤니티 관리자만 강좌 삭제 가능
+        boolean isChannelAdmin = channel.getUserUid() != null && channel.getUserUid().equals(user.getUid());
+
+        if (!isChannelAdmin) {
+            throw new RuntimeException("강좌 삭제 권한이 없습니다. 커뮤니티 관리자만 삭제할 수 있습니다");
+        }
+
+        lessionRepository.delete(lession);
     }
 }

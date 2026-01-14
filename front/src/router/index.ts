@@ -75,7 +75,7 @@ export const constantRoutes: Array<RouteConfig> = [
     },
     meta: {
       hidden: true,
-      roles: ['ROLE_USER'],
+      // roles: ['ROLE_USER'], // 로그아웃 상태에서도 커뮤니티 접근 가능하도록 제거
       title: '커뮤니티',
     },
     children: [

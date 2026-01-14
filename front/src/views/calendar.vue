@@ -93,7 +93,7 @@
               <div class="user-info">
                 <div class="user-info-wr">
                 <div class="user-avatar">
-                  <img v-if="event.iconFileUid" :src="`${apiUrl}/attached-file/${event.iconFileUid}`" alt="프로필 이미지" class="user-avatar-img">
+                  <img v-if="event.writerIconFileUid" :src="`${apiUrl}/attached-file/${event.writerIconFileUid}`" alt="프로필 이미지" class="user-avatar-img">
                   <svg v-else width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <circle cx="18" cy="18" r="18" fill="#D9D9D9"/>
                     <mask id="mask0_user" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="0" y="0" width="36" height="36">
@@ -432,7 +432,8 @@
             >
               <div class="participant-info">
                 <div class="participant-avatar">
-                  <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <img v-if="participant.iconFileUid" :src="`${apiUrl}/attached-file/${participant.iconFileUid}`" alt="참여자 프로필" class="participant-avatar-img">
+                  <svg v-else width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <circle cx="18" cy="18" r="18" fill="#D9D9D9"/>
                     <mask :id="'mask_participant_' + participant.idx" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="0" y="0" width="36" height="36">
                       <circle cx="18" cy="18" r="18" fill="#D9D9D9"/>
@@ -656,6 +657,7 @@ export default class extends Vue {
         console.log('First item detail:', apiData[0]);
         console.log('writerName:', apiData[0].writerName);
         console.log('writerUid:', apiData[0].writerUid);
+        console.log('writerIconFileUid:', apiData[0].writerIconFileUid);
       }
       console.log('=====================================');
       
@@ -677,6 +679,7 @@ export default class extends Vue {
           location: item.location || '',
           writer: writerDisplay,
           writerUid: item.writerUid || '',
+          writerIconFileUid: item.writerIconFileUid || null,
           points: item.points || 0,
           likeCount: item.likeCount || 0,
           isLiked: item.isLiked || false,
@@ -698,16 +701,31 @@ export default class extends Vue {
 
 
   private handleWriteModal() {
-    // 커뮤니티 관리자만 일정 작성 가능
-    if (!this.isChannelAdmin) {
-      console.error('❌ 관리자 권한이 없습니다');
-      console.log('현재 사용자 정보:', this.currentUserInfo);
-      console.log('채널 정보:', ChannelModule.selectedChannel);
-      this.$message.warning('일정 작성은 커뮤니티 관리자만 가능합니다.');
+    // 권한 체크
+    if (!ChannelPermissionModule.loaded) {
+      this.$message.error('권한 정보를 불러오는 중입니다');
       return;
     }
     
-    console.log('✅ 관리자 권한 확인 완료');
+    // 추방된 사용자는 접근 불가
+    if (ChannelPermissionModule.isBanned) {
+      this.$message.error('추방된 사용자는 일정을 생성할 수 없습니다');
+      return;
+    }
+    
+    // 멤버가 아니면 권한 없음
+    if (!ChannelPermissionModule.isMember) {
+      this.$message.error('커뮤니티 멤버만 일정을 생성할 수 있습니다');
+      return;
+    }
+    
+    // SCHEDULE_CREATE 권한 체크 (관리자는 자동으로 true)
+    if (!ChannelPermissionModule.hasPermission('SCHEDULE_CREATE')) {
+      this.$message.error('일정 생성 권한이 없습니다');
+      return;
+    }
+    
+    console.log('✅ 일정 생성 권한 확인 완료');
     // 새 일정 작성을 위해 폼 초기화 및 선택된 이벤트 리셋
     this.selectedEvent = {};
     this.eventForm = {
@@ -724,6 +742,30 @@ export default class extends Vue {
   }
 
   private handleJoinEvent(event: any) {
+    // 권한 체크: SCHEDULE_PARTICIPATE 권한이 필요
+    if (!ChannelPermissionModule.loaded) {
+      this.$message.error('권한 정보를 불러오는 중입니다');
+      return;
+    }
+    
+    // 추방된 사용자는 접근 불가
+    if (ChannelPermissionModule.isBanned) {
+      this.$message.error('추방된 사용자는 일정에 참여할 수 없습니다');
+      return;
+    }
+    
+    // 멤버가 아니면 권한 없음
+    if (!ChannelPermissionModule.isMember) {
+      this.$message.error('커뮤니티 멤버만 일정에 참여할 수 있습니다');
+      return;
+    }
+    
+    // SCHEDULE_PARTICIPATE 권한 체크 (관리자는 자동으로 true)
+    if (!ChannelPermissionModule.hasPermission('SCHEDULE_PARTICIPATE')) {
+      this.$message.error('일정 참여 권한이 없습니다');
+      return;
+    }
+    
     // Check if user is the event creator
     if (this.isOwnEvent(event)) {
       this.$message.info('본인이 작성한 일정입니다.');
@@ -2129,6 +2171,7 @@ export default class extends Vue {
 
 .submit-button {
   height: 50px;
+  padding: 15px;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -2144,8 +2187,8 @@ export default class extends Vue {
 
   &:hover {
     background: #0535e6;
-    transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(7, 61, 255, 0.35);
+    // transform: translateY(-2px);
+    // box-shadow: 0 6px 16px rgba(7, 61, 255, 0.35);
   }
 
   &:active {
@@ -2788,12 +2831,20 @@ export default class extends Vue {
     flex-shrink: 0;
     width: 40px;
     height: 40px;
+    border-radius: 50%;
+    overflow: hidden;
 
     svg {
       width: 100%;
       height: 100%;
       display: block;
     }
+  }
+
+  .participant-avatar-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
   }
 
   .participant-details {

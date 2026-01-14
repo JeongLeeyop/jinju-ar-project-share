@@ -24,6 +24,7 @@ public class CalendarDto {
         private String eventType;
         private String writerUid;
         private String writerName;
+        private String writerIconFileUid;
         private Integer participantCount;
         private Boolean isParticipating;
         // Like and Comment
@@ -72,6 +73,7 @@ public class CalendarDto {
         private String eventType;
         private String writerUid;
         private String writerName;
+        private String writerIconFileUid;
         private Integer participantCount;
         private Boolean isParticipating;
         // Like and Comment

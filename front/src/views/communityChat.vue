@@ -171,7 +171,7 @@ interface Participant {
 export default class CommunityChat extends Vue {
   private spaceId = '';
   private spaceName = '';
-  private spaceColor = '#FF5858';
+  private spaceColor = '#FFAD3A';
   private noticeCollapsed = false;
   private newMessage = '';
   private participantCount = 0;
@@ -368,7 +368,7 @@ export default class CommunityChat extends Vue {
         if (!this.spaceName) {
           this.spaceName = spaceInfo.name;
         }
-        this.spaceColor = spaceInfo.color || '#FF5858';
+        this.spaceColor = '#FFAD3A';
         this.participantCount = spaceInfo.participants?.length || 0;
 
         if (spaceInfo.notice) {
@@ -418,7 +418,7 @@ export default class CommunityChat extends Vue {
         this.userAvatarMap.clear();
         
         this.participants = response.data.map((member: any) => {
-          const avatarUrl = member.iconFileUid ? `${this.apiUrl}/attached-file/${member.iconFileUid}` : '';
+          const avatarUrl = member.iconFileUid ? `${member.iconFileUid}` : '';
           
           console.log('Member:', {
             name: member.actualName || member.name,

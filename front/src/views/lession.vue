@@ -134,6 +134,7 @@ import { getLessionList, addLession } from '@/api/lession';
 import request from '@/utils/request';
 import { ILession } from '@/types/lession';
 import { ChannelModule } from '@/store/modules/channel';
+import { ChannelPermissionModule } from '@/store/modules/channelPermission';
 
 @Component({
   name: 'Lession',
@@ -167,12 +168,21 @@ export default class extends Vue {
 
   private lessionList: ILession[] = [];
 
-  created() {
+  async created() {
+    // 권한 로드
+    const channelUid = ChannelModule.selectedChannel.uid;
+    if (channelUid) {
+      await ChannelPermissionModule.loadPermissions(channelUid);
+    }
     this.fetchLessionList();
   }
 
-  activated() {
-    // 다른 페이지에서 돌아왔을 때 목록 새로고침
+  async activated() {
+    // 다른 페이지에서 돌아왔을 때 권한 및 목록 새로고침
+    const channelUid = ChannelModule.selectedChannel.uid;
+    if (channelUid) {
+      await ChannelPermissionModule.loadPermissions(channelUid);
+    }
     this.fetchLessionList();
   }
 
@@ -209,6 +219,30 @@ export default class extends Vue {
   }
 
   private openWriteModal() {
+    // 권한 체크: 커뮤니티 관리자만 강좌 생성 가능
+    if (!ChannelPermissionModule.loaded) {
+      this.$message.error('권한 정보를 불러오는 중입니다');
+      return;
+    }
+    
+    // 추방된 사용자는 접근 불가
+    if (ChannelPermissionModule.isBanned) {
+      this.$message.error('추방된 사용자는 강좌를 생성할 수 없습니다');
+      return;
+    }
+    
+    // 멤버가 아니면 권한 없음
+    if (!ChannelPermissionModule.isMember) {
+      this.$message.error('커뮤니티 멤버만 강좌를 생성할 수 있습니다');
+      return;
+    }
+    
+    // 커뮤니티 관리자만 강좌 생성 가능
+    if (!ChannelPermissionModule.isChannelAdmin) {
+      this.$message.error('강좌 생성은 커뮤니티 관리자만 가능합니다');
+      return;
+    }
+    
     this.writeModalVisible = true;
   }
 
@@ -491,6 +525,7 @@ export default class extends Vue {
 }
 
 .empty-state {
+  margin-top:100px;
   display: flex;
   flex-direction: column;
   align-items: center;

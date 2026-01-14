@@ -516,10 +516,20 @@ export default class extends Vue {
   }
 
   private openWriteModal() {
+    // ✅ 권한 체크
+    if (!ChannelPermissionModule.canCreatePost) {
+      this.$message.error('게시글 작성 권한이 없습니다');
+      return;
+    }
     this.$emit('open-write-modal');
   }
 
   private openCreateSpaceModal() {
+    // ✅ 권한 체크
+    if (!ChannelPermissionModule.canCreateSpace && !ChannelPermissionModule.isChannelAdmin) {
+      this.$message.error('공간 생성 권한이 없습니다');
+      return;
+    }
     this.createSpaceModalVisible = true;
   }
 
@@ -634,6 +644,11 @@ export default class extends Vue {
 
   // 오프라인 장터 생성 모달 열기
   private openCreateOfflineMarketplaceModal() {
+    // ✅ 권한 체크
+    if (!ChannelPermissionModule.canRegisterOfflineMarketplace && !ChannelPermissionModule.isChannelAdmin) {
+      this.$message.error('오프라인 장터 등록 권한이 없습니다');
+      return;
+    }
     this.newOfflineMarketplace = { name: '', description: '' };
     this.createOfflineMarketplaceModalVisible = true;
   }
