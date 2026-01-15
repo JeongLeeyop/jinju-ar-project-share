@@ -444,6 +444,15 @@ public class MarketplaceProductService {
                     .orElse(null);
         }
 
+        // 판매자 프로필 아이콘 조회
+        String sellerIconFileUid = null;
+        if (entity.getSellerUid() != null) {
+            User seller = userRepository.findById(entity.getSellerUid()).orElse(null);
+            if (seller != null) {
+                sellerIconFileUid = seller.getIconFileUid();
+            }
+        }
+
         // 거래중 여부 및 현재 구매자 정보 조회
         boolean isTrading = "TRADING".equals(entity.getStatus());
         boolean isSoldOut = "SOLD_OUT".equals(entity.getStatus());
@@ -504,6 +513,7 @@ public class MarketplaceProductService {
                 .location(entity.getLocation())
                 .sellerUid(entity.getSellerUid())
                 .sellerName(entity.getSellerName())
+                .iconFileUid(sellerIconFileUid)
                 .status(entity.getStatus())
                 .viewCount(entity.getViewCount())
                 .createdAt(entity.getCreatedAt())

@@ -137,10 +137,11 @@ class CalendarServiceImpl implements CalendarService {
         int commentCount = calendarCommentRepository.countByCalendarIdxAndNotDeleted(idx);
         dto.setCommentCount(commentCount);
 
-        // Add writer name if available
+        // Add writer name and icon if available
         Calendar calendar = optional.get();
         if (calendar.getWriter() != null) {
             dto.setWriterName(calendar.getWriter().getActualName());
+            dto.setWriterIconFileUid(calendar.getWriter().getIconFileUid());
         }
 
         return dto;
@@ -163,13 +164,15 @@ class CalendarServiceImpl implements CalendarService {
             // Add comment count
             dto.setCommentCount(calendarCommentRepository.countByCalendarIdxAndNotDeleted(entity.getIdx()));
             
-            // Add writer name
+            // Add writer name and icon
             if (entity.getWriter() != null) {
                 dto.setWriterName(entity.getWriter().getActualName());
+                dto.setWriterIconFileUid(entity.getWriter().getIconFileUid());
             } else if (entity.getWriterUid() != null) {
                 // Fetch writer if not loaded
                 userRepository.findById(entity.getWriterUid()).ifPresent(writer -> {
                     dto.setWriterName(writer.getActualName());
+                    dto.setWriterIconFileUid(writer.getIconFileUid());
                 });
             }
             
@@ -194,13 +197,14 @@ class CalendarServiceImpl implements CalendarService {
             // Add comment count
             dto.setCommentCount(calendarCommentRepository.countByCalendarIdxAndNotDeleted(entity.getIdx()));
             
-            // Add writer name with fallback
+            // Add writer name and icon with fallback
             if (entity.getWriter() != null) {
                 String writerName = entity.getWriter().getActualName();
                 if (writerName == null || writerName.trim().isEmpty()) {
                     writerName = entity.getWriter().getUserId();
                 }
                 dto.setWriterName(writerName != null ? writerName : "작성자");
+                dto.setWriterIconFileUid(entity.getWriter().getIconFileUid());
             } else if (entity.getWriterUid() != null) {
                 userRepository.findById(entity.getWriterUid()).ifPresent(writer -> {
                     String writerName = writer.getActualName();
@@ -208,6 +212,7 @@ class CalendarServiceImpl implements CalendarService {
                         writerName = writer.getUserId();
                     }
                     dto.setWriterName(writerName != null ? writerName : "작성자");
+                    dto.setWriterIconFileUid(writer.getIconFileUid());
                 });
             }
             
@@ -267,15 +272,103 @@ class CalendarServiceImpl implements CalendarService {
                 .build());
     }
 
+    @Transactional
     @Override
     public void update(SinghaUser authUser, Calendar calendar, CalendarDto.update updateDto) {
+        // 사용자 조회
+        User user = userRepository.findById(authUser.getUser().getUid())
+                .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다"));
+
+        // 채널 멤버 조회
+        ChannelMember member = channelMemberRepository.findByUserUidAndChannelUid(user.getUid(), calendar.getChannelUid())
+                .orElseThrow(() -> new RuntimeException("커뮤니티 멤버가 아닙니다"));
+
+        // 추방된 사용자 체크
+        if (member.isBanned()) {
+            throw new RuntimeException("추방된 사용자는 일정을 수정할 수 없습니다");
+        }
+
+        // 채널 조회
+        com.community.cms.entity2.Channel channel = channelRepository.findByUid(calendar.getChannelUid())
+                .orElseThrow(() -> new RuntimeException("채널을 찾을 수 없습니다"));
+
+        // 디버깅 로그
+        System.out.println("=== 일정 수정 권한 체크 ===");
+        System.out.println("현재 사용자 UID: " + user.getUid());
+        System.out.println("일정 작성자 UID: " + calendar.getWriterUid());
+        System.out.println("채널 관리자 UID: " + channel.getUserUid());
+
+        // 권한 체크: 일정 작성자 본인 또는 커뮤니티 관리자만 수정 가능
+        boolean isOwner = calendar.getWriterUid() != null && calendar.getWriterUid().equals(user.getUid());
+        boolean isChannelAdmin = channel.getUserUid() != null && channel.getUserUid().equals(user.getUid());
+
+        System.out.println("작성자 본인 여부: " + isOwner);
+        System.out.println("채널 관리자 여부: " + isChannelAdmin);
+
+        if (!isOwner && !isChannelAdmin) {
+            throw new RuntimeException("일정 수정 권한이 없습니다. 일정 작성자 또는 커뮤니티 관리자만 수정할 수 있습니다");
+        }
+
+        // 일정 수정
         calendar = CalendarMapper.INSTANCE.updateDtoToEntity(updateDto, calendar);
         calendarRepository.save(calendar);
     }
 
+    @Transactional
     @Override
     public void delete(SinghaUser authUser, Calendar calendar) {
+        // 사용자 조회
+        User user = userRepository.findById(authUser.getUser().getUid())
+                .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다"));
+
+        // 채널 멤버 조회
+        ChannelMember member = channelMemberRepository.findByUserUidAndChannelUid(user.getUid(), calendar.getChannelUid())
+                .orElseThrow(() -> new RuntimeException("커뮤니티 멤버가 아닙니다"));
+
+        // 추방된 사용자 체크
+        if (member.isBanned()) {
+            throw new RuntimeException("추방된 사용자는 일정을 삭제할 수 없습니다");
+        }
+
+        // 채널 조회
+        com.community.cms.entity2.Channel channel = channelRepository.findByUid(calendar.getChannelUid())
+                .orElseThrow(() -> new RuntimeException("채널을 찾을 수 없습니다"));
+
+        // 디버깅 로그
+        System.out.println("=== 일정 삭제 권한 체크 ===");
+        System.out.println("현재 사용자 UID: " + user.getUid());
+        System.out.println("일정 작성자 UID: " + calendar.getWriterUid());
+        System.out.println("채널 관리자 UID: " + channel.getUserUid());
+
+        // 권한 체크: 일정 작성자 본인 또는 커뮤니티 관리자만 삭제 가능
+        boolean isOwner = calendar.getWriterUid() != null && calendar.getWriterUid().equals(user.getUid());
+        boolean isChannelAdmin = channel.getUserUid() != null && channel.getUserUid().equals(user.getUid());
+
+        System.out.println("작성자 본인 여부: " + isOwner);
+        System.out.println("채널 관리자 여부: " + isChannelAdmin);
+
+        if (!isOwner && !isChannelAdmin) {
+            throw new RuntimeException("일정 삭제 권한이 없습니다. 일정 작성자 또는 커뮤니티 관리자만 삭제할 수 있습니다");
+        }
+
+        // 일정 삭제
         calendarRepository.delete(calendar);
+
+        // 활동 로그 기록
+        try {
+            activityLogService.logActivity(ActivityLogDto.CreateReq.builder()
+                    .userUid(user.getUid())
+                    .userName(user.getActualName())
+                    .channelUid(calendar.getChannelUid())
+                    .activityType(ActivityLog.ActivityType.EVENT_CANCELLED)
+                    .description(ActivityLog.generateDescription(ActivityLog.ActivityType.EVENT_CANCELLED, null, calendar.getTitle()))
+                    .relatedUid(String.valueOf(calendar.getIdx()))
+                    .relatedName(calendar.getTitle())
+                    .build());
+        } catch (Exception e) {
+            // 활동 로그 실패는 메인 기능에 영향을 주지 않도록 처리
+            e.printStackTrace();
+        }
     }
 
     @Transactional

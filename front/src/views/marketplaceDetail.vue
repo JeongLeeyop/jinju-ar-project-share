@@ -229,6 +229,7 @@ import { getProduct, MarketplaceProduct, startTrade, applyForRequest } from '@/a
 import { getCurrentPoint } from '@/api/point';
 import { UserModule } from '@/store/modules/user';
 import { ChannelModule } from '@/store/modules/channel';
+import { ChannelPermissionModule } from '@/store/modules/channelPermission';
 
 @Component({
   name: 'MarketplaceDetail',
@@ -351,6 +352,29 @@ export default class extends Vue {
   }
 
   private handleTrade() {
+    // 권한 체크: MARKETPLACE_USE 권한이 필요
+    if (!ChannelPermissionModule.loaded) {
+      this.$message.error('권한 정보를 불러오는 중입니다');
+      return;
+    }
+    
+    // 추방된 사용자는 접근 불가
+    if (ChannelPermissionModule.isBanned) {
+      this.$message.error('추방된 사용자는 장터를 이용할 수 없습니다');
+      return;
+    }
+    
+    // 멤버가 아니면 권한 없음
+    if (!ChannelPermissionModule.isMember) {
+      this.$message.error('커뮤니티 멤버만 장터를 이용할 수 있습니다');
+      return;
+    }
+    // MARKETPLACE_USE 권한 체크 (관리자는 자동으로 true)
+    if (!ChannelPermissionModule.hasPermission('MARKETPLACE_USE')) {
+      this.$message.error('장터 이용 권한이 없습니다');
+      return;
+    }
+    
     if (this.isRequestType) {
       // REQUEST 상품은 지원 모달 열기
       this.applyForm = { contact: '', message: '' };
@@ -615,7 +639,7 @@ export default class extends Vue {
 .main-product-image {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: fill;
 }
 
 .thumbnail-row {

@@ -368,6 +368,7 @@ import { getChannelMemberCount, getChannelDomainDetail } from '@/api/channel';
 import { getSpacesByChannel, Space } from '@/api/space';
 import { getOfflineMarketplaces, createOfflineMarketplace, OfflineMarketplace } from '@/api/marketplace';
 import { checkPermissionByUser } from '@/api/channelMemberPermission';
+import { ChannelPermissionModule } from '@/store/modules/channelPermission';
 import { EventBus, EVENTS } from '@/utils/eventBus';
 import path from 'path';
 import { Component, Vue, Watch } from 'vue-property-decorator';
@@ -736,12 +737,22 @@ export default class extends Vue {
   }
 
   private handleCreateSpace() {
+    // ✅ 권한 체크
+    if (!ChannelPermissionModule.canCreateSpace && !ChannelPermissionModule.isChannelAdmin) {
+      this.$message.error('공간 생성 권한이 없습니다');
+      return;
+    }
     this.createSpaceModalVisible = true;
     this.toggleMobileMenu();
   }
 
   // 오프라인 장터 생성 모달 열기
   private openCreateOfflineMarketplaceModal() {
+    // ✅ 권한 체크
+    if (!ChannelPermissionModule.canRegisterOfflineMarketplace && !ChannelPermissionModule.isChannelAdmin) {
+      this.$message.error('오프라인 장터 등록 권한이 없습니다');
+      return;
+    }
     this.newOfflineMarketplace = { name: '', description: '' };
     this.createOfflineMarketplaceModalVisible = true;
     this.toggleMobileMenu();

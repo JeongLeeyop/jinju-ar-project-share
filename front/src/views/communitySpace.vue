@@ -315,7 +315,7 @@ export default class CommunitySpace extends Vue {
   private spaceId = '';
   
   private spaceName = '커뮤니티 공간';
-  private spaceColor = '#FFAD3A';
+  private spaceColor = '#FF5858';
   private channelUid = '';
   private isAdmin = false; // 현재 사용자가 관리자인지
   private isPublic = false; // 공간이 공개인지

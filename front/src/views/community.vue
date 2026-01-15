@@ -448,6 +448,12 @@ export default class extends Vue {
       this.totalElements = res.data.totalElements;
       // Reset overflow map for new posts
       this.contentOverflowMap = {};
+      
+      // ✅ 디버깅: iconFileUid 확인
+      console.log('게시글 목록 로드 완료, 첫 번째 게시글:', filteredContent[0]);
+      if (filteredContent[0]) {
+        console.log('첫 번째 게시글 iconFileUid:', filteredContent[0].iconFileUid);
+      }
     }).catch((error) => {
       // ✅ 에러 발생 시에도 로딩 상태 해제
       this.listLoading = false;
@@ -518,6 +524,30 @@ export default class extends Vue {
   }
 
   private handlewriteFormVisible() {
+    // 권한 체크: POST_USE 권한이 필요
+    if (!ChannelPermissionModule.loaded) {
+      this.$message.error('권한 정보를 불러오는 중입니다');
+      return;
+    }
+    
+    // 추방된 사용자는 접근 불가
+    if (ChannelPermissionModule.isBanned) {
+      this.$message.error('추방된 사용자는 게시글을 작성할 수 없습니다');
+      return;
+    }
+    
+    // 멤버가 아니면 권한 없음
+    if (!ChannelPermissionModule.isMember) {
+      this.$message.error('커뮤니티 멤버만 게시글을 작성할 수 있습니다');
+      return;
+    }
+    
+    // POST_USE 권한 체크 (관리자는 자동으로 true)
+    if (!ChannelPermissionModule.hasPermission('POST_USE')) {
+      this.$message.error('게시글 작성 권한이 없습니다');
+      return;
+    }
+    
     this.updatePost = {};
     this.writeFormVisible = true;
   }
@@ -775,6 +805,16 @@ export default class extends Vue {
   height: 36px;
   border-radius: 50%;
   overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.user-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
 }
 
 .user-name {

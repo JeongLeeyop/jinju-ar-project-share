@@ -17,7 +17,7 @@
               :key="period.value"
               class="period-btn"
               :class="{ active: selectedPeriod === period.value }"
-              @click="selectedPeriod = period.value"
+              @click="handlePeriodChange(period.value)"
             >
               {{ period.label }}
             </button>
@@ -25,37 +25,29 @@
 
           <div class="date-filters">
             <div class="date-range-picker">
-              <div class="date-input-wrapper">
-                <input
-                  v-model="startDate"
-                  type="text"
-                  placeholder="2025.01.01"
-                  class="date-input"
-                  @focus="$event.target.type='date'"
-                  @blur="$event.target.type='text'"
-                />
-                <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M14.625 6.1875L9 11.8125L3.375 6.1875" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-              </div>
+              <!-- eslint-disable-next-line vue/no-unused-properties -->
+              <el-date-picker
+                v-model="startDate"
+                type="date"
+                placeholder="시작일"
+                format="yyyy.MM.dd"
+                value-format="yyyy-MM-dd"
+                class="custom-date-picker"
+              />
 
               <svg class="separator-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M4 10C4 10 6.58778 6.62471 10 10C13.4122 13.3753 16 10 16 10" stroke="#CECECE" stroke-width="1.5" stroke-linecap="round"/>
               </svg>
 
-              <div class="date-input-wrapper">
-                <input
-                  v-model="endDate"
-                  type="text"
-                  placeholder="2025.02.01"
-                  class="date-input"
-                  @focus="$event.target.type='date'"
-                  @blur="$event.target.type='text'"
-                />
-                <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M14.625 6.1875L9 11.8125L3.375 6.1875" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-              </div>
+              <!-- eslint-disable-next-line vue/no-unused-properties -->
+              <el-date-picker
+                v-model="endDate"
+                type="date"
+                placeholder="종료일"
+                format="yyyy.MM.dd"
+                value-format="yyyy-MM-dd"
+                class="custom-date-picker"
+              />
             </div>
 
             <button class="search-btn" @click="searchActivities">조회</button>
@@ -132,8 +124,8 @@ export default class extends Vue {
   private page = 1; // UI 페이지(1-based)
   private limit = 20; // 페이지 사이즈
   private total = 0; // 전체 항목 수
-  private startDate = '';
-  private endDate = '';
+  private startDate: string | null = null;
+  private endDate: string | null = null;
 
   private periods = [
     { label: '1개월', value: 1 },
@@ -199,11 +191,15 @@ export default class extends Vue {
     await this.loadActivities();
   }
 
-  @Watch('selectedPeriod')
-  private onPeriodChange() {
+  /**
+   * 기간 버튼 클릭 시 날짜 자동 설정 및 조회
+   */
+  private async handlePeriodChange(periodValue: number) {
+    this.selectedPeriod = periodValue;
     this.updateDateRange();
     this.page = 1;
-    this.loadActivities();
+    await this.loadActivities();
+    this.$message.success('조회되었습니다.');
   }
 
   /**
@@ -268,6 +264,11 @@ export default class extends Vue {
 
     if (!this.userUid) {
       console.warn('[activityList] userUid is empty, cannot load activities');
+      return;
+    }
+
+    if (!this.startDate || !this.endDate) {
+      console.warn('[activityList] startDate or endDate is empty');
       return;
     }
 
@@ -443,53 +444,37 @@ export default class extends Vue {
   flex: 1;
 }
 
+.custom-date-picker {
+  width: 203px;
+  height: 52px;
+
+  ::v-deep .el-input__inner {
+    height: 52px;
+    padding: 0 12px;
+    border-radius: 10px;
+    border: 1px solid #CECECE;
+    color: #888;
+    font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 20px;
+
+    &:focus {
+      border-color: #073DFF;
+    }
+  }
+
+  ::v-deep .el-input__prefix {
+    display: none;
+  }
+
+  ::v-deep .el-input__suffix {
+    right: 10px;
+  }
+}
+
 .separator-icon {
   flex-shrink: 0;
-}
-
-.date-input-wrapper {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  height: 52px;
-  padding: 0 12px;
-  border-radius: 10px;
-  border: 1px solid #CECECE;
-  background: #FFF;
-  width: 203px;
-  min-width: 0;
-  flex: 1;
-  gap: 8px;
-  transition: border-color 0.3s ease;
-  position: relative;
-
-  &:focus-within {
-    border-color: #073DFF;
-  }
-
-  svg {
-    flex-shrink: 0;
-    position: absolute;
-    top: 50%;
-    right: 10px;
-    transform: translateY(-50%);
-  }
-}
-
-.date-input {
-  flex: 1;
-  border: none;
-  outline: none;
-  color: #888;
-  font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
-  font-size: 16px;
-  font-weight: 400;
-  line-height: 20px;
-  background: transparent;
-
-  &::placeholder {
-    color: #888;
-  }
 }
 
 .search-btn {
@@ -638,7 +623,7 @@ export default class extends Vue {
     width: 100%;
   }
 
-  .date-input-wrapper {
+  .custom-date-picker {
     flex: 1;
   }
 
@@ -691,13 +676,9 @@ export default class extends Vue {
     gap: 8px;
   }
 
-  .date-input-wrapper {
+  .custom-date-picker {
     width: 125px;
     height: 52px;
-  }
-
-  .date-input {
-    font-size: 16px;
   }
 
   .search-btn {

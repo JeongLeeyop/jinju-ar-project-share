@@ -184,6 +184,7 @@ import { getLession } from '@/api/lession';
 import { IVideo, ILession } from '@/types/lession';
 import Pagination from '@/components/Pagination/index.vue';
 import { ChannelModule } from '@/store/modules/channel';
+import { ChannelPermissionModule } from '@/store/modules/channelPermission';
 import HomeHeader from '@/layout/components/homeHeader.vue';
 import CommunitySidebar from './components/communitySidebar.vue';
 
@@ -371,6 +372,30 @@ export default class extends Vue {
   };
 
   private handleWriteModal() {
+    // 권한 체크: 커뮤니티 관리자만 비디오 추가 가능
+    if (!ChannelPermissionModule.loaded) {
+      this.$message.error('권한 정보를 불러오는 중입니다');
+      return;
+    }
+    
+    // 추방된 사용자는 접근 불가
+    if (ChannelPermissionModule.isBanned) {
+      this.$message.error('추방된 사용자는 비디오를 추가할 수 없습니다');
+      return;
+    }
+    
+    // 멤버가 아니면 권한 없음
+    if (!ChannelPermissionModule.isMember) {
+      this.$message.error('커뮤니티 멤버만 비디오를 추가할 수 있습니다');
+      return;
+    }
+    
+    // 커뮤니티 관리자만 비디오 추가 가능
+    if (!ChannelPermissionModule.isChannelAdmin) {
+      this.$message.error('비디오 추가는 커뮤니티 관리자만 가능합니다');
+      return;
+    }
+    
     // Reset form data when opening modal
     this.videoData = {
       idx: '',

@@ -166,8 +166,8 @@
                 <div class="info-title"><i class="el-icon-goods"></i> 판매자 정보</div>
                 <div class="seller-profile">
                   <img 
-                    v-if="product.sellerIconFileUid" 
-                    :src="`/api/attached-file/${product.sellerIconFileUid}`" 
+                    v-if="product.iconFileUid" 
+                    :src="`/api/attached-file/${product.iconFileUid}`" 
                     alt="seller" 
                     class="seller-avatar"
                   />

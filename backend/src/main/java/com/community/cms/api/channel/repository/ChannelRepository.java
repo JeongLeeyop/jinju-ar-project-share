@@ -21,6 +21,7 @@ public interface ChannelRepository extends JpaRepository<Channel, String>, Query
     
     // 사용자가 생성한 채널 개수
     long countByUserUid(String userUid);
+    long countByUserUidAndDeleteStatusFalse(String userUid);
     
     // 관리자용: deleteStatus=false인 채널만 조회
     Page<Channel> findByDeleteStatusFalse(Pageable pageable);

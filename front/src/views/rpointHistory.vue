@@ -8,7 +8,8 @@
       <!-- Profile Card -->
       <div class="profile-card">
         <div class="profile-avatar">
-          <svg width="100" height="100" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <img v-if="userIconFileUid" :src="`${apiUrl}/attached-file/${userIconFileUid}`" alt="프로필 이미지" class="profile-avatar-img">
+          <svg v-else width="100" height="100" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
             <circle cx="50" cy="50" r="50" fill="#D9D9D9" />
             <mask id="mask0_profile" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="0" y="0" width="100"
               height="100">
@@ -49,26 +50,30 @@
 
           <div class="date-filters">
             <div class="date-range-picker">
-              <div class="date-input-wrapper">
-                <input v-model="startDate" type="text" placeholder="2025.01.01" class="date-input" readonly />
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M16.25 6.875L10 13.125L3.75 6.875" stroke="black" stroke-width="1.5" stroke-linecap="round"
-                    stroke-linejoin="round" />
-                </svg>
-              </div>
+              <el-date-picker
+                v-model="startDate"
+                type="date"
+                placeholder="시작일"
+                format="yyyy.MM.dd"
+                value-format="yyyy-MM-dd"
+                class="date-picker"
+                :clearable="false"
+              />
 
               <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M4 10C4 10 6.58778 6.62471 10 10C13.4122 13.3753 16 10 16 10" stroke="#CECECE"
                   stroke-width="1.5" stroke-linecap="round" />
               </svg>
 
-              <div class="date-input-wrapper">
-                <input v-model="endDate" type="text" placeholder="2025.02.01" class="date-input" readonly />
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M16.25 6.875L10 13.125L3.75 6.875" stroke="black" stroke-width="1.5" stroke-linecap="round"
-                    stroke-linejoin="round" />
-                </svg>
-              </div>
+              <el-date-picker
+                v-model="endDate"
+                type="date"
+                placeholder="종료일"
+                format="yyyy.MM.dd"
+                value-format="yyyy-MM-dd"
+                class="date-picker"
+                :clearable="false"
+              />
             </div>
 
             <button class="search-btn" @click="searchHistory">조회</button>
@@ -104,6 +109,7 @@ import { Component, Vue } from 'vue-property-decorator';
 import { ChannelModule } from '@/store/modules/channel';
 import { UserModule } from '@/store/modules/user';
 import { getCurrentPoint, getPointHistory, PointHistory } from '@/api/point';
+import { getUserInfo } from '@/api/user';
 import CommunitySidebar from './components/communitySidebar.vue';
 import UserInfo from './components/UserInfo.vue';
 
@@ -124,13 +130,13 @@ interface HistoryItem {
 export default class extends Vue {
   private totalPoints = 0;
   private selectedPeriod = '1month';
-  private startDate = '';
-  private endDate = '';
+  private startDate: string | null = null;
+  private endDate: string | null = null;
   private userModalVisible = false;
   private loading = false;
-  private channelUid = ChannelModule.selectedChannel?.uid || 'default';
   private page = 0;
   private size = 100;
+  private userIconFileUid = '';
 
   private periods = [
     { label: '1개월', value: '1month' },
@@ -141,13 +147,35 @@ export default class extends Vue {
   private historyData: HistoryItem[] = [];
   private backendHistory: PointHistory[] = [];
 
+  get apiUrl() {
+    return '/api';
+  }
+
   get userName() {
     return UserModule.actualName || '사용자';
   }
 
+  get channelUid() {
+    return ChannelModule.selectedChannel?.uid || '';
+  }
+
   async mounted() {
     this.initializeDates();
+    await this.loadUserInfo();
     await this.loadPointData();
+  }
+
+  // 사용자 정보 로드
+  private async loadUserInfo() {
+    try {
+      const response = await getUserInfo();
+      if (response.data && response.data.iconFileUid) {
+        this.userIconFileUid = response.data.iconFileUid;
+      }
+    } catch (error) {
+      console.error('Failed to load user info:', error);
+      // 사용자 정보 로드 실패는 무시 (프로필 이미지만 영향)
+    }
   }
 
   // 초기 날짜 설정 (기본 1개월)
@@ -156,20 +184,31 @@ export default class extends Vue {
     const oneMonthAgo = new Date(today);
     oneMonthAgo.setMonth(today.getMonth() - 1);
 
-    this.endDate = this.formatDateForInput(today);
-    this.startDate = this.formatDateForInput(oneMonthAgo);
+    this.endDate = this.formatDateForPicker(today);
+    this.startDate = this.formatDateForPicker(oneMonthAgo);
   }
 
-  // 날짜 포맷팅 (YYYY.MM.DD)
-  private formatDateForInput(date: Date): string {
+  // 날짜 포맷팅 (YYYY-MM-DD for DatePicker)
+  private formatDateForPicker(date: Date): string {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
-    return `${year}.${month}.${day}`;
+    return `${year}-${month}-${day}`;
+  }
+
+  // 날짜 포맷팅 (YYYY.MM.DD for Display)
+  private formatDateForDisplay(dateStr: string): string {
+    if (!dateStr) return '';
+    return dateStr.replace(/-/g, '.');
   }
 
   // 백엔드에서 포인트 데이터 로드
   private async loadPointData() {
+    if (!this.channelUid) {
+      this.$message.warning('채널 정보가 없습니다. 커뮤니티를 먼저 선택해주세요.');
+      return;
+    }
+
     this.loading = true;
     try {
       // 현재 포인트 조회
@@ -186,12 +225,21 @@ export default class extends Vue {
       this.backendHistory = historyResponse.data.content || [];
 
       // 백엔드 데이터를 UI 형식으로 변환
-      this.historyData = this.backendHistory.map((item) => ({
-        date: this.$options.filters?.parseDate(item.createdAt, 'YYYY.MM.DD') || item.createdAt,
-        description: item.description,
-        amount: item.pointAmount,
-        type: item.pointAmount > 0 ? 'earn' : 'spend',
-      }));
+      this.historyData = this.backendHistory.map((item) => {
+        // createdAt을 YYYY.MM.DD 형식으로 변환
+        const date = new Date(item.createdAt);
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const formattedDate = `${year}.${month}.${day}`;
+
+        return {
+          date: formattedDate,
+          description: item.description,
+          amount: item.pointAmount,
+          type: item.pointAmount > 0 ? 'earn' : 'spend',
+        };
+      });
     } catch (error: any) {
       console.error('Failed to load point data:', error);
       const message = error.response?.data?.message || '포인트 정보를 불러오는데 실패했습니다.';
@@ -207,23 +255,43 @@ export default class extends Vue {
     }
 
     // 날짜 문자열을 Date 객체로 변환
-    const start = new Date(this.startDate.replace(/\./g, '-'));
-    const end = new Date(this.endDate.replace(/\./g, '-'));
+    const start = new Date(this.startDate);
+    const end = new Date(this.endDate);
     end.setHours(23, 59, 59, 999); // 종료일 마지막 시각까지 포함
 
     return this.historyData.filter((item) => {
+      // item.date는 'YYYY.MM.DD' 형식
       const itemDate = new Date(item.date.replace(/\./g, '-'));
       return itemDate >= start && itemDate <= end;
     });
   }
 
-  private searchHistory() {
+  private async searchHistory() {
+    if (!this.startDate || !this.endDate) {
+      this.$message.warning('시작일과 종료일을 선택해주세요.');
+      return;
+    }
+
+    // 날짜 유효성 검증
+    const start = new Date(this.startDate);
+    const end = new Date(this.endDate);
+    
+    if (start > end) {
+      this.$message.warning('시작일은 종료일보다 이전이어야 합니다.');
+      return;
+    }
+
     // 필터링은 computed property에서 자동으로 처리됨
+    // 데이터가 없으면 로드, 있으면 필터링만 수행
+    if (this.historyData.length === 0) {
+      await this.loadPointData();
+    }
+    
     this.$message.success('조회되었습니다.');
   }
 
   // 기간 버튼 클릭 시 날짜 자동 설정
-  private handlePeriodChange(periodValue: string) {
+  private async handlePeriodChange(periodValue: string) {
     this.selectedPeriod = periodValue;
 
     const today = new Date();
@@ -241,8 +309,11 @@ export default class extends Vue {
         break;
     }
 
-    this.startDate = this.formatDateForInput(startDate);
-    this.endDate = this.formatDateForInput(today);
+    this.startDate = this.formatDateForPicker(startDate);
+    this.endDate = this.formatDateForPicker(today);
+    
+    // 자동으로 조회
+    await this.searchHistory();
   }
 
   private handleEditProfile() {
@@ -290,6 +361,12 @@ export default class extends Vue {
     width: 100%;
     height: 100%;
   }
+}
+
+.profile-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .profile-info {
@@ -443,6 +520,45 @@ export default class extends Vue {
   display: flex;
   align-items: center;
   gap: 5px;
+}
+
+// Element UI DatePicker 커스텀 스타일
+::v-deep .date-picker {
+  width: 203px;
+
+  .el-input__inner {
+    height: 52px;
+    padding: 0 16px;
+    border-radius: 10px;
+    border: 1px solid #CECECE;
+    background: #FFF;
+    color: #888;
+    font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
+    font-size: 18px;
+    font-weight: 400;
+    line-height: 20px;
+    transition: border-color 0.3s ease;
+
+    &:focus {
+      border-color: #073DFF;
+    }
+
+    &::placeholder {
+      color: #888;
+    }
+  }
+
+  .el-input__prefix {
+    display: none;
+  }
+
+  .el-input__suffix {
+    right: 16px;
+
+    .el-input__icon {
+      line-height: 52px;
+    }
+  }
 }
 
 .date-input-wrapper {
@@ -620,6 +736,14 @@ export default class extends Vue {
     width: 100%;
   }
 
+  ::v-deep .date-picker {
+    flex: 1;
+
+    .el-input__inner {
+      width: 100%;
+    }
+  }
+
   .date-input-wrapper {
     flex: 1;
   }
@@ -652,6 +776,19 @@ export default class extends Vue {
 
   .date-input-wrapper {
     width: 125px;
+  }
+
+  ::v-deep .date-picker {
+    width: 125px;
+
+    .el-input__inner {
+      padding: 0 12px;
+      font-size: 14px;
+    }
+
+    .el-input__suffix {
+      right: 12px;
+    }
   }
 
   .date-input-wrapper svg {

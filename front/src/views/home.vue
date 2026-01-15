@@ -68,7 +68,7 @@
           <div class="community-card" v-for="item in channelList" :key="item.uid" @click="handleContent(0, item)">
             <div class="card-image">
               <img v-if="item.coverImageList.length > 0" :src="apiUrl + '/attached-file/' + item.coverImageList[0]?.fileUid" alt="">
-              <img v-else src="@/assets/images/logo.png" alt="">
+              <img v-else src="@/assets/images/logo.png" style="object-fit: contain;" alt="">
             </div>
             <div class="card-content">
               <h3 class="card-title">{{ item.name }}</h3>
@@ -124,9 +124,9 @@
           </div>
         </div>
 
-        <div class="filter-divider"></div>
+        <!-- <div class="filter-divider"></div> -->
 
-        <div class="filter-section">
+        <!-- <div class="filter-section">
           <h3 class="filter-section-title">가격</h3>
           <div class="filter-options">
             <button
@@ -138,7 +138,7 @@
               {{ item.label }}
             </button>
           </div>
-        </div>
+        </div> -->
       </div>
 
       <div slot="footer" class="filter-footer">
@@ -599,7 +599,7 @@ export default class extends Vue {
   img {
     width: 100%;
     height: 100%;
-    object-fit: contain;
+    object-fit: fill;
   }
 }
 
@@ -724,6 +724,7 @@ export default class extends Vue {
   display: flex;
   gap: 12px;
   flex-wrap: wrap;
+  justify-content: center;
 }
 
 .filter-option-btn {
