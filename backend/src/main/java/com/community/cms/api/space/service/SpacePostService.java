@@ -203,8 +203,12 @@ public class SpacePostService {
         Space space = spaceRepository.findByUidAndIsActiveTrueAndIsDeletedFalse(spaceUid)
                 .orElseThrow(() -> new IllegalArgumentException("공간을 찾을 수 없습니다"));
 
-        // 비공개 공간은 멤버만 조회 가능
-        if (!space.isPublic() && (currentUserUid == null || !isSpaceMember(spaceUid, currentUserUid))) {
+        // 비공개 공간은 멤버 또는 채널 관리자만 조회 가능
+        boolean isChannelAdmin = currentUserUid != null && permissionService.isChannelAdmin(currentUserUid, space.getChannelUid());
+        if (!space.isPublic() && currentUserUid != null && !isSpaceMember(spaceUid, currentUserUid) && !isChannelAdmin) {
+            throw new IllegalStateException("공간 멤버만 게시글을 조회할 수 있습니다");
+        }
+        if (!space.isPublic() && currentUserUid == null) {
             throw new IllegalStateException("공간 멤버만 게시글을 조회할 수 있습니다");
         }
 

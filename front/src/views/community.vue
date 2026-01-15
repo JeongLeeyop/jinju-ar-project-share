@@ -1126,9 +1126,10 @@ export default class extends Vue {
 .notice-badge {
   position: absolute;
   right: -4px;
-  top: 25px;
+  top: 5px;
   width: 100px;
   height: 38px;
+  pointer-events: none; /* 클릭 이벤트가 드롭다운으로 통과되도록 */
 }
 
 .notice-text {
