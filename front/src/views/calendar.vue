@@ -456,7 +456,7 @@
         </div>
 
         <button class="submit-button" @click="handleConfirmJoin">
-          R 포인트 지급하기
+          {{ joinButtonText }}
         </button>
       </div>
     </el-dialog>
@@ -490,21 +490,41 @@
             >
               <div class="participant-info">
                 <div class="participant-avatar">
-                  <img v-if="participant.iconFileUid" :src="`${apiUrl}/attached-file/${participant.iconFileUid}`" alt="참여자 프로필" class="participant-avatar-img">
-                  <svg v-else width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <circle cx="18" cy="18" r="18" fill="#D9D9D9"/>
-                    <mask :id="'mask_participant_' + participant.idx" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="0" y="0" width="36" height="36">
-                      <circle cx="18" cy="18" r="18" fill="#D9D9D9"/>
+                  <img v-if="participant.userProfileImage" :src="`${apiUrl}/attached-file/${participant.userProfileImage}`" alt="참여자 프로필" class="participant-avatar-img">
+                  <svg v-else width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="24" cy="24" r="24" fill="#D9D9D9"/>
+                    <mask :id="'mask_participant_' + participant.idx" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="0" y="0" width="48" height="48">
+                      <circle cx="24" cy="24" r="24" fill="#D9D9D9"/>
                     </mask>
                     <g :mask="'url(#mask_participant_' + participant.idx + ')'">
-                      <rect x="4" y="21" width="28" height="32" rx="14" fill="#F5F5F5"/>
-                      <circle cx="18" cy="11" r="7" fill="#F5F5F5"/>
+                      <rect x="5" y="28" width="38" height="43" rx="19" fill="#F5F5F5"/>
+                      <circle cx="24" cy="15" r="9.5" fill="#F5F5F5"/>
                     </g>
                   </svg>
                 </div>
                 <div class="participant-details">
-                  <span class="participant-name">{{ participant.userName }}</span>
-                  <span class="participant-date">{{ participant.createdAt | formatDate }}</span>
+                  <div class="participant-name-row">
+                    <span class="participant-name">{{ participant.userName }}</span>
+                    <span v-if="participant.status" class="status-badge" :class="`status-${participant.status.toLowerCase()}`">
+                      {{ getStatusText(participant.status) }}
+                    </span>
+                  </div>
+                  <div class="participant-meta">
+                    <span v-if="participant.userPhone" class="participant-phone">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M20 10.999H22C22 5.869 18.127 2 12.99 2V4C17.052 4 20 6.943 20 10.999Z" fill="#888"/>
+                        <path d="M13 8.00024C15.103 8.00024 16 8.89724 16 11.0002H18C18 7.77524 16.225 6.00024 13 6.00024V8.00024ZM16.422 13.4432C16.2298 13.2686 15.9773 13.1754 15.7178 13.1835C15.4583 13.1915 15.212 13.3001 15.031 13.4862L12.638 15.9472C12.062 15.8372 10.904 15.4762 9.71204 14.2872C8.52004 13.0942 8.15904 11.9332 8.05204 11.3612L10.511 8.96724C10.6975 8.78643 10.8062 8.54009 10.8142 8.2806C10.8222 8.02111 10.7289 7.76861 10.554 7.57624L6.85904 3.51324C6.68408 3.32071 6.44092 3.2035 6.18119 3.18725C5.92146 3.17101 5.66564 3.25695 5.46804 3.42624L3.29804 5.28724C3.12515 5.46075 3.0222 5.69169 3.00804 5.93624C2.99304 6.18624 2.70704 12.1082 7.29904 16.7022C11.305 20.7072 16.323 21.0002 17.705 21.0002C17.907 21.0002 18.031 20.9942 18.064 20.9922C18.3085 20.9783 18.5394 20.8747 18.712 20.7012L20.572 18.5302C20.7415 18.3328 20.8276 18.0771 20.8115 17.8173C20.7954 17.5576 20.6782 17.3143 20.486 17.1392L16.422 13.4432Z" fill="#888"/>
+                      </svg>
+                      {{ participant.userPhone }}
+                    </span>
+                    <span class="participant-date">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 2C6.486 2 2 6.486 2 12C2 17.514 6.486 22 12 22C17.514 22 22 17.514 22 12C22 6.486 17.514 2 12 2ZM12 20C7.589 20 4 16.411 4 12C4 7.589 7.589 4 12 4C16.411 4 20 7.589 20 12C20 16.411 16.411 20 12 20Z" fill="#888"/>
+                        <path d="M13 7H11V13H17V11H13V7Z" fill="#888"/>
+                      </svg>
+                      신청일 : {{ participant.createdAt | parseDateTime }}
+                    </span>
+                  </div>
                 </div>
               </div>
               
@@ -1351,6 +1371,16 @@ export default class extends Vue {
         this.$message.error(error.response?.data?.message || '포인트 지급에 실패했습니다.');
       }
     }
+  }
+
+  // 참여 상태 텍스트 변환
+  private getStatusText(status: string): string {
+    const statusMap: { [key: string]: string } = {
+      REGISTERED: '참여중',
+      CANCELLED: '취소됨',
+      COMPLETED: '완료',
+    };
+    return statusMap[status] || status;
   }
 }
 </script>
@@ -2272,7 +2302,7 @@ export default class extends Vue {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 40px;
+  gap: 20px;
   position: relative;
   overflow: visible;
 }
@@ -2766,7 +2796,7 @@ export default class extends Vue {
   }
 
   .modal-content-wrapper {
-    gap: 30px;
+    gap: 20px;
   }
 
   ::v-deep .create-event-modal {
@@ -3157,6 +3187,7 @@ export default class extends Vue {
   }
 
   .participants-list {
+    width: 100%;
     min-height: 240px;
     max-height: 480px;
     overflow-y: auto;
@@ -3232,10 +3263,11 @@ export default class extends Vue {
 
   .participant-avatar {
     flex-shrink: 0;
-    width: 40px;
-    height: 40px;
+    width: 48px;
+    height: 48px;
     border-radius: 50%;
     overflow: hidden;
+    border: 2px solid #E5E7EB;
 
     svg {
       width: 100%;
@@ -3253,27 +3285,64 @@ export default class extends Vue {
   .participant-details {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 8px;
     min-width: 0;
     flex: 1;
   }
 
+  .participant-name-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
   .participant-name {
     font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
-    font-size: 15px;
+    font-size: 16px;
     font-weight: 600;
     color: #111827;
     line-height: 1.3;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
   }
 
+  .status-badge {
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+
+    &.status-registered {
+      background: #DBEAFE;
+      color: #1E40AF;
+    }
+
+    &.status-cancelled {
+      background: #FEE2E2;
+      color: #991B1B;
+    }
+
+    &.status-completed {
+      background: #D1FAE5;
+      color: #065F46;
+    }
+  }
+
+  .participant-meta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .participant-phone,
   .participant-date {
+    display: flex;
+    align-items: center;
+    gap: 4px;
     font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
     font-size: 13px;
     font-weight: 400;
-    color: #9CA3AF;
+    color: #6B7280;
     line-height: 1.3;
   }
 
