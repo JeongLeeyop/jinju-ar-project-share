@@ -60,7 +60,7 @@
                 </div>
                 <div class="post-actions">
                   <span class="post-date">{{ formatDate(post.createdAt) }}</span>
-                  <el-dropdown v-if="post.isAuthor" trigger="click" @command="handlePostAction">
+                  <el-dropdown v-if="post.isAuthor || isChannelManager" trigger="click" @command="handlePostAction">
                     <span class="el-dropdown-link">
                       <i class="el-icon-more"></i>
                     </span>
@@ -149,7 +149,7 @@
                     </div>
                     <div class="comment-actions">
                       <span class="comment-date">{{ formatDate(comment.createdAt) }}</span>
-                      <el-dropdown v-if="comment.isAuthor && !commentEditMode[comment.uid]" trigger="click" @command="handleCommentAction">
+                      <el-dropdown v-if="(comment.isAuthor || isChannelManager) && !commentEditMode[comment.uid]" trigger="click" @command="handleCommentAction">
                         <span class="el-dropdown-link">
                           <i class="el-icon-more"></i>
                         </span>
@@ -315,6 +315,9 @@ export default class CommunitySpace extends Vue {
   // 초대 모달 관련
   private inviteModalVisible = false;
 
+  // ✅ 채널 관리자 여부 (로컬 data로 관리)
+  private isChannelManager = false;
+
   // ✅ 권한 체크 (ChannelPermissionModule 사용)
   get canCreatePost() {
     // 권한이 로드되지 않았으면 false
@@ -351,6 +354,13 @@ export default class CommunitySpace extends Vue {
       // 채널 권한 로드
       if (this.channelUid) {
         await ChannelPermissionModule.loadPermissions(this.channelUid);
+        // 채널 관리자 여부 업데이트
+        this.isChannelManager = ChannelPermissionModule.isChannelAdmin;
+        console.log('✅ 권한 로드 완료 - isChannelAdmin:', this.isChannelManager);
+        console.log('📊 isChannelManager 값:', this.isChannelManager, 'ChannelPermissionModule.isChannelAdmin:', ChannelPermissionModule.isChannelAdmin);
+        // 권한 로드 후 강제 업데이트
+        await this.$nextTick();
+        this.$forceUpdate();
       }
       this.loadPosts();
       this.loadParticipants();
@@ -358,10 +368,17 @@ export default class CommunitySpace extends Vue {
   }
 
   @Watch('$route.params.spaceId')
-  private onSpaceIdChange(newSpaceId: string) {
+  private async onSpaceIdChange(newSpaceId: string) {
     if (newSpaceId) {
       this.spaceId = newSpaceId;
-      this.loadSpaceData();
+      await this.loadSpaceData();
+      // 채널 권한 다시 로드
+      if (this.channelUid) {
+        await ChannelPermissionModule.loadPermissions(this.channelUid);
+        // 채널 관리자 여부 업데이트
+        this.isChannelManager = ChannelPermissionModule.isChannelAdmin;
+        console.log('🔄 공간 변경 - isChannelAdmin:', this.isChannelManager);
+      }
       this.loadPosts();
       this.loadParticipants();
     }
@@ -421,7 +438,7 @@ export default class CommunitySpace extends Vue {
         this.participants = response.data.map((member: any) => ({
           id: member.uid,
           name: member.actualName || member.name || '익명',
-          avatar: member.profileImage || member.avatar,
+          avatar: member.iconFileUid ? `${this.apiUrl}/attached-file/${member.iconFileUid}` : '',
           email: member.email,
           joinedAt: member.joinedAt || member.createdAt,
         }));
@@ -1123,6 +1140,7 @@ display: flex;
 }
 
 .comment-date {
+  margin-right:20px;
   color: #888;
   font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
   font-size: 16px;

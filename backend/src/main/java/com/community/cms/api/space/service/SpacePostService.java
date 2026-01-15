@@ -339,13 +339,17 @@ public class SpacePostService {
         // 게시판 이용 권한 검증 (POST_USE 권한 필요)
         permissionService.validatePermission(userUid, space.getChannelUid(), ChannelMemberPermissionType.POST_USE);
 
-        // 작성자는 수정 가능, 관리자는 전체 수정 가능
-        boolean isAdmin = space.getAdminUid().equals(userUid);
+        // 작성자, 공간 관리자, 또는 채널 관리자는 수정 가능
         boolean isAuthor = post.getUserUid().equals(userUid);
+        boolean isSpaceAdmin = space.getAdminUid().equals(userUid);
+        boolean isChannelAdmin = permissionService.isChannelAdmin(userUid, space.getChannelUid());
 
-        if (!isAuthor && !isAdmin) {
+        if (!isAuthor && !isSpaceAdmin && !isChannelAdmin) {
             throw new IllegalStateException("게시글 수정 권한이 없습니다");
         }
+
+        // 관리자 권한 확인 (공간 관리자 또는 채널 관리자)
+        boolean isAdmin = isSpaceAdmin || isChannelAdmin;
 
         // 필드 업데이트
         if (request.getTitle() != null) {
@@ -438,8 +442,12 @@ public class SpacePostService {
         // ✅ 게시판 이용 권한 검증 (POST_USE 권한 필요, 커뮤니티 관리자는 자동 허용)
         permissionService.validatePermission(userUid, space.getChannelUid(), ChannelMemberPermissionType.POST_USE);
 
-        // 작성자 또는 관리자만 삭제 가능
-        if (!post.getUserUid().equals(userUid) && !space.getAdminUid().equals(userUid)) {
+        // 작성자, 공간 관리자, 또는 채널 관리자만 삭제 가능
+        boolean isAuthor = post.getUserUid().equals(userUid);
+        boolean isSpaceAdmin = space.getAdminUid().equals(userUid);
+        boolean isChannelAdmin = permissionService.isChannelAdmin(userUid, space.getChannelUid());
+
+        if (!isAuthor && !isSpaceAdmin && !isChannelAdmin) {
             throw new IllegalStateException("게시글 삭제 권한이 없습니다");
         }
 
@@ -611,8 +619,20 @@ public class SpacePostService {
         SpacePostComment comment = spacePostCommentRepository.findByUidAndIsDeletedFalse(commentUid)
                 .orElseThrow(() -> new IllegalArgumentException("댓글을 찾을 수 없습니다"));
 
-        // 작성자만 수정 가능
-        if (!comment.getUserUid().equals(userUid)) {
+        SpacePost post = spacePostRepository.findByUidAndIsDeletedFalse(
+                comment.getPost() != null ? comment.getPost().getUid() : null)
+                .orElseThrow(() -> new IllegalArgumentException("게시글을 찾을 수 없습니다"));
+
+        Space space = spaceRepository.findByUidAndIsActiveTrueAndIsDeletedFalse(
+                post.getSpace() != null ? post.getSpace().getUid() : null)
+                .orElseThrow(() -> new IllegalArgumentException("공간을 찾을 수 없습니다"));
+
+        // 작성자, 공간 관리자, 또는 채널 관리자만 수정 가능
+        boolean isAuthor = comment.getUserUid().equals(userUid);
+        boolean isSpaceAdmin = space.getAdminUid().equals(userUid);
+        boolean isChannelAdmin = permissionService.isChannelAdmin(userUid, space.getChannelUid());
+
+        if (!isAuthor && !isSpaceAdmin && !isChannelAdmin) {
             throw new IllegalStateException("댓글 수정 권한이 없습니다");
         }
 
@@ -638,8 +658,12 @@ public class SpacePostService {
                 post.getSpace() != null ? post.getSpace().getUid() : null)
                 .orElseThrow(() -> new IllegalArgumentException("공간을 찾을 수 없습니다"));
 
-        // 작성자 또는 관리자만 삭제 가능
-        if (!comment.getUserUid().equals(userUid) && !space.getAdminUid().equals(userUid)) {
+        // 작성자, 공간 관리자, 또는 채널 관리자만 삭제 가능
+        boolean isAuthor = comment.getUserUid().equals(userUid);
+        boolean isSpaceAdmin = space.getAdminUid().equals(userUid);
+        boolean isChannelAdmin = permissionService.isChannelAdmin(userUid, space.getChannelUid());
+
+        if (!isAuthor && !isSpaceAdmin && !isChannelAdmin) {
             throw new IllegalStateException("댓글 삭제 권한이 없습니다");
         }
 

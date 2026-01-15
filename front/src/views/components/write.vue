@@ -25,12 +25,22 @@
                     @change="(inputValue) => handleChangeField(inputValue, data.fieldUid)"
                     @upload="(res) => handleUpload(res, data.fieldUid)" @fileRemove="handleFileRemove" />
             </el-form-item>
-            <el-form-item v-if="board.fileUseState" :label="!formData.noticeStatus ? '첨부파일' : ''">
-                <el-upload :action="`${apiUrl}/post/upload`" :headers="requestHeaders"
-                    :before-upload="handleBeforeUpload" :on-success="handleSuccessUpload" :limit="board.fileCountLimit"
-                    :file-list="getFileList()" :on-remove="handleRemove" v-if="!formData.noticeStatus">
-                    <el-button size="small" type="info" icon="el-icon-upload2">파일 선택</el-button>
-                    <div slot="tip" class="el-upload__tip" style="margin-bottom:10px;">
+            <el-form-item v-if="board.fileUseState" :label="!formData.noticeStatus ? '첨부 이미지' : ''">
+                <el-upload 
+                    v-if="!formData.noticeStatus"
+                    :action="`${apiUrl}/post/upload`" 
+                    :headers="requestHeaders"
+                    list-type="picture-card"
+                    :file-list="getFileList()" 
+                    :on-success="handleSuccessUpload" 
+                    :on-remove="handleRemove"
+                    :before-upload="handleBeforeUpload"
+                    :on-exceed="handleExceedLimit"
+                    :limit="board.fileCountLimit"
+                    accept="image/*"
+                >
+                    <i class="el-icon-plus"></i>
+                    <div slot="tip" class="el-upload__tip">
                         이미지 파일만 업로드 가능하며, 파일 당 용량 {{ board.fileSizeLimit }}MB, 최대 {{ board.fileCountLimit }}개 까지 업로드 가능합니다.
                     </div>
                 </el-upload>
@@ -140,12 +150,17 @@ export default class extends Vue {
     }
 
     private handleBeforeUpload(uploadFile: File) {
-        const fileSizeLimitByMb = (this.board as any).fileSizeLimit * 1024 * 1024;
-        if (uploadFile.size > fileSizeLimitByMb) {
-            this.$message.warning(`파일 업로드 최대용량은 ${fileSizeLimitByMb}MB입니다.`);
+        const fileSizeLimit = (this.board as any).fileSizeLimit;
+        const fileSizeLimitByBytes = fileSizeLimit * 1024 * 1024;
+        if (uploadFile.size > fileSizeLimitByBytes) {
+            this.$message.warning(`파일 업로드 최대용량은 ${fileSizeLimit}MB입니다.`);
             return false;
         }
         return true;
+    }
+
+    private handleExceedLimit(files: any, fileList: any[]) {
+        this.$message.warning(`최대 ${(this.board as any).fileCountLimit}개까지 업로드 가능합니다.`);
     }
 
     private handleUpload(res: any, boardFieldUid: string) {
@@ -165,9 +180,11 @@ export default class extends Vue {
     }
 
     private handleRemove(file: any, fileList: any[]) {
-        const fileIndex = this.formData.fileList.findIndex((postFile: any) => postFile.fileUid === file.fileUid);
+        // file 객체에서 fileUid 또는 response.uid를 찾아서 제거
+        const fileUid = file.fileUid || file.response?.uid;
+        const fileIndex = this.formData.fileList.findIndex((postFile: any) => postFile.fileUid === fileUid);
         if (fileIndex > -1) this.formData.fileList.splice(fileIndex, 1);
-     }
+    }
 
     private handleChangeField(inputValue: string, uid: string) {
         const dataIndex = this.formData.dataList.findIndex((data: any) => data.fieldUid === uid);
@@ -177,7 +194,15 @@ export default class extends Vue {
     private getFileList() {
         const fileList: any[] = [];
         this.formData.fileList.forEach((postFile: any) => {
-            if (!postFile.fieldUid) fileList.push({ fileUid: postFile.fileUid, name: postFile.file.originalName });
+            if (!postFile.fieldUid) {
+                fileList.push({ 
+                    uid: postFile.fileUid, // Element UI uses uid for tracking
+                    fileUid: postFile.fileUid, 
+                    name: postFile.file.originalName || postFile.file.name,
+                    url: postFile.url || `${this.apiUrl}/attached-file/${postFile.fileUid}`,
+                    status: 'success'
+                });
+            }
         });
         return fileList;
     }
@@ -206,8 +231,16 @@ export default class extends Vue {
         });
     }
 
-    private handleSuccessUpload(res: any) {
-        (this.formData.fileList as any[]).push({ fileUid: res.uid, file: res, fieldUid: null });
+    private handleSuccessUpload(response: any, file: any, fileList: any[]) {
+        // 백엔드 응답에서 UID 추출하여 파일 리스트에 추가
+        console.log('Upload success:', response);
+        
+        (this.formData.fileList as any[]).push({ 
+            fileUid: response.uid, 
+            file: response, 
+            fieldUid: null,
+            url: `${this.apiUrl}/attached-file/${response.uid}` // URL 추가로 미리보기 지원
+        });
     }
 
     private rules = {

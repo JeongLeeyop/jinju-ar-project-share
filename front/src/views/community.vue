@@ -51,8 +51,8 @@
               </div>
               <div class="post-header-right">
                 <span class="post-date">{{ post.createDate | parseDate('YYYY. MM. DD.') }}</span>
-                <!-- 더보기 버튼 (작성자만 표시) -->
-                <el-dropdown v-if="post.myStatus" trigger="click" @command="handlePostAction">
+                <!-- 더보기 버튼 (작성자 또는 채널 관리자 표시) -->
+                <el-dropdown v-if="post.myStatus || isChannelManager" trigger="click" @command="handlePostAction">
                   <span class="el-dropdown-link">
                     <i class="el-icon-more"></i>
                   </span>
@@ -158,6 +158,7 @@ import { likePost } from '@/api/postLike';
 import Pagination from '@/components/Pagination/index.vue';
 import { UserModule } from '@/store/modules/user';
 import { ChannelModule } from '@/store/modules/channel';
+import { ChannelPermissionModule } from '@/store/modules/channelPermission';
 import { IBoard, IField } from '@/types/board';
 import InfiniteLoading from 'vue-infinite-loading';
 import { Component, Vue, Watch } from 'vue-property-decorator';
@@ -176,10 +177,20 @@ import CommunitySidebar from './components/communitySidebar.vue';
   },
 })
 export default class extends Vue {
-  mounted() {
+  async mounted() {
     this.fullscreenLoading = true;
     this.listQuery.boardUid = this.boardUid;
     this.listQuery.channelUid = this.channelUid;
+    
+    // 채널 권한 로드
+    if (this.channelUid) {
+      await ChannelPermissionModule.loadPermissions(this.channelUid);
+      // 채널 관리자 여부 업데이트
+      this.isChannelManager = ChannelPermissionModule.isChannelAdmin;
+      console.log('✅ Community 권한 로드 완료 - isChannelAdmin:', this.isChannelManager);
+      this.$forceUpdate();
+    }
+    
     this.getPostList();
     this.getCommunityBoard();
   }
@@ -213,6 +224,9 @@ export default class extends Vue {
   private board: IBoard | null = null;
 
   private selectedChannel = ChannelModule.selectedChannel;
+
+  // ✅ 채널 관리자 여부 (로컬 data로 관리)
+  private isChannelManager = false;
 
   // ✅ apiUrl을 computed getter로 변경하여 템플릿에서 접근 가능하도록 수정
   get apiUrl() {
@@ -1400,7 +1414,7 @@ export default class extends Vue {
 
   .date_wr {
     text-align: right;
-    margin-right:50px;
+    margin-right:20px;
     color: #888;
     font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
     font-size: 14px;

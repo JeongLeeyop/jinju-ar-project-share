@@ -31,14 +31,16 @@
           :file-list="formData.attachments"
           :on-success="handleSuccessUpload"
           :on-remove="handleRemove"
-          :limit="5"
+          :before-upload="handleBeforeUpload"
+          :on-exceed="handleExceedLimit"
+          :limit="3"
           accept="image/*"
         >
           <i class="el-icon-plus"></i>
+          <div slot="tip" class="el-upload__tip">
+            이미지 파일만 업로드 가능하며, 파일 당 용량 10MB, 최대 3개 까지 업로드 가능합니다.
+          </div>
         </el-upload>
-        <div slot="tip" class="el-upload__tip">
-          이미지 파일만 업로드 가능하며, 파일 당 용량 5MB, 최대 5개 까지 업로드 가능합니다.
-        </div>
       </el-form-item>
 
       <div class="align--center">
@@ -114,6 +116,19 @@ export default class extends Vue {
 
   private handleChangeContents(content: string) {
     this.formData.content = content;
+  }
+
+  private handleBeforeUpload(uploadFile: File) {
+    const fileSizeLimitByMb = 10 * 1024 * 1024; // 10MB
+    if (uploadFile.size > fileSizeLimitByMb) {
+      this.$message.warning('파일 업로드 최대용량은 10MB입니다.');
+      return false;
+    }
+    return true;
+  }
+
+  private handleExceedLimit(files: any, fileList: any[]) {
+    this.$message.warning('최대 3개까지 업로드 가능합니다.');
   }
 
   private handleSuccessUpload(response: any, file: any, fileList: any[]) {

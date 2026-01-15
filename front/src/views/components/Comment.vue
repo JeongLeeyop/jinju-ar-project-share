@@ -7,7 +7,7 @@
                 <div class="writer">{{ comment.writer }}</div>
                 <div class="comment-header-right">
                   <div class="date_wr">{{ comment.createDate | parseDate('YY.MM.DD') }}</div>
-                  <el-dropdown v-if="comment.hasAuthority" trigger="click" @command="handleCommentAction">
+                  <el-dropdown v-if="comment.hasAuthority || isChannelManager" trigger="click" @command="handleCommentAction">
                     <span class="el-dropdown-link">
                       <i class="el-icon-more"></i>
                     </span>
@@ -43,6 +43,7 @@ import { addComment, deleteComment, getCommentList, updateComment } from '@/api/
 import { Component, Prop, Vue } from 'vue-property-decorator';
 import Pagination from '@/components/Pagination/index.vue';
 import { ChannelModule } from '@/store/modules/channel';
+import { ChannelPermissionModule } from '@/store/modules/channelPermission';
 
 @Component({
     name: 'Comment',
@@ -54,6 +55,9 @@ export default class extends Vue {
     @Prop({ required: false }) private postUid!: any;
 
     mounted() {
+        // 채널 권한 확인
+        this.isChannelManager = ChannelPermissionModule.isChannelAdmin;
+        console.log('📝 Comment 마운트 - isChannelAdmin:', this.isChannelManager);
         this.getCommentList();
     }
 
@@ -62,6 +66,9 @@ export default class extends Vue {
   private isVisible = false;
 
   private commentTotalElements: number = 0;
+
+  // ✅ 채널 관리자 여부 (로컬 data로 관리)
+  private isChannelManager = false;
 
   private commentListQuery: any = {
     postUid: '',
@@ -275,6 +282,7 @@ export default class extends Vue {
   display: flex;
   align-items: center;
   gap: 10px;
+  margin-right:clamp(20px, 5vw, 60px);
 }
 
 .el-dropdown-link {

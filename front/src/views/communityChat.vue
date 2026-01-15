@@ -420,14 +420,6 @@ export default class CommunityChat extends Vue {
         this.participants = response.data.map((member: any) => {
           const avatarUrl = member.iconFileUid ? `${this.apiUrl}/attached-file/${member.iconFileUid}` : '';
           
-          console.log('Member:', {
-            name: member.actualName || member.name,
-            userId: member.userId,
-            uid: member.uid,
-            iconFileUid: member.iconFileUid,
-            avatarUrl,
-          });
-          
           // userId로 아바타 URL 매핑 저장
           if (member.userId && avatarUrl) {
             this.userAvatarMap.set(member.userId, avatarUrl);
