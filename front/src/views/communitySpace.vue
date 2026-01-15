@@ -75,11 +75,24 @@
               <!-- 제목 -->
               <!-- <div v-if="post.title" class="post-title">{{ post.title }}</div> -->
 
-              <div class="post-text-content summernote-content" :class="{ expanded: isExpanded(post.uid) }">
-                <div class="text-preview" v-html="post.content"></div>
-                <span v-if="post.content.length > 150" class="read-more-link" @click.stop="toggleExpand(post.uid)">
+              <div class="post-text-content summernote-content">
+                <div 
+                  class="text-preview" 
+                  v-html="post.content"
+                  :style="{
+                    display: isExpanded(post.uid) ? 'block' : '-webkit-box',
+                    '-webkit-line-clamp': isExpanded(post.uid) ? 'unset' : '3',
+                    '-webkit-box-orient': 'vertical',
+                    overflow: isExpanded(post.uid) ? 'visible' : 'hidden'
+                  }"
+                ></div>
+                <button 
+                  v-if="getPlainTextLength(post.content) > 200" 
+                  @click.stop="toggleExpand(post.uid)"
+                  style="margin-top: 10px; padding: 6px 12px; background: #F5F5F5; border: none; border-radius: 4px; color: #073DFF; font-weight: 700; cursor: pointer; font-size: 14px;"
+                >
                   {{ isExpanded(post.uid) ? '접기' : '더보기' }}
-                </span>
+                </button>
               </div>
 
               <!-- 첨부 이미지가 있는 경우 -->
@@ -505,6 +518,12 @@ export default class CommunitySpace extends Vue {
 
   private isExpanded(postId: string): boolean {
     return this.expandedPosts[postId] || false;
+  }
+
+  private getPlainTextLength(content: string): number {
+    // HTML 태그 제거 후 순수 텍스트 길이 반환
+    const stripped = content ? content.replace(/<[^>]*>/g, '') : '';
+    return stripped.length;
   }
 
   private isCommentExpanded(commentId: string): boolean {
@@ -967,34 +986,42 @@ display: flex;
   font-size: 20px;
   font-weight: 400;
   line-height: 150%;
+  position: relative;
+}
+
+.post-text-content .text-preview {
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 3;
   line-clamp: 3;
   overflow: hidden;
   text-overflow: ellipsis;
-
-  &.expanded {
-    display: block;
-    -webkit-line-clamp: unset;
-    line-clamp: unset;
-    overflow: visible;
-  }
 }
 
-.text-preview {
-  color: #222;
+.post-text-content.expanded .text-preview {
+  display: block;
+  -webkit-line-clamp: unset;
+  line-clamp: unset;
+  overflow: visible;
+}
+
+.read-more-wrapper {
+  margin-top: 10px;
 }
 
 .read-more-link {
   color: #073DFF;
   font-weight: 700;
   cursor: pointer;
-  white-space: nowrap;
+  display: inline-block;
+  padding: 4px 8px;
+  background: #F5F5F5;
+  border-radius: 4px;
   transition: opacity 0.2s;
 
   &:hover {
     opacity: 0.8;
+    background: #EBEBEB;
   }
 }
 
