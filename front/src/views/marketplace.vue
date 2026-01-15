@@ -233,7 +233,7 @@ import { getChannelDomainDetail } from '@/api/channel';
 export default class extends Vue {
   private activeFilter: 'SALE' | 'SHARE' | 'REQUEST' = 'SALE';
   private writeModalVisible = false;
-  private loading = false;
+  private loading = true;
 
   private newPost = {
     title: '',

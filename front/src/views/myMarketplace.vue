@@ -303,8 +303,8 @@ import { getMyRegisteredProducts, getMyPurchasedProducts, MarketplaceProduct, Ma
 export default class extends Vue {
   private activeTab: 'registered' | 'purchased' = 'registered';
   private marketplaceFilter: 'all' | 'online' | 'offline' = 'all';
-  private loadingRegistered = false;
-  private loadingPurchased = false;
+  private loadingRegistered = true;
+  private loadingPurchased = true;
   
   // 내 등록 상품
   private registeredProducts: MarketplaceProduct[] = [];

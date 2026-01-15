@@ -399,9 +399,9 @@ interface Participant {
 })
 export default class extends Vue {
   private activeTab = 'registered';
-  private loadingRegistered = false;
-  private loadingParticipated = false;
-  private loadingPointHistory = false;
+  private loadingRegistered = true;
+  private loadingParticipated = true;
+  private loadingPointHistory = true;
 
   private registeredSchedules: Schedule[] = [];
   private participatedSchedules: Schedule[] = [];

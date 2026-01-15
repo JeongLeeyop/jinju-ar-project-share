@@ -37,7 +37,15 @@
 
       <!-- Members Grid -->
       <div class="members-container">
+        <!-- 로딩 상태 -->
+        <div v-if="loading" class="loading-container">
+          <i class="el-icon-loading"></i>
+          <span>회원 목록을 불러오는 중...</span>
+        </div>
+
+        <!-- 회원 카드 -->
         <div
+          v-else
           v-for="member in filteredMembers"
           :key="member.uid"
           class="member-card"
@@ -137,6 +145,7 @@ import moment from 'moment';
   },
 })
 export default class extends Vue {
+  private loading = true;
   private searchQuery = '';
   private totalCount = 0;
   private channelMembers: any[] = [];
@@ -173,6 +182,7 @@ export default class extends Vue {
   }
 
   private async fetchMemberList() {
+    this.loading = true;
     try {
       const res = await getChannelMemberList(this.listQuery);
       this.channelMembers = res.data.content || [];
@@ -188,6 +198,8 @@ export default class extends Vue {
       console.error('Error fetching member list:', error);
       this.channelMembers = this.getDummyMembers();
       this.totalCount = this.channelMembers.length;
+    } finally {
+      this.loading = false;
     }
   }
 
@@ -371,6 +383,26 @@ export default class extends Vue {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(363px, 1fr));
   gap: 32px;
+}
+
+.loading-container {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 100px 20px;
+  gap: 20px;
+  
+  i {
+    font-size: 48px;
+    color: #073DFF;
+  }
+  
+  span {
+    color: #888;
+    font-size: 18px;
+  }
 }
 
 .member-card {
