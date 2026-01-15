@@ -22,6 +22,7 @@ public class CalendarDto {
         private String location;
         private Integer points;
         private String eventType;
+        private Integer maxParticipants;
         private String writerUid;
         private String writerName;
         private String writerIconFileUid;
@@ -71,6 +72,7 @@ public class CalendarDto {
         private String location;
         private Integer points;
         private String eventType;
+        private Integer maxParticipants;
         private String writerUid;
         private String writerName;
         private String writerIconFileUid;

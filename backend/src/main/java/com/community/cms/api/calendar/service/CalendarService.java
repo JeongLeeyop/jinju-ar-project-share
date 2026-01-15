@@ -292,12 +292,6 @@ class CalendarServiceImpl implements CalendarService {
         com.community.cms.entity2.Channel channel = channelRepository.findByUid(calendar.getChannelUid())
                 .orElseThrow(() -> new RuntimeException("채널을 찾을 수 없습니다"));
 
-        // 디버깅 로그
-        System.out.println("=== 일정 수정 권한 체크 ===");
-        System.out.println("현재 사용자 UID: " + user.getUid());
-        System.out.println("일정 작성자 UID: " + calendar.getWriterUid());
-        System.out.println("채널 관리자 UID: " + channel.getUserUid());
-
         // 권한 체크: 일정 작성자 본인 또는 커뮤니티 관리자만 수정 가능
         boolean isOwner = calendar.getWriterUid() != null && calendar.getWriterUid().equals(user.getUid());
         boolean isChannelAdmin = channel.getUserUid() != null && channel.getUserUid().equals(user.getUid());

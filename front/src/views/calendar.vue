@@ -7,8 +7,14 @@
 
     <!-- Main Content Area -->
     <div class="calendar-main">
+      <!-- 로딩 상태 -->
+      <div v-if="loading" class="loading-container">
+        <i class="el-icon-loading"></i>
+        <span>일정을 불러오는 중...</span>
+      </div>
+
       <!-- Empty State -->
-      <div v-if="eventList.length === 0 && !loading" class="empty-state">
+      <div v-else-if="eventList.length === 0" class="empty-state">
         <div class="empty-box">
           <h2 class="empty-title">예정된 일정이 없습니다.</h2>
           <p class="empty-subtitle">예정된 일정은 여기에 표시됩니다.</p>
@@ -389,17 +395,18 @@
           <div class="form-group">
             <label class="form-label">최대 참석 가능 인원 (선택)</label>
             <input
-              v-model="eventForm.maxParticipants"
+              v-model.number="eventForm.maxParticipants"
               type="number"
               class="form-input"
               placeholder="인원 제한 없음"
               min="1"
+              @input="console.log('maxParticipants 입력:', $event.target.value)"
             />
             <p class="form-hint">비워두면 인원 제한 없이 참여할 수 있습니다.</p>
           </div>
 
           <!-- Submit Button -->
-          <button class="submit-button" @click="handleCreateEvent">
+          <button type="button" class="submit-button" @click="handleCreateEvent">
             {{ isEditMode ? '일정 수정하기' : '일정 만들기' }}
           </button>
         </div>
@@ -564,7 +571,7 @@ import moment from 'moment';
   },
 })
 export default class extends Vue {
-  private loading = false;
+  private loading = true;
   private eventList: any[] = [];
   private createEventModalVisible = false;
   private joinEventModalVisible = false;
@@ -938,6 +945,10 @@ export default class extends Vue {
       return;
     }
 
+    console.log('=== 일정 생성/수정 시작 ===');
+    console.log('eventForm.maxParticipants:', this.eventForm.maxParticipants);
+    console.log('eventForm.maxParticipants type:', typeof this.eventForm.maxParticipants);
+
     try {
       // Combine date and time
       const dateStr = moment(this.eventForm.date).format('YYYY-MM-DD');
@@ -956,12 +967,17 @@ export default class extends Vue {
         channelUid: ChannelModule.selectedChannel.uid,
       };
 
+      console.log('=== 전송할 eventData ===');
+      console.log(JSON.stringify(eventData, null, 2));
+
       if (this.isEditMode) {
         // 수정 모드
+        console.log('수정 모드 - idx:', this.selectedEvent.idx);
         await updateCalendar(String(this.selectedEvent.idx), eventData);
         this.$message.success('일정이 수정되었습니다!');
       } else {
         // 생성 모드
+        console.log('생성 모드');
         await addCalendar(eventData);
         this.$message.success('일정이 생성되었습니다!');
       }
@@ -972,6 +988,7 @@ export default class extends Vue {
       this.fetchEventList();
     } catch (error: any) {
       console.error('Error creating/updating event:', error);
+      console.error('Error response:', error.response);
       this.$message.error(error.response?.data?.message || (this.isEditMode ? '일정 수정에 실패했습니다.' : '일정 생성에 실패했습니다.'));
     }
   }
@@ -1360,6 +1377,25 @@ export default class extends Vue {
   // justify-content: center;
   align-items: center;
   min-height: 400px;
+}
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 100px 20px;
+  gap: 20px;
+  
+  i {
+    font-size: 48px;
+    color: #073DFF;
+  }
+  
+  span {
+    color: #888;
+    font-size: 18px;
+  }
 }
 
 .empty-box {

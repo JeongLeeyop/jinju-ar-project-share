@@ -20,5 +20,6 @@ public interface CalendarMapper {
     @Mapping(target = "idx", ignore = true)
     @Mapping(target = "writerUid", ignore = true)
     @Mapping(target = "channelUid", ignore = true)
+    @Mapping(target = "maxParticipants", nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.SET_TO_NULL)
     Calendar updateDtoToEntity(CalendarDto.update updateDto, @MappingTarget Calendar entity);
 }
