@@ -193,7 +193,18 @@ export default class extends Vue {
 
   private getChannelList() {
     this.loading = true;
-    getChannelList(this.listQuery).then((res) => {
+    // 빈 값인 파라미터 제외
+    const params: any = { ...this.listQuery };
+    if (params.privateStatus === '' || params.privateStatus === null || params.privateStatus === undefined) {
+      delete params.privateStatus;
+    }
+    if (params.minPrice === '' || params.minPrice === null || params.minPrice === undefined) {
+      delete params.minPrice;
+    }
+    if (params.categoryUid === 'all') {
+      delete params.categoryUid;
+    }
+    getChannelList(params).then((res) => {
       this.channelList = res.data.content;
       this.totalElements = res.data.totalElements;
       this.loading = false;
@@ -818,8 +829,6 @@ export default class extends Vue {
 
   &:hover {
     background: #0535e6;
-    box-shadow: 0 6px 16px rgba(7, 61, 255, 0.3);
-    transform: translateY(-2px);
   }
 
   &:active {
