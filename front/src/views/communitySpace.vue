@@ -84,12 +84,24 @@
 
               <!-- 첨부 이미지가 있는 경우 -->
               <div v-if="post.attachments && post.attachments.length > 0" class="post-images">
+                <!-- 이미지가 2장 이상일 때 캐러셀 사용 -->
+                <el-carousel v-if="post.attachments.length >= 2" height="220px" indicator-position="outside" arrow="always" class="post-image-carousel">
+                  <el-carousel-item v-for="(attachment, index) in post.attachments" :key="index">
+                    <div class="carousel-item-wrapper">
+                      <img 
+                        :src="getAttachmentUrl(attachment)" 
+                        :alt="`이미지 ${index + 1}`" 
+                        class="post-image" 
+                      />
+                    </div>
+                  </el-carousel-item>
+                </el-carousel>
+                <!-- 이미지가 1장일 때 일반 표시 -->
                 <img 
-                  v-for="(attachment, index) in post.attachments" 
-                  :key="index"
-                  :src="getAttachmentUrl(attachment)" 
-                  :alt="`이미지 ${index + 1}`" 
-                  class="post-image" 
+                  v-else
+                  :src="getAttachmentUrl(post.attachments[0])" 
+                  alt="이미지" 
+                  class="post-image single-image" 
                 />
               </div>
 
@@ -288,6 +300,7 @@ interface Participant {
 })
 export default class CommunitySpace extends Vue {
   private spaceId = '';
+  
   private spaceName = '커뮤니티 공간';
   private spaceColor = '#FFAD3A';
   private channelUid = '';
@@ -786,6 +799,19 @@ export default class CommunitySpace extends Vue {
 </script>
 
 <style scoped lang="scss">
+// el-carousel 캐러셀 커스텀 스타일
+.post-image-carousel {
+  width: 100%;
+  
+  .carousel-item-wrapper {
+    width: 100%;
+    height: 220px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+}
+
 .community-space-page {
   display: flex;
   gap: 0;
@@ -973,36 +999,28 @@ display: flex;
 }
 
 .post-images {
-  display: flex;
-  gap: 30px;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
+  width: 100%;
+  margin: 16px 0;
+}
 
-  &::-webkit-scrollbar {
-    height: 8px;
-  }
-
-  &::-webkit-scrollbar-track {
-    background: #F5F5F5;
-    border-radius: 4px;
-  }
-
-  &::-webkit-scrollbar-thumb {
-    background: #CECECE;
-    border-radius: 4px;
-
-    &:hover {
-      background: #999;
-    }
-  }
+.post-image-slider {
+  width: 100%;
+  height: 220px;
 }
 
 .post-image {
-  width: 419px;
-  height: 220px;
+  max-width: 100%;
+  max-height: 220px;
+  height: auto;
+  width: auto;
   border-radius: 10px;
   object-fit: contain;
-  flex-shrink: 0;
+  display: block;
+  
+  &.single-image {
+    display: block;
+    margin: 0 auto;
+  }
 }
 
 .post-stats {

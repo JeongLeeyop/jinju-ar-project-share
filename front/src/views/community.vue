@@ -77,12 +77,24 @@
 
               <!-- Post Images -->
               <div v-if="post.fileList && post.fileList.length > 0" class="post-images">
+                <!-- 이미지가 2장 이상일 때 캐러셀 사용 -->
+                <el-carousel v-if="post.fileList.length >= 2" height="220px" indicator-position="outside" arrow="always" class="post-image-carousel">
+                  <el-carousel-item v-for="(fileUid, index) in post.fileList" :key="fileUid">
+                    <div class="carousel-item-wrapper">
+                      <img
+                        :src="`${apiUrl}/attached-file/${fileUid}`"
+                        :alt="`Image ${index + 1}`"
+                        class="post-image"
+                      />
+                    </div>
+                  </el-carousel-item>
+                </el-carousel>
+                <!-- 이미지가 1장일 때 일반 표시 -->
                 <img
-                  v-for="(fileUid, index) in post.fileList.slice(0, 4)"
-                  :key="fileUid"
-                  :src="`${apiUrl}/attached-file/${fileUid}`"
-                  :alt="`Image ${index + 1}`"
-                  class="post-image"
+                  v-else
+                  :src="`${apiUrl}/attached-file/${post.fileList[0]}`"
+                  alt="Image"
+                  class="post-image single-image"
                 />
               </div>
 
@@ -560,6 +572,19 @@ export default class extends Vue {
 </script>
 
 <style scoped lang="scss">
+// el-carousel 캐러셀 커스텀 스타일
+.post-image-carousel {
+  width: 100%;
+  
+  .carousel-item-wrapper {
+    width: 100%;
+    height: 220px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+}
+
 .community-page {
   display: flex;
   min-height: 100vh;
@@ -708,6 +733,8 @@ export default class extends Vue {
   margin-left: auto;
 }
 
+.user-avatar-img {height:100%;}
+
 @media screen and (max-width: 1400px) {
   .posts-container {padding: 20px 0;}
 }
@@ -826,17 +853,28 @@ export default class extends Vue {
 }
 
 .post-images {
-  display: flex;
-  gap: 30px;
-  overflow-x: auto;
+  width: 100%;
+  margin: 16px 0;
+}
+
+.post-image-slider {
+  width: 100%;
+  height: 220px;
 }
 
 .post-image {
-  width: 419px;
-  height: 220px;
+  max-width: 100%;
+  max-height: 220px;
+  height: auto;
+  width: auto;
   border-radius: 10px;
   object-fit: contain;
-  flex-shrink: 0;
+  display: block;
+  
+  &.single-image {
+    display: block;
+    margin: 0 auto;
+  }
 }
 
 .post-stats {
