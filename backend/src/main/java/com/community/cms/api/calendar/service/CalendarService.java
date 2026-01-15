@@ -309,8 +309,8 @@ class CalendarServiceImpl implements CalendarService {
             throw new RuntimeException("일정 수정 권한이 없습니다. 일정 작성자 또는 커뮤니티 관리자만 수정할 수 있습니다");
         }
 
-        // 일정 수정
-        calendar = CalendarMapper.INSTANCE.updateDtoToEntity(updateDto, calendar);
+        // 일정 수정 - @MappingTarget을 사용하므로 기존 엔티티가 직접 업데이트됩니다
+        CalendarMapper.INSTANCE.updateDtoToEntity(updateDto, calendar);
         calendarRepository.save(calendar);
     }
 
@@ -421,6 +421,21 @@ class CalendarServiceImpl implements CalendarService {
             }
         }
 
+        // Check max participants limit
+        if (calendar.getMaxParticipants() != null && calendar.getMaxParticipants() > 0) {
+            int currentParticipantCount = participantRepository.countByCalendarIdxAndStatus(calendarIdx, ParticipantStatus.REGISTERED);
+            if (currentParticipantCount >= calendar.getMaxParticipants()) {
+                return CalendarDto.JoinResult.builder()
+                        .success(false)
+                        .message("참여 가능 인원이 모두 찼습니다. (최대 " + calendar.getMaxParticipants() + "명)")
+                        .build();
+            }
+        }
+
+        // Get host (calendar writer)
+        User host = userRepository.findById(calendar.getWriterUid())
+                .orElseThrow(() -> new RuntimeException("일정 주최자를 찾을 수 없습니다."));
+
         String eventType = calendar.getEventType() != null ? calendar.getEventType() : "free";
         Integer points = calendar.getPoints() != null ? calendar.getPoints() : 0;
         Integer currentBalance = user.getPoint() != null ? user.getPoint() : 0;
@@ -435,24 +450,71 @@ class CalendarServiceImpl implements CalendarService {
                         .build();
             }
 
-            // Deduct points
+            // Deduct points from participant
             int newBalance = currentBalance - points;
             user.setPoint(newBalance);
             userRepository.save(user);
 
-            // Save point history
-            PointHistory history = PointHistory.builder()
+            // Save participant point history (deduction)
+            PointHistory participantHistory = PointHistory.builder()
                     .userUid(user.getUid())
                     .channelUid(calendar.getChannelUid())
-                    .pointType("SCHEDULE")
+                    .pointType("SCHEDULE_PAID")
                     .pointAmount(-points)
                     .currentBalance(newBalance)
-                    .description("일정 참여: " + calendar.getTitle())
+                    .description("일정 참여 포인트 차감: " + calendar.getTitle())
                     .referenceId(String.valueOf(calendarIdx))
                     .build();
-            pointHistoryRepository.save(history);
+            pointHistoryRepository.save(participantHistory);
+
+            // Add points to host (주최자에게 포인트 지급)
+            Integer hostBalance = host.getPoint() != null ? host.getPoint() : 0;
+            int newHostBalance = hostBalance + points;
+            host.setPoint(newHostBalance);
+            userRepository.save(host);
+
+            // Save host point history (receipt)
+            PointHistory hostHistory = PointHistory.builder()
+                    .userUid(host.getUid())
+                    .channelUid(calendar.getChannelUid())
+                    .pointType("SCHEDULE_PAID_RECEIVED")
+                    .pointAmount(points)
+                    .currentBalance(newHostBalance)
+                    .description("일정 참여비 수령 (" + user.getActualName() + "): " + calendar.getTitle())
+                    .referenceId(String.valueOf(calendarIdx))
+                    .build();
+            pointHistoryRepository.save(hostHistory);
 
             currentBalance = newBalance;
+        }
+
+        // Handle earn type - deduct points from host (주최자 포인트 예치)
+        if ("earn".equals(eventType) && points > 0) {
+            Integer hostBalance = host.getPoint() != null ? host.getPoint() : 0;
+            if (hostBalance < points) {
+                return CalendarDto.JoinResult.builder()
+                        .success(false)
+                        .message("주최자의 포인트가 부족하여 참여할 수 없습니다.")
+                        .currentBalance(currentBalance)
+                        .build();
+            }
+
+            // Deduct points from host (예치)
+            int newHostBalance = hostBalance - points;
+            host.setPoint(newHostBalance);
+            userRepository.save(host);
+
+            // Save host point history (deduction for escrow)
+            PointHistory hostHistory = PointHistory.builder()
+                    .userUid(host.getUid())
+                    .channelUid(calendar.getChannelUid())
+                    .pointType("SCHEDULE_EARN_ESCROW")
+                    .pointAmount(-points)
+                    .currentBalance(newHostBalance)
+                    .description("일정 포인트 예치 (" + user.getActualName() + " 참여): " + calendar.getTitle())
+                    .referenceId(String.valueOf(calendarIdx))
+                    .build();
+            pointHistoryRepository.save(hostHistory);
         }
 
         // Create participant record
@@ -532,25 +594,75 @@ class CalendarServiceImpl implements CalendarService {
             throw new RuntimeException("일정 시작 24시간 전까지만 취소가 가능합니다.");
         }
 
-        // Refund points for paid type
+        // Get host (calendar writer)
+        User host = userRepository.findById(calendar.getWriterUid())
+                .orElseThrow(() -> new RuntimeException("일정 주최자를 찾을 수 없습니다."));
+
         String eventType = calendar.getEventType() != null ? calendar.getEventType() : "free";
-        if ("paid".equals(eventType) && participant.getPointsAmount() != null && participant.getPointsAmount() > 0) {
+        Integer refundPoints = participant.getPointsAmount() != null ? participant.getPointsAmount() : 0;
+
+        // Refund points for paid type (주최자에게서 차감 후 참여자에게 환불)
+        if ("paid".equals(eventType) && refundPoints > 0) {
+            // Check if host has enough points to refund
+            Integer hostBalance = host.getPoint() != null ? host.getPoint() : 0;
+            if (hostBalance < refundPoints) {
+                throw new RuntimeException("주최자의 포인트가 부족하여 취소할 수 없습니다. 주최자에게 문의해주세요.");
+            }
+
+            // Deduct points from host
+            int newHostBalance = hostBalance - refundPoints;
+            host.setPoint(newHostBalance);
+            userRepository.save(host);
+
+            // Save host point history (deduction)
+            PointHistory hostHistory = PointHistory.builder()
+                    .userUid(host.getUid())
+                    .channelUid(calendar.getChannelUid())
+                    .pointType("SCHEDULE_PAID_REFUND_DEDUCT")
+                    .pointAmount(-refundPoints)
+                    .currentBalance(newHostBalance)
+                    .description("일정 참여 취소 환불 (" + user.getActualName() + "): " + calendar.getTitle())
+                    .referenceId(String.valueOf(calendarIdx))
+                    .build();
+            pointHistoryRepository.save(hostHistory);
+
+            // Refund points to participant
             Integer currentBalance = user.getPoint() != null ? user.getPoint() : 0;
-            int newBalance = currentBalance + participant.getPointsAmount();
+            int newBalance = currentBalance + refundPoints;
             user.setPoint(newBalance);
             userRepository.save(user);
 
-            // Save refund point history
-            PointHistory history = PointHistory.builder()
+            // Save participant refund point history
+            PointHistory participantHistory = PointHistory.builder()
                     .userUid(user.getUid())
                     .channelUid(calendar.getChannelUid())
-                    .pointType("SCHEDULE_REFUND")
-                    .pointAmount(participant.getPointsAmount())
+                    .pointType("SCHEDULE_PAID_REFUND")
+                    .pointAmount(refundPoints)
                     .currentBalance(newBalance)
                     .description("일정 참여 취소 환불: " + calendar.getTitle())
                     .referenceId(String.valueOf(calendarIdx))
                     .build();
-            pointHistoryRepository.save(history);
+            pointHistoryRepository.save(participantHistory);
+        }
+
+        // Return escrow points for earn type (주최자에게 예치금 반환)
+        if ("earn".equals(eventType) && refundPoints > 0) {
+            Integer hostBalance = host.getPoint() != null ? host.getPoint() : 0;
+            int newHostBalance = hostBalance + refundPoints;
+            host.setPoint(newHostBalance);
+            userRepository.save(host);
+
+            // Save host point history (escrow return)
+            PointHistory hostHistory = PointHistory.builder()
+                    .userUid(host.getUid())
+                    .channelUid(calendar.getChannelUid())
+                    .pointType("SCHEDULE_EARN_ESCROW_RETURN")
+                    .pointAmount(refundPoints)
+                    .currentBalance(newHostBalance)
+                    .description("일정 참여 취소 예치금 반환 (" + user.getActualName() + "): " + calendar.getTitle())
+                    .referenceId(String.valueOf(calendarIdx))
+                    .build();
+            pointHistoryRepository.save(hostHistory);
         }
 
         // Update participant status
@@ -772,12 +884,43 @@ class CalendarServiceImpl implements CalendarService {
         if (LocalDateTime.now().isAfter(calendar.getStartDate())) {
             throw new RuntimeException("이미 시작된 일정은 취소할 수 없습니다.");
         }
-        
-        // 참여자들에게 포인트 환불 (paid 타입인 경우)
-        if ("paid".equals(calendar.getEventType())) {
-            List<ScheduleParticipant> participants = participantRepository.findByCalendarIdxAndStatus(
-                    calendarIdx, ParticipantStatus.REGISTERED);
-            
+
+        String eventType = calendar.getEventType() != null ? calendar.getEventType() : "free";
+        List<ScheduleParticipant> participants = participantRepository.findByCalendarIdxAndStatus(
+                calendarIdx, ParticipantStatus.REGISTERED);
+
+        // paid 타입: 주최자 포인트 확인 후 참여자에게 환불
+        if ("paid".equals(eventType) && !participants.isEmpty()) {
+            // 총 환불 필요 포인트 계산
+            int totalRefundPoints = participants.stream()
+                    .filter(p -> p.getPointsAmount() != null && p.getPointsAmount() > 0)
+                    .mapToInt(ScheduleParticipant::getPointsAmount)
+                    .sum();
+
+            // 주최자 포인트 확인
+            Integer hostBalance = user.getPoint() != null ? user.getPoint() : 0;
+            if (hostBalance < totalRefundPoints) {
+                throw new RuntimeException("포인트가 부족하여 일정을 취소할 수 없습니다. 필요: " + totalRefundPoints + "P, 보유: " + hostBalance + "P");
+            }
+
+            // 주최자 포인트 차감
+            int newHostBalance = hostBalance - totalRefundPoints;
+            user.setPoint(newHostBalance);
+            userRepository.save(user);
+
+            // 주최자 포인트 히스토리 기록
+            PointHistory hostHistory = PointHistory.builder()
+                    .userUid(user.getUid())
+                    .channelUid(calendar.getChannelUid())
+                    .pointType("SCHEDULE_CANCEL_REFUND")
+                    .pointAmount(-totalRefundPoints)
+                    .currentBalance(newHostBalance)
+                    .description("일정 취소 환불 지급 (" + participants.size() + "명): " + calendar.getTitle())
+                    .referenceId(String.valueOf(calendarIdx))
+                    .build();
+            pointHistoryRepository.save(hostHistory);
+
+            // 참여자들에게 포인트 환불
             for (ScheduleParticipant participant : participants) {
                 if (participant.getPointsAmount() != null && participant.getPointsAmount() > 0) {
                     User participantUser = userRepository.findById(participant.getUserUid()).orElse(null);
@@ -787,8 +930,8 @@ class CalendarServiceImpl implements CalendarService {
                         participantUser.setPoint(newBalance);
                         userRepository.save(participantUser);
                         
-                        // 포인트 히스토리 기록
-                        PointHistory history = PointHistory.builder()
+                        // 참여자 포인트 히스토리 기록
+                        PointHistory participantHistory = PointHistory.builder()
                                 .userUid(participantUser.getUid())
                                 .channelUid(calendar.getChannelUid())
                                 .pointType("SCHEDULE_CANCELLED_REFUND")
@@ -797,11 +940,55 @@ class CalendarServiceImpl implements CalendarService {
                                 .description("일정 취소로 인한 환불: " + calendar.getTitle())
                                 .referenceId(String.valueOf(calendarIdx))
                                 .build();
-                        pointHistoryRepository.save(history);
+                        pointHistoryRepository.save(participantHistory);
                     }
                 }
                 
                 // 참여자 상태 변경
+                participant.setStatus(ParticipantStatus.CANCELLED);
+                participant.setCancelledAt(LocalDateTime.now());
+                participantRepository.save(participant);
+            }
+        }
+
+        // earn 타입: 예치된 포인트 반환 (참여자들 포인트 아직 미지급 상태)
+        if ("earn".equals(eventType) && !participants.isEmpty()) {
+            // 예치된 포인트 반환 (아직 지급되지 않은 참여자들만)
+            int totalEscrowPoints = participants.stream()
+                    .filter(p -> !Boolean.TRUE.equals(p.getPointGranted()) && p.getPointsAmount() != null && p.getPointsAmount() > 0)
+                    .mapToInt(ScheduleParticipant::getPointsAmount)
+                    .sum();
+
+            if (totalEscrowPoints > 0) {
+                Integer hostBalance = user.getPoint() != null ? user.getPoint() : 0;
+                int newHostBalance = hostBalance + totalEscrowPoints;
+                user.setPoint(newHostBalance);
+                userRepository.save(user);
+
+                // 주최자 포인트 히스토리 기록 (예치금 반환)
+                PointHistory hostHistory = PointHistory.builder()
+                        .userUid(user.getUid())
+                        .channelUid(calendar.getChannelUid())
+                        .pointType("SCHEDULE_CANCEL_ESCROW_RETURN")
+                        .pointAmount(totalEscrowPoints)
+                        .currentBalance(newHostBalance)
+                        .description("일정 취소 예치금 반환: " + calendar.getTitle())
+                        .referenceId(String.valueOf(calendarIdx))
+                        .build();
+                pointHistoryRepository.save(hostHistory);
+            }
+
+            // 참여자 상태 변경
+            for (ScheduleParticipant participant : participants) {
+                participant.setStatus(ParticipantStatus.CANCELLED);
+                participant.setCancelledAt(LocalDateTime.now());
+                participantRepository.save(participant);
+            }
+        }
+
+        // free 타입: 참여자 상태만 변경
+        if ("free".equals(eventType) && !participants.isEmpty()) {
+            for (ScheduleParticipant participant : participants) {
                 participant.setStatus(ParticipantStatus.CANCELLED);
                 participant.setCancelledAt(LocalDateTime.now());
                 participantRepository.save(participant);

@@ -94,6 +94,7 @@ public class CalendarDto {
         private String location;
         private Integer points;
         private String eventType;
+        private Integer maxParticipants;
     }
 
     @Data
@@ -108,6 +109,7 @@ public class CalendarDto {
         private String location;
         private Integer points;
         private String eventType;
+        private Integer maxParticipants;
     }
 
     /**

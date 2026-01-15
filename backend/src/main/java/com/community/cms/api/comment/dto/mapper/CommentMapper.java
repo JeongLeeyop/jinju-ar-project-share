@@ -27,6 +27,10 @@ public interface CommentMapper {
             dto.setHasAuthority(true);
         } else dto.setHasAuthority(false);
 
+        // User의 iconFileUid 설정
+        if (entity.getUser() != null) {
+            dto.setIconFileUid(entity.getUser().getIconFileUid());
+        }
 
         if (entity.getPost().getDataList().size() > 0) {
             dto.setPostTitle(entity.getPost().getDataList().get(0).getInputValue());

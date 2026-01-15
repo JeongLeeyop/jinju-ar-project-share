@@ -5,6 +5,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 
+import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
@@ -42,8 +43,13 @@ public class Calendar implements Serializable {
 
     private String location; // 진행 장소
     private Integer points; // R포인트 (유료/획득)
+    
+    @Column(name = "event_type")
     private String eventType; // free, paid, earn
+    
+    @Column(name = "max_participants")
     private Integer maxParticipants; // 최대 참여 인원
+    
     private String writerUid; // 작성자 UID
 
     @ManyToOne

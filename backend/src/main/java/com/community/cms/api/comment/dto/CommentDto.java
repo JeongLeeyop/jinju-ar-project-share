@@ -12,6 +12,7 @@ public class CommentDto {
         private String uid;
         private String userUid;
         private String writer;
+        private String iconFileUid;
         private String contents;
         private String postUid;
         private boolean hasAuthority;

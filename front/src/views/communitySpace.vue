@@ -464,7 +464,7 @@ export default class CommunitySpace extends Vue {
         this.participants = response.data.map((member: any) => ({
           id: member.uid,
           name: member.actualName || member.name || '익명',
-          avatar: member.iconFileUid ? `${this.apiUrl}/attached-file/${member.iconFileUid}` : '',
+          avatar: member.iconFileUid,
           email: member.email,
           joinedAt: member.joinedAt || member.createdAt,
         }));
@@ -1026,6 +1026,7 @@ display: flex;
 }
 
 .post-images {
+  justify-content: start;
   width: 100%;
   margin: 16px 0;
 }
@@ -1046,7 +1047,7 @@ display: flex;
   
   &.single-image {
     display: block;
-    margin: 0 auto;
+    // margin: 0 auto;
   }
 }
 

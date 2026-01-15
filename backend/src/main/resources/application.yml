@@ -85,10 +85,10 @@ security:
 
 attached-file:
     # 집
-    upload-directory: D:\VSCode\attached-file\jinju-ar-community
+    # upload-directory: D:\VSCode\attached-file\jinju-ar-community
     # upload-directory: D:\jinju\jinju-ar-community
     # 회사
-    # upload-directory: D:\VSCode\PersonalProject\attached-file\jinju-ar-community
+    upload-directory: D:\VSCode\PersonalProject\attached-file\jinju-ar-community
     # 서버
     # upload-directory: /home/jinjuar/attached-file
 

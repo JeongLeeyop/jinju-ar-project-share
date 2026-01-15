@@ -108,8 +108,8 @@
                 <span class="user-name">{{ event.writer || '작성자 미상' }}</span>
               </div>
 
-                <!-- 본인 작성 일정인 경우 ... 버튼 표시 -->
-                <el-dropdown v-if="isOwnEvent(event)" trigger="click" @command="handleEventAction">
+                <!-- 본인 작성 일정 또는 커뮤니티 관리자인 경우 ... 버튼 표시 -->
+                <el-dropdown v-if="canManageEvent(event)" trigger="click" @command="handleEventAction">
                   <span class="el-dropdown-link">
                     <i class="el-icon-more"></i>
                   </span>
@@ -158,24 +158,62 @@
                 <div class="comment-header">
                   <div class="user-info">
                     <div class="user-avatar">
-                      <img v-if="comment.iconFileUid" :src="`${apiUrl}/attached-file/${comment.iconFileUid}`" alt="프로필 이미지" class="user-avatar-img">
-                      <svg v-else width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <circle cx="18" cy="18" r="18" fill="#D9D9D9"/>
-                        <mask :id="'mask_comment_' + comment.idx" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="0" y="0" width="36" height="36">
-                          <circle cx="18" cy="18" r="18" fill="#D9D9D9"/>
+                      <img 
+                        v-if="comment.userProfileImage" 
+                        :src="`${apiUrl}/attached-file/${comment.userProfileImage}`" 
+                        alt="프로필 이미지" 
+                        class="user-avatar-img"
+                      >
+                      <svg v-else width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="20" cy="20" r="20" fill="#E5E7EB"/>
+                        <mask :id="'mask_comment_' + comment.idx" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="0" y="0" width="40" height="40">
+                          <circle cx="20" cy="20" r="20" fill="#E5E7EB"/>
                         </mask>
                         <g :mask="'url(#mask_comment_' + comment.idx + ')'">
-                          <rect x="4" y="21" width="28" height="32" rx="14" fill="#F5F5F5"/>
-                          <circle cx="18" cy="11" r="7" fill="#F5F5F5"/>
+                          <rect x="5" y="23" width="30" height="34" rx="15" fill="#9CA3AF"/>
+                          <circle cx="20" cy="13" r="8" fill="#9CA3AF"/>
                         </g>
                       </svg>
                     </div>
-                    <span class="user-name">{{ comment.userName }}</span>
+                    <div class="user-details">
+                      <span class="user-name">{{ comment.userName || '알 수 없음' }}</span>
+                      <span class="comment-date">{{ comment.createdAt | formatDate }}</span>
+                    </div>
                   </div>
-                  <span class="comment-date">{{ comment.createdAt | formatDate }}</span>
+                  <el-dropdown 
+                    v-if="canManageComment(comment)"
+                    trigger="click" 
+                    @command="handleCommentAction"
+                    class="comment-dropdown"
+                  >
+                    <span class="el-dropdown-link el-dropdown-selfdefine">
+                      <i class="el-icon-more"></i>
+                    </span>
+                    <el-dropdown-menu slot="dropdown">
+                      <el-dropdown-item :command="{ action: 'edit', eventIdx: event.idx, comment: comment }">
+                        <i class="el-icon-edit"></i> 수정
+                      </el-dropdown-item>
+                      <el-dropdown-item :command="{ action: 'delete', eventIdx: event.idx, commentIdx: comment.idx }">
+                        <i class="el-icon-delete"></i> 삭제
+                      </el-dropdown-item>
+                    </el-dropdown-menu>
+                  </el-dropdown>
                 </div>
-                <div class="comment-text">
-                  {{ comment.content }}
+                <div class="comment-content">
+                  <div v-if="editingCommentIdx === comment.idx" class="comment-edit">
+                    <textarea 
+                      v-model="editingCommentText" 
+                      class="comment-edit-textarea" 
+                      rows="3"
+                    ></textarea>
+                    <div class="comment-edit-actions">
+                      <el-button size="small" @click="editingCommentIdx = null">취소</el-button>
+                      <el-button size="small" type="primary" @click="handleSaveComment(event.idx, comment.idx)">저장</el-button>
+                    </div>
+                  </div>
+                  <div v-else class="comment-text">
+                    {{ comment.content }}
+                  </div>
                 </div>
               </div>
             </div>
@@ -183,15 +221,15 @@
               <p>첫 번째 댓글을 작성해보세요!</p>
             </div>
 
-            <div class="comment-input-area">
-              <input 
-                type="text" 
-                class="comment-input" 
-                placeholder="댓글을 입력하세요." 
-                v-model="commentInputs[event.idx]"
-                @keyup.enter="handleCommentSubmit(event.idx)"
-              />
-              <button class="comment-submit-btn" @click="handleCommentSubmit(event.idx)">댓글입력</button>
+            <div class="comment-input-wr">
+              <textarea 
+                v-model="commentInputs[event.idx]" 
+                placeholder="댓글을 입력해주세요" 
+                rows="3" 
+                @keyup.ctrl.enter="handleCommentSubmit(event.idx)" 
+                class="comment-textarea"
+              ></textarea>
+              <el-button icon="el-icon-s-promotion" @click="handleCommentSubmit(event.idx)" class="btn"></el-button>
             </div>
           </div>
         </div>
@@ -347,6 +385,19 @@
             </template>
           </div>
 
+          <!-- Max Participants -->
+          <div class="form-group">
+            <label class="form-label">최대 참석 가능 인원 (선택)</label>
+            <input
+              v-model="eventForm.maxParticipants"
+              type="number"
+              class="form-input"
+              placeholder="인원 제한 없음"
+              min="1"
+            />
+            <p class="form-hint">비워두면 인원 제한 없이 참여할 수 있습니다.</p>
+          </div>
+
           <!-- Submit Button -->
           <button class="submit-button" @click="handleCreateEvent">
             {{ isEditMode ? '일정 수정하기' : '일정 만들기' }}
@@ -481,6 +532,8 @@ import {
   toggleCalendarLike,
   getCalendarComments,
   createCalendarComment,
+  updateCalendarComment,
+  deleteCalendarComment,
   getCalendarParticipants,
   grantPointToParticipant,
 } from '@/api/manager/calendar';
@@ -532,6 +585,8 @@ export default class extends Vue {
   private showCommentsForEvent: { [key: number]: boolean } = {};
   private commentInputs: { [key: number]: string } = {};
   private commentsData: { [key: number]: any[] } = {};
+  private editingCommentIdx: number | null = null;
+  private editingCommentText = '';
 
   private eventForm = {
     title: '',
@@ -542,6 +597,7 @@ export default class extends Vue {
     location: '',
     type: 'free',
     points: '',
+    maxParticipants: '',
   };
 
   private eventTypes = [
@@ -660,6 +716,7 @@ export default class extends Vue {
         console.log('writerName:', apiData[0].writerName);
         console.log('writerUid:', apiData[0].writerUid);
         console.log('writerIconFileUid:', apiData[0].writerIconFileUid);
+        console.log('userProfileImage:', apiData[0].userProfileImage);
       }
       console.log('=====================================');
       
@@ -689,6 +746,7 @@ export default class extends Vue {
           type: item.eventType || 'free',
           isParticipating: item.isParticipating || false,
           participantCount: item.participantCount || 0,
+          maxParticipants: item.maxParticipants || null,
         };
         console.log('Mapped event:', mappedItem);
         return mappedItem;
@@ -739,6 +797,7 @@ export default class extends Vue {
       location: '',
       type: 'free',
       points: '',
+      maxParticipants: '',
     };
     this.createEventModalVisible = true;
   }
@@ -790,6 +849,13 @@ export default class extends Vue {
     return event.writerUid && currentUserUid && event.writerUid === currentUserUid;
   }
 
+  // Check if user can manage the event (작성자 or 커뮤니티 관리자)
+  private canManageEvent(event: any): boolean {
+    const isChannelAdmin = ChannelPermissionModule.isChannelAdmin;
+    const isOwner = this.isOwnEvent(event);
+    return isOwner || isChannelAdmin;
+  }
+
   // Dropdown 메뉴 액션 핸들러
   private handleEventAction(command: any) {
     const { action, event } = command;
@@ -813,6 +879,7 @@ export default class extends Vue {
       location: event.location || '',
       type: event.eventType || 'free',
       points: event.points ? String(event.points) : '',
+      maxParticipants: event.maxParticipants ? String(event.maxParticipants) : '',
     };
     
     // 수정할 일정 정보 저장
@@ -885,6 +952,7 @@ export default class extends Vue {
         location: this.eventForm.location,
         eventType: this.eventForm.type,
         points: this.eventForm.type !== 'free' ? parseInt(this.eventForm.points) || 0 : 0,
+        maxParticipants: this.eventForm.maxParticipants ? parseInt(this.eventForm.maxParticipants) : null,
         channelUid: ChannelModule.selectedChannel.uid,
       };
 
@@ -921,6 +989,7 @@ export default class extends Vue {
       location: '',
       type: 'free',
       points: '',
+      maxParticipants: '',
     };
   }
 
@@ -1117,6 +1186,105 @@ export default class extends Vue {
     } catch (error: any) {
       console.error('Error creating comment:', error);
       this.$message.error(error.response?.data?.message || '댓글 작성에 실패했습니다.');
+    }
+  }
+
+  // 댓글 수정/삭제 권한 체크
+  private canManageComment(comment: any): boolean {
+    const isChannelAdmin = ChannelPermissionModule.isChannelAdmin;
+    const currentUserUid = UserModule.userId;
+    // API 응답의 owner 필드 사용 (백엔드에서 계산된 값)
+    const isCommentAuthor = comment.owner === true;
+    
+    console.log('=== canManageComment ===');
+    console.log('comment:', comment);
+    console.log('comment.owner:', comment.owner);
+    console.log('comment.userUid:', comment.userUid);
+    console.log('currentUserUid:', currentUserUid);
+    console.log('isChannelAdmin:', isChannelAdmin);
+    console.log('ChannelPermissionModule:', ChannelPermissionModule);
+    console.log('isCommentAuthor:', isCommentAuthor);
+    console.log('result:', isCommentAuthor || isChannelAdmin);
+    console.log('========================');
+    
+    return isCommentAuthor || isChannelAdmin;
+  }
+
+  // 댓글 드롭다운 액션 핸들러
+  private handleCommentAction(command: any) {
+    const { action, eventIdx, comment, commentIdx } = command;
+    
+    if (action === 'edit') {
+      this.handleEditComment(eventIdx, comment);
+    } else if (action === 'delete') {
+      this.handleDeleteComment(eventIdx, commentIdx);
+    }
+  }
+
+  // 댓글 수정 시작
+  private handleEditComment(eventIdx: number, comment: any) {
+    this.editingCommentIdx = comment.idx;
+    this.editingCommentText = comment.content;
+  }
+
+  // 댓글 수정 저장
+  private async handleSaveComment(eventIdx: number, commentIdx: number) {
+    if (!this.editingCommentText || this.editingCommentText.trim() === '') {
+      this.$message.warning('댓글 내용을 입력해주세요.');
+      return;
+    }
+
+    try {
+      await updateCalendarComment(commentIdx, {
+        content: this.editingCommentText,
+      });
+      
+      this.$message.success('댓글이 수정되었습니다!');
+      
+      // Reset editing state
+      this.editingCommentIdx = null;
+      this.editingCommentText = '';
+      
+      // Reload comments
+      await this.loadComments(eventIdx);
+    } catch (error: any) {
+      console.error('Error updating comment:', error);
+      this.$message.error(error.response?.data?.message || '댓글 수정에 실패했습니다.');
+    }
+  }
+
+  // 댓글 삭제
+  private async handleDeleteComment(eventIdx: number, commentIdx: number) {
+    try {
+      const confirmed = await this.$confirm(
+        '정말 이 댓글을 삭제하시겠습니까?',
+        '댓글 삭제',
+        {
+          confirmButtonText: '삭제',
+          cancelButtonText: '취소',
+          type: 'warning',
+        }
+      );
+
+      if (confirmed) {
+        await deleteCalendarComment(commentIdx);
+        
+        this.$message.success('댓글이 삭제되었습니다.');
+        
+        // Reload comments
+        await this.loadComments(eventIdx);
+        
+        // Update comment count
+        const event = this.eventList.find(e => e.idx === eventIdx);
+        if (event && event.commentCount > 0) {
+          event.commentCount = event.commentCount - 1;
+        }
+      }
+    } catch (error: any) {
+      if (error !== 'cancel') {
+        console.error('Error deleting comment:', error);
+        this.$message.error(error.response?.data?.message || '댓글 삭제에 실패했습니다.');
+      }
     }
   }
 
@@ -1617,6 +1785,23 @@ export default class extends Vue {
   background: #EBEBEB;
 }
 
+.participants-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #4B5563;
+  font-size: 20px;
+  font-weight: 400;
+  line-height: 150%;
+
+  svg {
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    opacity: 0.8;
+  }
+}
+
 /* Comments Section */
 .comments-section {
   width: calc(100% - 50px);
@@ -1659,7 +1844,7 @@ export default class extends Vue {
 
 .comment-item {
   background: #FFF;
-  padding: 16px;
+  padding: 20px 30px;
   border-radius: 8px;
   border: 1px solid #E5E7EB;
   transition: all 0.2s ease;
@@ -1674,7 +1859,6 @@ export default class extends Vue {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
 
   .user-info {
     display: flex;
@@ -1683,37 +1867,217 @@ export default class extends Vue {
 
     .user-avatar {
       flex-shrink: 0;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      overflow: hidden;
+
+      .user-avatar-img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
 
       svg {
         display: block;
       }
     }
 
-    .user-name {
-      color: #222;
-      font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
-      font-size: 18px;
-      font-weight: 600;
-      line-height: 100%;
+    .user-details {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      flex: 1;
+      align-items: flex-start;
+
+      .user-name {
+        color: #222;
+        font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
+        font-size: 18px;
+        font-weight: 600;
+        line-height: 100%;
+      }
+
+      .comment-date {
+        color: #9CA3AF;
+        font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
+        font-size: 13px;
+        font-weight: 400;
+        line-height: 1.2;
+      }
+    }
+  }
+
+  .comment-dropdown {
+    flex-shrink: 0;
+    margin-left: 8px;
+
+    .el-dropdown-selfdefine {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      color: #6B7280;
+
+      &:hover {
+        background: #F3F4F6;
+        color: #374151;
+      }
+
+      i {
+        font-size: 18px;
+        font-weight: bold;
+      }
     }
   }
 }
 
-.comment-date {
-  color: #888;
-  font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
-  font-size: 14px;
-  font-weight: 400;
-  line-height: 100%;
+.comment-content {
+  padding: 0px 52px;
 }
 
 .comment-text {
   color: #374151;
   font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
-  font-size: 16px;
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.6;
+  word-break: keep-all;
+  white-space: pre-line;
+}
+
+.comment-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.comment-edit-textarea {
+  width: 100%;
+  min-height: 80px;
+  padding: 12px 14px;
+  border: 1px solid #073DFF;
+  border-radius: 8px;
+  color: #222;
+  font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 15px;
   font-weight: 400;
   line-height: 150%;
-  word-break: keep-all;
+  outline: none;
+  resize: none;
+  box-sizing: border-box;
+}
+
+.comment-edit-input {
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 8px;
+  border: 1px solid #D1D5DB;
+  background: #FFF;
+  color: #222;
+  font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 15px;
+  font-weight: 400;
+  outline: none;
+  transition: all 0.3s ease;
+
+  &:focus {
+    border-color: #073DFF;
+    box-shadow: 0 0 0 3px rgba(7, 61, 255, 0.1);
+  }
+}
+
+.comment-edit-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.comment-save-btn,
+.comment-cancel-btn {
+  height: 36px;
+  padding: 0 20px;
+  border-radius: 6px;
+  border: none;
+  font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.comment-save-btn {
+  background: #073DFF;
+  color: #FFF;
+
+  &:hover {
+    background: #0533CC;
+  }
+}
+
+.comment-cancel-btn {
+  background: #F3F4F6;
+  color: #6B7280;
+
+  &:hover {
+    background: #E5E7EB;
+    color: #374151;
+  }
+}
+
+.comment-input-wr {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.comment-textarea {
+  flex: 1;
+  min-height: 52px;
+  max-height: 120px;
+  padding: 14px 16px;
+  border: 1px solid #CECECE;
+  border-radius: 10px;
+  color: #222;
+  font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 150%;
+  outline: none;
+  transition: border-color 0.2s;
+  resize: none;
+  box-sizing: border-box;
+
+  &::placeholder {
+    color: #888;
+  }
+
+  &:focus {
+    border-color: #073DFF;
+  }
+}
+
+.comment-input-wr .btn {
+  width: 52px;
+  height: 52px;
+  padding: 0;
+  background: #073DFF;
+  border: none;
+  border-radius: 10px;
+  color: #FFF;
+  font-size: 20px;
+  cursor: pointer;
+  transition: background 0.2s;
+  flex-shrink: 0;
+
+  &:hover {
+    background: #0530CC;
+  }
 }
 
 .comment-input-area {
@@ -1859,12 +2223,12 @@ export default class extends Vue {
 /* Fix z-index to appear above header */
 ::v-deep .el-dialog__wrapper {
   z-index: 9999 !important;
+}
 
-  @media screen and (max-width: 768px) {
-    .join-event-modal {
-      display: flex;
-      align-items: flex-end;
-    }
+@media screen and (max-width: 768px) {
+  ::v-deep .join-event-modal {
+    display: flex;
+    align-items: flex-end;
   }
 }
 
@@ -1996,6 +2360,14 @@ export default class extends Vue {
   &:hover:not(:focus) {
     border-color: #B0B0B0;
   }
+}
+
+.form-hint {
+  margin-top: 6px;
+  color: #888;
+  font-family: Pretendard, -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 14px;
+  font-weight: 400;
 }
 
 .form-textarea {

@@ -928,6 +928,7 @@ export default class extends Vue {
 }
 
 .post-images {
+  justify-content: start;
   width: 100%;
   margin: 16px 0;
 }
@@ -948,7 +949,7 @@ export default class extends Vue {
   
   &.single-image {
     display: block;
-    margin: 0 auto;
+    // margin: 0 auto;
   }
 }
 

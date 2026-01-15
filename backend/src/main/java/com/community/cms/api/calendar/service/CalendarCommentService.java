@@ -14,6 +14,7 @@ import com.community.cms.api.activity_log.service.ActivityLogService;
 import com.community.cms.api.calendar.dto.CalendarCommentDto;
 import com.community.cms.api.calendar.repository.CalendarCommentRepository;
 import com.community.cms.api.calendar.repository.CalendarRepository;
+import com.community.cms.api.channel.service.ChannelMemberPermissionService;
 import com.community.cms.api.user.repository.UserRepository;
 import com.community.cms.common.exception.NotFoundException;
 import com.community.cms.common.exception.code.NotFound;
@@ -38,6 +39,7 @@ public class CalendarCommentService {
     private final CalendarRepository calendarRepository;
     private final UserRepository userRepository;
     private final ActivityLogService activityLogService;
+    private final ChannelMemberPermissionService permissionService;
 
     /**
      * 댓글 목록 조회
@@ -112,9 +114,17 @@ public class CalendarCommentService {
         CalendarComment comment = commentRepository.findById(commentIdx)
                 .orElseThrow(() -> new RuntimeException("댓글을 찾을 수 없습니다."));
 
-        // Check ownership
-        if (!comment.getUserUid().equals(user.getUid())) {
-            throw new RuntimeException("댓글 작성자만 수정할 수 있습니다.");
+        // 일정의 채널 UID 조회
+        Calendar calendar = calendarRepository.findById(comment.getCalendarIdx())
+                .orElseThrow(() -> new RuntimeException("일정을 찾을 수 없습니다."));
+        String channelUid = calendar.getChannelUid();
+
+        // Check ownership or admin
+        boolean isOwner = comment.getUserUid().equals(user.getUid());
+        boolean isChannelAdmin = permissionService.isChannelAdmin(user.getUid(), channelUid);
+        
+        if (!isOwner && !isChannelAdmin) {
+            throw new RuntimeException("댓글 작성자 또는 커뮤니티 관리자만 수정할 수 있습니다.");
         }
 
         comment.setContent(request.getContent());
@@ -136,9 +146,17 @@ public class CalendarCommentService {
         CalendarComment comment = commentRepository.findById(commentIdx)
                 .orElseThrow(() -> new RuntimeException("댓글을 찾을 수 없습니다."));
 
-        // Check ownership
-        if (!comment.getUserUid().equals(user.getUid())) {
-            throw new RuntimeException("댓글 작성자만 삭제할 수 있습니다.");
+        // 일정의 채널 UID 조회
+        Calendar calendar = calendarRepository.findById(comment.getCalendarIdx())
+                .orElseThrow(() -> new RuntimeException("일정을 찾을 수 없습니다."));
+        String channelUid = calendar.getChannelUid();
+
+        // Check ownership or admin
+        boolean isOwner = comment.getUserUid().equals(user.getUid());
+        boolean isChannelAdmin = permissionService.isChannelAdmin(user.getUid(), channelUid);
+        
+        if (!isOwner && !isChannelAdmin) {
+            throw new RuntimeException("댓글 작성자 또는 커뮤니티 관리자만 삭제할 수 있습니다.");
         }
 
         comment.setDeleted(true);

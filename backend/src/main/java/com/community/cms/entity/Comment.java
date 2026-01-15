@@ -68,4 +68,8 @@ public class Comment {
     @ManyToOne
     @JoinColumn(name ="postUid", insertable = false, updatable = false)
     private Post post;
+
+    @ManyToOne
+    @JoinColumn(name = "userUid", insertable = false, updatable = false)
+    private User user;
 }

@@ -4,7 +4,22 @@
     <div class="comment-item-group">
             <div class="comment-item" v-for="comment in commentList" :key="comment.uid">
             <div class="comment-item-inner">
-                <div class="writer">{{ comment.writer }}</div>
+                <div class="comment-header-left">
+                  <div class="user-avatar">
+                    <img v-if="comment.iconFileUid" :src="`${apiUrl}/attached-file/${comment.iconFileUid}`" alt="프로필 이미지" class="user-avatar-img">
+                    <svg v-else width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <circle cx="14" cy="14" r="14" fill="#D9D9D9"/>
+                      <mask :id="`mask-comment-${comment.uid}`" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="0" y="0" width="28" height="28">
+                        <circle cx="14" cy="14" r="14" fill="#D9D9D9"/>
+                      </mask>
+                      <g :mask="`url(#mask-comment-${comment.uid})`">
+                        <rect x="3" y="16" width="22" height="25" rx="11" fill="#F5F5F5"/>
+                        <circle cx="14" cy="9" r="5.5" fill="#F5F5F5"/>
+                      </g>
+                    </svg>
+                  </div>
+                  <div class="writer">{{ comment.writer }}</div>
+                </div>
                 <div class="comment-header-right">
                   <div class="date_wr">{{ comment.createDate | parseDate('YY.MM.DD') }}</div>
                   <el-dropdown v-if="comment.hasAuthority || isChannelManager" trigger="click" @command="handleCommentAction">
@@ -53,6 +68,8 @@ import { ChannelPermissionModule } from '@/store/modules/channelPermission';
 })
 export default class extends Vue {
     @Prop({ required: false }) private postUid!: any;
+
+    private apiUrl = process.env.VUE_APP_BASE_API;
 
     mounted() {
         // 채널 권한 확인
@@ -223,6 +240,26 @@ export default class extends Vue {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+}
+
+.comment-header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.user-avatar {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  overflow: hidden;
+}
+
+.user-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .writer {
