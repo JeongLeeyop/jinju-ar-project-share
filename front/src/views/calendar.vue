@@ -474,7 +474,9 @@ import { Component, Vue } from 'vue-property-decorator';
 import CommunitySidebar from './components/communitySidebar.vue';
 import { 
   getCalendarList, 
-  addCalendar, 
+  addCalendar,
+  updateCalendar,
+  deleteCalendar,
   joinCalendarEvent,
   toggleCalendarLike,
   getCalendarComments,
@@ -850,10 +852,7 @@ export default class extends Vue {
 
   // 일정 삭제 API 호출
   private async deleteCalendarEvent(eventIdx: number) {
-    const response = await request({
-      url: `/calendar/${eventIdx}`,
-      method: 'delete',
-    });
+    const response = await deleteCalendar(String(eventIdx));
     return response;
   }
 
@@ -891,11 +890,7 @@ export default class extends Vue {
 
       if (this.isEditMode) {
         // 수정 모드
-        await request({
-          url: `/calendar/${this.selectedEvent.idx}`,
-          method: 'put',
-          data: eventData,
-        });
+        await updateCalendar(String(this.selectedEvent.idx), eventData);
         this.$message.success('일정이 수정되었습니다!');
       } else {
         // 생성 모드
