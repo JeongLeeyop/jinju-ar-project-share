@@ -11,8 +11,8 @@ server:
 
 spring:
   profiles:
-    # active: development
-    active: product
+    active: development
+    # active: product
   application:
     name: jinju_ar_community
   datasource:
@@ -87,8 +87,10 @@ attached-file:
     # 집
     # upload-directory: D:\VSCode\attached-file\jinju-ar-community
     # upload-directory: D:\jinju\jinju-ar-community
+    # 노트북
+    upload-directory: /Users/devyop/git/attached-file/jinjuar
     # 회사
-    upload-directory: D:\VSCode\PersonalProject\attached-file\jinju-ar-community
+    # upload-directory: D:\VSCode\PersonalProject\attached-file\jinju-ar-community
     # 서버
     # upload-directory: /home/jinjuar/attached-file
 
