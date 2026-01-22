@@ -213,3 +213,5 @@ $RECYCLE.BIN/
 .config/
 /jinju-ar-community
 .github
+
+.idea
