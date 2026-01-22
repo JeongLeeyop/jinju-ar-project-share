@@ -91,25 +91,33 @@
 
               <!-- Post Images -->
               <div v-if="post.fileList && post.fileList.length > 0" class="post-images">
-                <!-- 이미지가 2장 이상일 때 캐러셀 사용 -->
-                <el-carousel v-if="post.fileList.length >= 2" height="220px" indicator-position="outside" arrow="always" class="post-image-carousel">
-                  <el-carousel-item v-for="(fileUid, index) in post.fileList" :key="fileUid">
-                    <div class="carousel-item-wrapper">
-                      <img
-                        :src="`${apiUrl}/attached-file/${fileUid}`"
-                        :alt="`Image ${index + 1}`"
-                        class="post-image"
-                      />
-                    </div>
-                  </el-carousel-item>
-                </el-carousel>
+                <!-- 이미지가 2장 이상일 때 스크롤 방식 -->
+                <div v-if="post.fileList.length >= 2" class="post-images-scroll">
+                  <div 
+                    v-for="(fileUid, index) in post.fileList" 
+                    :key="fileUid"
+                    class="image-wrapper"
+                    @click.stop="openImagePreview(post.fileList.map(f => `${apiUrl}/attached-file/${f}`), index)"
+                  >
+                    <img
+                      :src="`${apiUrl}/attached-file/${fileUid}`"
+                      :alt="`이미지 ${index + 1}`"
+                      class="post-image"
+                    />
+                  </div>
+                </div>
                 <!-- 이미지가 1장일 때 일반 표시 -->
-                <img
+                <div
                   v-else
-                  :src="`${apiUrl}/attached-file/${post.fileList[0]}`"
-                  alt="Image"
-                  class="post-image single-image"
-                />
+                  class="image-wrapper single"
+                  @click.stop="openImagePreview([`${apiUrl}/attached-file/${post.fileList[0]}`], 0)"
+                >
+                  <img
+                    :src="`${apiUrl}/attached-file/${post.fileList[0]}`"
+                    alt="이미지"
+                    class="post-image single-image"
+                  />
+                </div>
               </div>
 
               <!-- Engagement Stats -->
@@ -163,6 +171,34 @@
         </svg>
       </button>
     </div>
+
+    <!-- 이미지 프리뷰 모달 -->
+    <el-dialog
+      :visible.sync="imagePreviewVisible"
+      width="90%"
+      custom-class="image-preview-dialog"
+      :show-close="true"
+      @close="closeImagePreview"
+    >
+      <div class="image-preview-container">
+        <el-carousel
+          v-if="previewImages.length > 1"
+          :initial-index="previewInitialIndex"
+          height="80vh"
+          indicator-position="outside"
+          arrow="always"
+        >
+          <el-carousel-item v-for="(img, index) in previewImages" :key="index">
+            <div class="preview-image-wrapper">
+              <img :src="img" class="preview-image" />
+            </div>
+          </el-carousel-item>
+        </el-carousel>
+        <div v-else class="preview-image-wrapper">
+          <img :src="previewImages[0]" class="preview-image" />
+        </div>
+      </div>
+    </el-dialog>
 
     <!-- Write Post Dialog -->
     <el-dialog :title="updatePost.uid ? '글 수정' : '글 작성'" class="community-post-form dialog-wrap" :visible.sync="writeFormVisible" @open="handleDialogOpen">
@@ -253,6 +289,11 @@ export default class extends Vue {
 
   // ✅ 채널 관리자 여부 (로컬 data로 관리)
   private isChannelManager = false;
+
+  // 이미지 프리뷰 관련
+  private imagePreviewVisible = false;
+  private previewImages: string[] = [];
+  private previewInitialIndex = 0;
 
   // ✅ apiUrl을 computed getter로 변경하여 템플릿에서 접근 가능하도록 수정
   get apiUrl() {
@@ -553,6 +594,20 @@ export default class extends Vue {
   }
 
   private handleDialogOpen() {
+  }
+
+  // 이미지 프리뷰 열기
+  private openImagePreview(images: string[], index: number) {
+    this.previewImages = images;
+    this.previewInitialIndex = index;
+    this.imagePreviewVisible = true;
+  }
+
+  // 이미지 프리뷰 닫기
+  private closeImagePreview() {
+    this.imagePreviewVisible = false;
+    this.previewImages = [];
+    this.previewInitialIndex = 0;
   }
 
   private handleChangeStatus(form: any) {
@@ -933,6 +988,62 @@ export default class extends Vue {
   margin: 16px 0;
 }
 
+// 이미지 스크롤 스타일
+.post-images-scroll {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  width: 100%;
+  padding: 4px 0;
+  
+  &::-webkit-scrollbar {
+    height: 6px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: #F5F5F5;
+    border-radius: 3px;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: #CECECE;
+    border-radius: 3px;
+    
+    &:hover {
+      background: #B0B0B0;
+    }
+  }
+
+  .post-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+}
+
+.image-wrapper {
+  width: 280px;
+  height: 220px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #F5F5F5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+  
+  &:hover {
+    transform: scale(1.02);
+  }
+  
+  &.single {
+  }
+}
+
 .post-image-slider {
   width: 100%;
   height: 220px;
@@ -940,11 +1051,11 @@ export default class extends Vue {
 
 .post-image {
   max-width: 100%;
-  max-height: 220px;
+  // max-height: 220px;
   height: auto;
   width: auto;
   border-radius: 10px;
-  object-fit: contain;
+  object-fit: cover;
   display: block;
   
   &.single-image {
@@ -1453,6 +1564,11 @@ export default class extends Vue {
 @media screen and (max-width: 500px) {
   .community-main{padding: 80px 0;}
   .hero-banner { height: 130px;}
+  
+  .image-wrapper {
+    width: 240px;
+    height: 180px;
+  }
 }
 @media screen and (max-width: 480px) {
   .posts-container {
@@ -1729,5 +1845,56 @@ export default class extends Vue {
 ::v-deep .el-message {
   z-index: 9999 !important;
   top: 20px;
+}
+
+/* 이미지 프리뷰 모달 스타일 - el-dialog는 body에 append되므로 비스코프 스타일 필요 */
+.el-dialog.image-preview-dialog {
+  background: rgba(0, 0, 0, 0.95) !important;
+  
+  .el-dialog__header {
+    padding: 20px;
+    background: transparent;
+  }
+  
+  .el-dialog__body {
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+  }
+  
+  .el-dialog__headerbtn {
+    .el-dialog__close {
+      color: #fff;
+      font-size: 28px;
+      
+      &:hover {
+        color: #ddd;
+      }
+    }
+  }
+}
+
+.image-preview-container {
+  width: 100%;
+  height: 80vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.preview-image-wrapper {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.preview-image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
 }
 </style>

@@ -97,25 +97,33 @@
 
               <!-- 첨부 이미지가 있는 경우 -->
               <div v-if="post.attachments && post.attachments.length > 0" class="post-images">
-                <!-- 이미지가 2장 이상일 때 캐러셀 사용 -->
-                <el-carousel v-if="post.attachments.length >= 2" height="220px" indicator-position="outside" arrow="always" class="post-image-carousel">
-                  <el-carousel-item v-for="(attachment, index) in post.attachments" :key="index">
-                    <div class="carousel-item-wrapper">
-                      <img 
-                        :src="getAttachmentUrl(attachment)" 
-                        :alt="`이미지 ${index + 1}`" 
-                        class="post-image" 
-                      />
-                    </div>
-                  </el-carousel-item>
-                </el-carousel>
+                <!-- 이미지가 2장 이상일 때 스크롤 방식 -->
+                <div v-if="post.attachments.length >= 2" class="post-images-scroll">
+                  <div 
+                    v-for="(attachment, index) in post.attachments" 
+                    :key="index"
+                    class="image-wrapper"
+                    @click="openImagePreview(post.attachments.map(a => getAttachmentUrl(a)), index)"
+                  >
+                    <img 
+                      :src="getAttachmentUrl(attachment)" 
+                      :alt="`이미지 ${index + 1}`" 
+                      class="post-image" 
+                    />
+                  </div>
+                </div>
                 <!-- 이미지가 1장일 때 일반 표시 -->
-                <img 
+                <div 
                   v-else
-                  :src="getAttachmentUrl(post.attachments[0])" 
-                  alt="이미지" 
-                  class="post-image single-image" 
-                />
+                  class="image-wrapper single"
+                  @click="openImagePreview([getAttachmentUrl(post.attachments[0])], 0)"
+                >
+                  <img 
+                    :src="getAttachmentUrl(post.attachments[0])" 
+                    alt="이미지" 
+                    class="post-image single-image" 
+                  />
+                </div>
               </div>
 
               <div class="post-stats">
@@ -271,6 +279,34 @@
       :space-uid="spaceId"
       @invited="handleInvited"
     />
+
+    <!-- 이미지 프리뷰 모달 -->
+    <el-dialog
+      :visible.sync="imagePreviewVisible"
+      width="90%"
+      custom-class="image-preview-dialog"
+      :show-close="true"
+      @close="closeImagePreview"
+    >
+      <div class="image-preview-container">
+        <el-carousel
+          v-if="previewImages.length > 1"
+          :initial-index="previewInitialIndex"
+          height="80vh"
+          indicator-position="outside"
+          arrow="always"
+        >
+          <el-carousel-item v-for="(img, index) in previewImages" :key="index">
+            <div class="preview-image-wrapper">
+              <img :src="img" class="preview-image" />
+            </div>
+          </el-carousel-item>
+        </el-carousel>
+        <div v-else class="preview-image-wrapper">
+          <img :src="previewImages[0]" class="preview-image" />
+        </div>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
@@ -314,6 +350,11 @@ interface Participant {
 export default class CommunitySpace extends Vue {
   private spaceId = '';
   
+  // 이미지 프리뷰 관련
+  private imagePreviewVisible = false;
+  private previewImages: string[] = [];
+  private previewInitialIndex = 0;
+
   private spaceName = '커뮤니티 공간';
   private spaceColor = '#FF5858';
   private channelUid = '';
@@ -814,20 +855,49 @@ export default class CommunitySpace extends Vue {
     // 참여자 목록 다시 로드
     await this.loadParticipants();
   }
+
+  // 이미지 프리뷰 열기
+  private openImagePreview(images: string[], index: number) {
+    this.previewImages = images;
+    this.previewInitialIndex = index;
+    this.imagePreviewVisible = true;
+  }
+
+  // 이미지 프리뷰 닫기
+  private closeImagePreview() {
+    this.imagePreviewVisible = false;
+    this.previewImages = [];
+    this.previewInitialIndex = 0;
+  }
 }
 </script>
 
 <style scoped lang="scss">
-// el-carousel 캐러셀 커스텀 스타일
-.post-image-carousel {
+// 이미지 스크롤 스타일
+.post-images-scroll {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  overflow-y: hidden;
   width: 100%;
+  padding: 4px 0;
   
-  .carousel-item-wrapper {
-    width: 100%;
-    height: 220px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+  &::-webkit-scrollbar {
+    height: 6px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: #F5F5F5;
+    border-radius: 3px;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: #CECECE;
+    border-radius: 3px;
+    
+    &:hover {
+      background: #B0B0B0;
+    }
   }
 }
 
@@ -840,6 +910,9 @@ export default class CommunitySpace extends Vue {
 }
 
 .space-main {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
   padding-bottom: 100px;
   position: relative;
   margin-left: 270px; /* Sidebar width */
@@ -1029,25 +1102,47 @@ display: flex;
   justify-content: start;
   width: 100%;
   margin: 16px 0;
+  overflow-y: hidden;
 }
 
-.post-image-slider {
-  width: 100%;
+.image-wrapper {
+  width: 280px;
   height: 220px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #F5F5F5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+  
+  &:hover {
+    transform: scale(1.02);
+  }
+  
+  &.single {
+  }
+}
+
+.post-images-scroll {
+  .post-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
 }
 
 .post-image {
-  max-width: 100%;
-  max-height: 220px;
-  height: auto;
-  width: auto;
-  border-radius: 10px;
-  object-fit: contain;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
   display: block;
   
   &.single-image {
     display: block;
-    // margin: 0 auto;
   }
 }
 
@@ -1470,8 +1565,8 @@ display: flex;
   }
 
   .post-image {
-    width: 320px;
-    height: 180px;
+    // width: 320px;
+    // height: 180px;
   }
 }
 
@@ -1482,8 +1577,8 @@ display: flex;
   }
 
   .post-image {
-    width: 280px;
-    height: 160px;
+    // width: 280px;
+    // height: 160px;
   }
 }
 
@@ -1494,8 +1589,8 @@ display: flex;
   }
 
   .post-image {
-    width: 240px;
-    height: 140px;
+    // width: 240px;
+    // height: 140px;
   }
 }
 
@@ -1514,8 +1609,8 @@ display: flex;
   }
 
   .post-image {
-    width: 220px;
-    height: 130px;
+    // width: 220px;
+    // height: 130px;
   }
 
   // Show floating write button on mobile (circular style)
@@ -1612,8 +1707,8 @@ display: flex;
   }
 
   .post-image {
-    width: 200px;
-    height: 120px;
+    // width: 200px;
+    // height: 120px;
   }
 
   .comment-submit-btn {
@@ -1674,8 +1769,8 @@ display: flex;
   }
 
   .post-image {
-    width: 180px;
-    height: 100px;
+    // width: 180px;
+    // height: 100px;
   }
 
   .comment-submit-btn {
@@ -1702,9 +1797,63 @@ display: flex;
   }
 }
 
-
 @media screen and (max-width: 500px) {
-  .space-main {padding: 20px 0; }
+  .space-main {
+    padding: 20px 0;
+  }
+
+  .image-wrapper {
+    width: 240px;
+    height: 180px;
+  }
+}
+
+/* 이미지 프리뷰 모달 스타일 */
+::v-deep .image-preview-dialog {
+  background: rgba(0, 0, 0, 0.95) !important;
+  
+  .el-dialog__header {
+    padding: 20px;
+    background: transparent;
+  }
+  
+  .el-dialog__body {
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .el-dialog__close {
+    color: #fff;
+    font-size: 28px;
+    
+    &:hover {
+      color: #ddd;
+    }
+  }
+}
+
+.image-preview-container {
+  width: 100%;
+  height: 80vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.preview-image-wrapper {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.preview-image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
 }
 
 /* Element UI Message z-index fix */
